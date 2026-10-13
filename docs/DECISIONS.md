@@ -1,0 +1,1370 @@
+# Interactive Claude Code Mod — Design Decision Record
+
+**Project:** Interactive AI Terminal
+**Created:** 2026-10-12 · **Last updated:** 2026-10-12 (second review pass)
+**Status:** **Decision review complete — all 29 decisions and 2 principles
+reviewed.** Next: the requirements document. See §9–§10.
+**Framework:** Claude Code mods (CLI v2.1.287+, Desktop Code tab v2.1.286+)
+
+> **Review convention.** Decisions keep their original numbers even when revised,
+> collapsed or killed, so they stay citable across sessions. Numbers are never
+> reused or renumbered. A dead decision says why it died rather than vanishing.
+
+> **Direction of travel.** This pass removed far more than it added. Killed or
+> moved out of MVP: the Run verb, Explain as a separate verb, the capability
+> matrix, block IDs, ID expansion, tool-payload anchoring, the `session.append`
+> hook, `$.tool.register`, the unified question model, and all
+> `AskUserQuestion` interception. **The MVP now registers no tool hooks at all.**
+
+---
+
+## 1. Problem statement
+
+Claude Code renders a linear transcript. Responding to part of it means
+scrolling up, re-reading, and hand-writing prose that points back at it
+("you said in step 3…"). Observed friction points:
+
+- **Bulk approval.** A long response contains several suggestions. Responding
+  means hand-writing a numbered list: `1. Ok as suggested, 2. use this
+  approach instead, 3. change this to 5 and apply`.
+- **Minor amendments.** Accepting a suggestion *with a tweak* costs a full
+  sentence of prose each time.
+- **Proposed commands.** Claude suggests running something as part of a larger
+  plan, without calling it. There is no way to respond to that in place.
+- **Lost context while discussing.** Clarifying one point means holding the
+  others in your head and scrolling back to rephrase.
+- **Question collapse.** When Claude asks a group of questions and the user
+  picks "Discuss", the agent returns to the main chat and the remaining
+  questions are lost — including ones already answered. *(Now E12 — out of MVP.)*
+
+### Core insight
+
+All of these are the same activity: **the user is hand-compiling a diff.**
+They read the response, mentally mark each item (accept / reject / comment /
+discuss), then serialize those marks into prose by hand.
+
+**The mod's job is to let the user mark in place and compile the prompt for
+them.** The response becomes a form to fill in; threads are one verb within
+that, not the central metaphor.
+
+---
+
+## 2. Principles
+
+Constraints that govern decisions rather than being decisions themselves.
+
+### P1 — The agent never knows the mod exists
+**Status:** settled · added 2026-10-12
+
+The compiled prompt reads exactly like something the user typed. No markers, no
+IDs, no mod structures, no sender attribution. The mod does not ask the model
+for anything, and does not teach it any protocol.
+
+**Consequences:**
+- The user always sees the exact text before it goes — in the band preview
+  (D29), whether they submit it directly or copy it to the box first.
+- Submission uses `$.prompt.submit({ asUser: true })`. The plain form prepends
+  a sentence naming the mod as sender.
+- Killed D6 and D8 outright, and reduced D7 to nothing.
+
+**Open edge:** E9 (nudging Claude toward `AskUserQuestion` via `prompt.compose`)
+does not touch user prompts, but does make the agent behave differently because
+the mod is installed. A softer violation of the same family. Current lean: allow
+it, since it changes *behaviour* rather than inventing a protocol. Revisit if
+E12 is ever built.
+
+**E16 is the deliberate exception**, and it is scoped as one: an opt-in
+"extended" mode where the agent is told its response will be marked up. **P1
+stays the default and the documented norm** — extended mode is the deviation, not
+the other way round. The reasoning for keeping it that way is in E16.
+
+### P2 — The mod relays, it does not analyse
+**Status:** settled · added 2026-10-12 (implicit from the start)
+
+The mod never decides what the user meant, what is worth sending, or how to
+reconcile contradictions. It captures intent and hands it over verbatim; the
+agent does the interpreting.
+
+Visible in D3 (the model summarizes its own thread, the mod does not),
+D22 (conflicts go out unresolved), and the deletion of the capability matrix
+in D4.
+
+### P3 — One mechanism, many sources: review what the transcript already holds
+**Status:** settled · added 2026-10-13
+
+> **Anything Claude produced, opened in a Synaptik pane, marked with the four
+> verbs, compiled into one prompt.**
+
+Response blocks are the first source, not the only one. The source list is
+**configuration, not architecture** — each new one reuses the tray, the verbs and
+the compile step unchanged.
+
+**The enabler is that `$.session.messages()` is a plain read** — the newest 4,096
+entries, no hook, no interception. Everything a turn produced is already there:
+a denied command and its text, a diff, a file path, a plan, a task list, a failed
+command's output. **Nothing needs gating, because none of it needs intercepting.**
+
+#### The shape every source follows
+
+1. The mod **reads** what the turn produced. It replaces nothing and gates
+   nothing.
+2. It offers *"open in Synaptik"* — a small additive affordance.
+3. It draws **its own pane**, where it controls every character. Q10 does not
+   apply: there is no Claude Code rendering to reproduce or match.
+4. The four verbs apply. Marks join the same tray.
+5. One prompt compiles out.
+
+#### Why this beats gating, every time
+
+The earlier instinct was to **intercept** the moment a decision is made — hold
+the tool call, restyle the approval prompt, replace the diff row. That instinct
+produced the two hardest and least tractable entries in this document (E5's
+hook-ordering dead end, E12's held-call timeout risk).
+
+Reviewing **after** is better on every axis:
+
+| | Gating | Reviewing after |
+|---|---|---|
+| Hooks needed | tool hooks, held calls | a read |
+| Risk to the session | can break the agent's flow | none (D23, D28) |
+| Content stability | live | frozen snapshot — line numbers cannot move |
+| The user's state of mind | deciding yes/no under pressure | composing several comments |
+
+**At a decision point you want to answer quickly; review is a separate
+activity.** Conflating them is what made the gating designs hard.
+
+#### Sources, by promise
+
+| Source | Where it comes from | Note |
+|---|---|---|
+| Response blocks | the message text | **Phase 1.** The spec. |
+| Diffs and generated files | `git diff` via `$.process.run`, or `$.fs.read` | **E15** — likely worth more than phase 2 |
+| A denied command | its text, read from the transcript | **E5**, rebuilt additively — see that entry |
+| `TodoWrite` lists | arrives as structured data | zero parsing; comment, reorder, drop |
+| Failed command output | the tool result | comment on specific stderr lines instead of describing which error |
+| Plans (`ExitPlanMode`) | possibly just text in the transcript | **may come free** — if the plan renders as text, phase 1 marks it up already. Check in the spike. |
+
+---
+
+## 3. Decision records
+
+Status values: `settled`, `provisional` (decided, revisit after dogfooding),
+`deferred` (moved to extension points, §5), `dead` (no longer exists).
+
+---
+
+### D1 — The response is a fillable form, not a thread host
+**Status:** settled · reviewed, revised
+
+**Decision:** The central metaphor is in-place marking of response blocks that
+compiles into a single prompt. Interactions fall into three classes:
+
+| Class | Input | Waits for a reply | Resume path |
+|---|---|---|---|
+| **Options** (accept, reject) | none | no | staged |
+| **Comment** ("ok, but change x to 5") | free-form | no | staged |
+| **Thread** | free-form | yes | its own, then staged |
+
+**The axis is "does it expect a reply before you continue?"** — *not* "does it
+need typing." Comment groups with accept and reject: all three are deferred
+marks that compile into one prompt, and only a thread interrupts the flow.
+
+**Comment ↔ thread conversion is free until the first prompt is sent.** Open a
+comment, realise you need an answer, promote it with one key and the typed text
+becomes the thread's opening message. The reverse works too. After the first
+exchange the choice is committed, since a thread has history and a comment does
+not.
+
+**Rationale:** of the five frictions above, only one is genuinely a discussion.
+The other four are marking. A thread for each would be heavier than the prose
+being typed today.
+
+**Revision note:** originally grouped verbs by *typed vs untyped* and named the
+free-form mark "amend". Renamed to **comment** — amend implies editing Claude's
+text, when the user is annotating it. Regrouped by *deferred vs waiting*.
+
+**Accepted consequences:**
+- The staging tray and compile step are core infrastructure, built in slice 1.
+- Default UI state is *marking*, not *discussing*.
+- Threads are cuttable — the mod is useful without them.
+- The project's working name, "step threads", is now a misnomer.
+
+**Rejected alternative:** *thread-first* — every interaction opens a discussion
+pane, marking is a shortcut for the trivial case. Better if the real pain is
+*thinking through* responses; worse if it is *processing* them quickly.
+
+---
+
+### D2 — Verb set: four verbs, two mechanisms
+**Status:** settled · reviewed, revised
+
+| Verb | Key | Mechanism |
+|---|---|---|
+| ✓ Accept | `a` | staged mark |
+| ✗ Reject | `x` | staged mark |
+| ✎ Comment | `c` | staged mark + input |
+| 💬 Thread | `d` (empty) / `?` (pre-filled "explain this") | fork conversation |
+
+**Verbs are idempotent entry points.** Pressing a verb again resumes or edits
+rather than duplicating: `c` reopens the comment input pre-filled, `d` reopens
+the existing thread with its history. **One comment and one thread per block,
+maximum.**
+
+**Run was cut.** The mod does not execute anything. If Claude proposes a command
+in prose, the user comments *"run this with --verbose"*; the agent runs it next
+turn through its own Bash tool and permission flow, and the result returns in
+context. Building Run would have meant `$.process.run`, output capture, and
+feeding results back — and skipping the feedback would silently desync the
+agent's picture of the world. The comment loop removes that trap for free.
+*(→ E7.)*
+
+**Explain was collapsed into Thread.** `?` opens a thread pre-seeded with
+"explain this"; `d` opens an empty one. One mechanism, two entry points,
+one-keypress ergonomics retained, one code path removed.
+
+**Known cost of cutting Run:** responding to a proposed command costs a round
+trip, because the agent must re-emit it before executing. Accepted, to avoid
+maintaining a parallel execution path with its own failure mode.
+
+---
+
+### D3 — Deferred vs waiting; threads commit explicitly
+**Status:** settled · reviewed, revised
+
+- **Accept / reject / comment** — deferred. Nothing reaches the agent until the
+  main prompt is submitted.
+- **Thread** — opens immediately, but sends nothing until committed.
+
+**Threads are consequence-free by default.** A thread is fully interactive, but
+has no effect on the main conversation unless committed. Close it and it is as
+if it never happened.
+
+**Rationale:** since Explain is now a thread (D2), most threads will be
+read-only understanding with nothing worth sending. Auto-staging them would
+pollute every prompt with explanations requested purely to understand. It also
+keeps "never mind, I was wrong" from reaching the agent.
+
+#### Commit flow
+
+1. **Esc** closes the thread. Nothing sent. *This is the default.*
+2. **⌃S** commits. The mod fires one more `fork` call at the thread:
+   *"summarize what was decided here as an instruction to the main agent."*
+3. The summary lands in the tray as an **editable** row.
+4. On main submit, it compiles with the other marks, and `$.prompt.fill` puts
+   the whole thing in the prompt box for a final edit.
+
+Per P2, the mod never analyses what is worth sending — the model summarizes and
+the user approves. Two review points, both free.
+
+**Rejected alternative:** stage the raw thread transcript. Zero machinery and
+nothing lost, but a ten-message thread dumps ten messages into the prompt and
+the main agent must re-derive the conclusion anyway.
+
+**Accepted caveat:** summarization is lossy and will occasionally drop the
+nuance the thread was about. Mitigated by the summary being editable. If it
+needs frequent rewriting, fix the summarizer prompt — not the mod.
+
+#### Build note — commit is a toggle, not a button
+
+Render the commit control as an **include/exclude state the user can flip**,
+showing the summary that would be staged. In MVP it defaults to *excluded* and
+`⌃S` flips it. With auto-classification (E6) it defaults to the classifier's
+verdict and the same key overrides it. Costs nothing now; makes E6 a change to
+one default rather than a UI rework.
+
+#### Two submits, two surfaces
+
+| Action | Where | Effect |
+|---|---|---|
+| `⌃S` | thread pane | thread summary joins the tray |
+| `Enter` | main prompt box | the whole tray compiles and sends |
+
+This separation is what allows threading on three blocks, committing all three,
+and sending once. Requirements must give these distinct keys and clear
+affordances, or a user will commit a thread believing they sent a prompt.
+
+---
+
+### D4 — Block segmentation: uniform verbs, flat navigation, structured output
+**Status:** settled · reviewed, substantially revised
+
+**Every block gets every verb.** No capability matrix.
+
+**Revision note:** the original restricted verbs by block type — list items got
+everything, paragraphs got discussion only, on the reasoning that "accepting a
+paragraph of prose is meaningless." **That was wrong.** Much of Claude's advice
+arrives as prose ("I'd recommend Redis here because…"), and accepting it is
+perfectly meaningful; the matrix would have made the verb bar useless on half of
+real responses. It also violated P2 — the mod deciding, on the user's behalf,
+that a mark is semantically invalid.
+
+**What is a block:**
+
+| Element | Block? |
+|---|---|
+| Paragraph | Yes |
+| List item (incl. nested) | Yes — **flat**, each item its own block |
+| Fenced code block | Yes |
+| Table, blockquote | Yes, treated as paragraphs |
+| Heading | **No** — a label; marking it is ambiguous with marking its section |
+| Multi-paragraph list item | One block (kept whole) |
+
+**Flat nesting.** Sub-items are often where the real decisions live, so
+collapsing them into a parent would hide exactly what the user wants to mark.
+
+**But segmentation records a parent pointer per block,** because *navigation is
+flat while the compiled prompt must preserve hierarchy.* Accepting a parent and
+rejecting one child is normal refinement, not a contradiction — and the agent
+can only read it that way if the output shows the nesting:
+
+```
+Accepted: "Use Redis for the session cache"
+  ✓ per-user key prefix
+  ✓ 5 minute TTL
+  ✗ write-through on logout
+```
+
+Cheap to record now, impossible to retrofit once the compile format is fixed.
+
+**Genuinely ambiguous case:** rejecting a parent while accepting a child. Goes
+out as-is; the agent resolves it (D22, P2).
+
+---
+
+### D5 — Blocks are derived at render time; no IDs are stored or shown
+**Status:** settled · reviewed, substantially revised
+
+Split the message text into blocks at render time and key marks by **position**.
+No stored IDs, no `session.append` hook, no persistence.
+
+**Revision note:** the original assigned IDs in `session.append` for anchor
+stability, on the assumption that the user would *type* block references into a
+prompt. Modal navigation (D20) removed that assumption, and the stability
+argument turned out to be free: per D24 only the completed last message is
+markable, so its text is fixed, so parsing it repeatedly yields identical blocks.
+Deterministic input, deterministic output.
+
+**Rule that falls out: marking is disabled while streaming.** Mid-stream the
+text is still growing, so indices would shift. Gate on `turn.complete`.
+
+**`session.append` moves to extension points** (E13), where it earns its place:
+marks surviving a restart, or multi-message interactivity (E11) where "it is the
+last message and the text is fixed" no longer holds.
+
+#### State model
+
+The mod keeps its own structured state and **generates** the final prompt from
+it at submit time. Nothing is accumulated as text along the way.
+
+Per block, at most **one mark** and **one committed thread summary** — two
+separate channels:
+
+| Action | Effect |
+|---|---|
+| Change a mark (`a` then `x`) | Overwrites. One slot, last write wins. |
+| Press the same verb twice | Unmarks (toggle off). |
+| `c` on a commented block | Reopens the input pre-filled — edit, don't retype. |
+| `d` on a threaded block | Reopens that thread with its history. |
+| `Backspace` on a block | Clears it: mark gone, thread flipped to excluded. |
+| Clear-all | Empties the tray in one action. |
+| Mark **and** committed thread on one block | Both go out; agent resolves (D22). |
+
+**Invariant: clearing unstages, it never destroys.** A cleared thread keeps its
+conversation and can be flipped back to included — that is D3's toggle reached
+from the block rather than the pane, not a second mechanism. A cleared comment
+keeps its text, so a misfire costs nothing.
+
+The gutter shows the result directly: a cleared block drops back to a dim `▎`
+with no symbol. No state the user cannot see.
+
+---
+
+### D6 — Reference expansion by truncated quote
+**Status:** **dead** · killed by D5 + P1
+
+Existed only because the user was assumed to type block references. They never
+do. Nothing to expand.
+
+What survives is a formatting detail of the compile step, not a decision:
+quotes run to roughly the first 6–8 words — long enough to locate, short enough
+to stay readable in a stack of marks.
+
+#### Compile format
+
+No prose scaffolding. No "the user approved step 3", no "the user asked to
+explain…". A marked-up outline of what Claude wrote:
+
+```
+Re your last message:
+✓ "Use Redis for the session cache"
+    ✓ "per-user key prefix"
+    ✗ "write-through on logout"
+✎ "Add a rate limiter" → make it 5 req/sec
+💬 "Shard by tenant id" → defer sharding until >10k tenants
+```
+
+Symbol, short quote, optional text, nesting preserved. The agent wrote this
+message one turn ago, so a six-word quote locates anything — the user is
+annotating, not re-explaining. **Threads contribute only their committed
+summary**, with no mention that a discussion happened or what was asked.
+
+---
+
+### D7 — Structure comes from tool payloads, not prose markup
+**Status:** reduced to nothing in MVP · the principle survives as P1
+
+Never ask Claude to emit `{?}` / `<block>` markers in prose: a schema cannot
+drift, markup degrades indistinguishably from "nothing to mark", must be
+stripped before drawing, and leaks into `claude -p` and subagent output.
+
+**Both halves are now out of MVP.** The `AskUserQuestion` half went to E12; the
+`$.tool.register` custom-payload half went to E14 — it was a bigger idea than
+MVP needs and depended on Claude choosing to call a tool it has no habit of
+calling.
+
+**What remains:** MVP asks nothing of the model and parses everything
+deterministically from response text (D4, D5).
+
+---
+
+### D8 — Tool-driven items anchor by quote
+**Status:** **dead** · killed by P1, then moot under E12
+
+Proposed that each tool-supplied item carry an `anchor_quote` so its control
+could be drawn inline. That required the model to send a field it does not
+currently send — exactly what P1 forbids. The conflict was not noticed when D8
+was written.
+
+**If E12 is ever built:** tool questions render at the end of the message, in
+order, which is where Claude Code puts them anyway.
+
+---
+
+### D9 — Unified question model
+**Status:** **dead in MVP** · moved to E12
+
+Was the design's keystone: one `Question` schema, two sources (tool and prose),
+two resume paths. It was load-bearing only because tool questions existed.
+
+**With `AskUserQuestion` out of MVP, there is no question model at all.** A
+question Claude asks in prose is simply a block, and the user comments on it
+with `c` like any other block. Same verb, same tray, same compile step.
+
+---
+
+### D10 — Build the prose path first
+**Status:** **absorbed into D4** · no longer a separate decision
+
+Its content — prose questions need no model cooperation, detection is a dumb
+heuristic, a miss is harmless — is now simply how blocks work. There is no
+second path to build first.
+
+---
+
+### D11, D12, D13 — Held tool calls, Discuss, answer-and-forward
+**Status:** **moved to E12** with `AskUserQuestion`
+
+All three existed to manage a held tool call: the gate (D11), the fix for
+Discuss destroying sibling questions (D12), and the escape hatch for typing
+while a call is held (D13).
+
+**MVP holds no tool calls, so none of this exists.** This also retires **Q1 and
+Q2** — the riskiest unknowns in the whole design, since everything rested on how
+long Claude Code tolerates a held call.
+
+---
+
+### D14 — Thread isolation via `$.model.fork`
+**Status:** settled
+
+Threads use `$.model.fork` exclusively. A thread **never** calls
+`$.prompt.submit`.
+
+**Rationale:** `fork` is a separate model call whose request and reply never
+enter the main conversation's message list, so crosstalk is impossible by
+construction. `$.prompt.submit` is the one call that would write into the main
+conversation.
+
+**Known limitation:** `fork` is single-shot. For a multi-turn thread the mod
+re-sends the accumulated side Q&A on each message and owns that history itself.
+This is also what makes E2 possible later — the thread is a clean, mod-owned
+transcript that can be handed to another session deliberately.
+
+---
+
+### D15 — Escalation ladder
+**Status:** settled · revised
+
+```
+accept/reject → comment → thread → delegate to main agent
+```
+
+Each rung is one keypress from the last. Start at the cheapest; promote when it
+is not enough.
+
+**Revision note:** the original fourth rung was a branched session with tools.
+That moved to E1. The replacement is better: **a thread that needs tools does
+not abandon — it asks.** Its committed conclusion can say "this needs running";
+the main agent executes next turn and the result arrives in a response that can
+itself be marked up.
+
+**This closes the loop:** thread → conclusion with an action → main agent runs
+it → new response → mark that up. The mod is iterative, not one-shot.
+
+---
+
+### D16–D19 — Branched sessions, depth, merge, worktrees
+**Status:** deferred → §5 (E1–E4)
+
+Dropping sub-sessions removes the entire distributed half of the design:
+cross-session messaging, lineage tracking, merge semantics and worktree
+isolation. MVP is **one session, one process**. Threads are flat — a thread
+cannot spawn a thread, and if one surfaces a new question it stays in that
+thread.
+
+**Note:** D15's loop *narrows* the case for E1 rather than merely postponing it.
+Tool access was the main argument for branching, and the delegate loop now
+covers it. What remains is **context isolation** — keeping an hour of
+exploratory work out of the main context. Real, but a smaller argument. Re-test
+after living with the loop.
+
+---
+
+### D20 — Modal navigation with visible controls on the selected block
+**Status:** settled · reviewed 2026-10-13, revised
+
+Enter navigation → arrows move between blocks → Esc backs out one level per
+nesting depth.
+
+**Revision: visible controls, not hotkeys alone.** The selected block shows a
+row of real `Button` elements; hotkeys work too, for whoever learns them. This
+is the primary interaction — not a fallback.
+
+```
+▎ Use Redis for the session cache
+    [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
+▏ Add a rate limiter
+▏ Shard by tenant id
+```
+
+The row moves with the selection, so **only one block's controls are on screen**
+— which resolves D20's original tension without hiding the verbs. Labels are
+visible, so nothing must be memorized, and `Button` takes both `label` and
+`hotkey`, so both paths work from one definition.
+
+**Comment is an inline `Input`** appearing in place under the block — better
+than a popup, because the text being commented on stays visible while typing.
+
+`Button`, `Input` and `Select` all render in the terminal.
+
+#### Entry key — open, and less important than it looked
+
+**`Cmd+S` is rejected.** On macOS the terminal emulator usually swallows Cmd
+combinations before they reach the TUI, and Cmd does not exist in Linux or
+Windows terminals. **`Ctrl+S` is worse** — it is the classic terminal XOFF and
+some terminals still honour it, freezing output until `Ctrl+Q`.
+
+Candidates, in order:
+
+1. **A plain unmodified key while the prompt box is empty** — the way Claude
+   Code already treats digits in the band. No modifiers, nothing to swallow.
+2. **`Ctrl+G`** — rarely bound, reaches the TUI reliably.
+3. **Esc-prefixed** (Esc then a key) — portable, slightly awkward.
+4. **`Button`'s `action` prop**, which names one of Claude Code's own
+   [keybinding actions](https://code.claude.com/docs/en/keybindings) and fires on
+   whatever the user has bound — inheriting a key that is already portable and
+   already consistent with the rest of the app.
+
+**Settle by feel in the spike** (D27), alongside Q3 — the key cannot be chosen
+without knowing what `ui.press` actually receives. Visible controls make the
+mode self-evident once entered, so the entry key matters less than it first
+appeared.
+
+#### Notes for implementation
+
+- `autoFocus` accepts only `true`, so focus is managed per render rather than
+  by flipping a prop off.
+- `Box` has a `hover` prop, which suggests **mouse interaction may work in the
+  terminal**. Worth checking in the spike — if clicking works, discoverability
+  comes free without touching the keyboard design.
+
+---
+
+### D21 — Selection highlighting is a gutter column
+**Status:** settled · reviewed 2026-10-13
+
+A single gutter column to the left of the text — bright `▎` on the selected
+block, dim `▏` on the others — also carrying mark state (`✓ ✗ ✎ 💬`):
+
+```
+  Here's what I'd suggest:
+
+▎ ✓ Use Redis for the session cache
+▏   Add a rate limiter
+▏   Shard by tenant id
+```
+
+One `Box` per block with a narrow left column, then the text.
+
+**Rationale:** per-block borders are noisy and cost two rows each. One column
+means no layout shift. **And the gutter cannot fail** — it is the mod's own
+column, not a restyling of Claude's text.
+
+#### Background highlighting is a nice-to-have, not the design
+
+`Box` takes `backgroundColor`; `Text` takes `backgroundColor` and `inverse`
+(the closest thing to a selection highlight in a terminal). But **`Markdown`
+lists no background prop** — only `text`, `dimColor` and the link props. So
+highlighting a block means either wrapping it in a `Box` with a background and
+hoping that paints behind the child text, or rendering the block as `Text` and
+giving up markdown formatting inside it. Neither is certain from the docs.
+
+**This is the same uncertainty as Q10** — how much control a `ui.render` hook
+has over message text. One question, two outcomes: good control means
+highlighting is available; poor control still leaves the gutter working.
+
+**This is the one part of the design that cannot be settled on paper.**
+Everything else was decided by reasoning; how a marked-up transcript actually
+*looks* in a terminal is only learned by drawing it. The
+[interface gallery](https://code.claude.com/docs/en/plugins/mods/gallery) has
+screenshots of most elements — the fastest way to judge a background behind
+markdown before building it.
+
+---
+
+### D22 — Conflicting marks are not resolved by the mod
+**Status:** settled
+
+If a block is accepted and then threaded to the opposite conclusion, send
+**both** without intervention. The agent resolves it in its next response.
+Avoids inventing precedence rules the user would have to learn. See P2.
+
+---
+
+### D23 — The mod must be trivially disableable, and must fail to vanilla
+**Status:** settled · reviewed 2026-10-13
+
+Enabling and disabling must be a single step, at any point, leaving a vanilla
+Claude Code session behind with the chat and flow unbroken. A hook that throws
+or exceeds its 10-second budget is skipped — so a failed `ui.render` hook must
+degrade to **plain Claude Code rendering, never a half-drawn transcript**.
+`.catch(handler)` returning `next(e)` on each registration is where this lives.
+
+**Now nearly free.** With no tool hooks (D28, E12), the mod cannot interfere
+with the agent's operation at all. It draws, and it writes the prompt box.
+
+#### The guarantee that makes this true
+
+**The mod holds no state the conversation depends on.** D5 is what delivers
+this: blocks are derived at render time and nothing is stored in the
+conversation, so disabling mid-flow costs only the tray. The transcript is
+untouched, and re-enabling just re-parses whatever message is current — nothing
+to migrate, nothing to recover.
+
+**This is a constraint to check future features against.** E13's persisted
+block identity would be the first thing to test it.
+
+#### Add: an in-mod kill switch
+
+Beyond `--safe-mode` and `/plugin`, provide a key or `/command` that makes the
+render hooks pass through while the session continues. **The failure actually
+hit during development is rendering being *wrong*, not throwing** — and
+restarting a session to escape it is painful mid-task.
+
+**Available switches:** `claude --plugin-dir ./mod` loads for one session only
+(and reloads the hooks module on save); `/plugin` disables an installed one;
+`--safe-mode` disables everything for a session.
+
+---
+
+### D24 — MVP scope: last message only
+**Status:** settled · reviewed 2026-10-13
+
+Only the most recent assistant message is interactive, and only once its turn
+has completed (D5). No historic interactivity. Eliminates the stale-mark problem
+entirely, and is what makes render-time segmentation safe.
+
+#### Q7 resolved: discard with warning
+
+**The mod never adds itself to a prompt the user typed.** Type your own prompt,
+it goes alone — no appended marks, no interception of `prompt.submit`.
+
+The consequence follows: that prompt produces a new assistant message, D24 makes
+only the newest message markable, so marks staged on the previous one are
+orphaned and go.
+
+**The risk is doing it silently** — sending a quick side question intending to
+return to five marks, and finding them gone with no sign they existed.
+
+**Shown in the band, before it happens.** No interception, no double-Enter, no
+dialog. The mod knows the box has text, and the band line changes:
+
+```
+5 marks staged · ⏎ sends your text only — marks discarded · ⇥ to use marks instead
+```
+
+Read one line above the cursor while typing. The band should be **loud** here —
+different colour, not the usual dim — because this is the one place in the mod
+where work can be lost. Everything else is reversible.
+
+**How the mod knows the box has text:** `$.prompt.read()` from the band's render
+hook, which needs no extra registration — the band redraws anyway. The
+`prompt.edit` event (fires when the user edits the box, observe-only, returns
+`next(e)`) is the fallback if `read()` does not serve. Prefer `read()`: one
+fewer hook, and the surface stays at four.
+
+**If discarding turns out to be annoying in practice, the fix is E13** —
+persisted marks that survive a new message — not a confirm dialog.
+
+---
+
+### D25 — Nudging Claude toward `AskUserQuestion`
+**Status:** deferred → §5 (E9) · now also in tension with P1
+
+---
+
+### D26 — Config surface
+**Status:** deferred → §5 (E10)
+
+---
+
+### D27 — A throwaway spike, then two thin phases
+**Status:** settled · reviewed 2026-10-13, revised
+
+Each phase is **thin but end-to-end** rather than a layer (all the parsing, then
+all the state, then all the UI), so something usable exists at the end of each.
+
+| | What | Delivers |
+|---|---|---|
+| **Spike** | a throwaway mod drawing one hardcoded message with a gutter, fake mark symbols and a selected row | answers Q3, Q10, the highlight question and the entry key — and whether the look holds up |
+| **Phase 1** | real segmentation, accept/reject/comment, tray, band preview, submit | a mod usable daily. **No threads.** |
+| **Phase 2** | threads via `fork`, commit toggle, model-written summary | the discussion half |
+
+**The spike is not phase 1** — it is throwaway code written to answer questions,
+then deleted.
+
+**Revision note:** the original first slice bundled rendering and state
+together, which would have meant discovering a rendering problem *after*
+building the machinery that depends on it. D21 is the one part of the design
+that cannot be settled on paper, so it goes first and costs almost nothing:
+`--plugin-dir`, one `register.ts`, reloads on save.
+
+**Phase 1 is the real test.** If marking without threads does not change how the
+work feels, phase 2 will not save it.
+
+**Rationale:** the project's real risk is scope growth, not poor tracking.
+
+---
+
+### D28 — Mods do not intervene in Claude Code's own tool runs
+**Status:** settled
+
+The mod does not gate, modify or execute tool calls Claude makes. The boundary
+falls on a natural seam — two different surfaces, never confusable at runtime:
+
+| | Surface | In MVP scope |
+|---|---|---|
+| Command **in the response text** (written, not called) | `AssistantMessage` render site | Yes — comment and thread apply |
+| Command Claude **is calling** | `tool.call` | No — untouched |
+
+**Consequence, now stronger than when written:** MVP registers **no tool hooks
+at all**. The surface is two render sites, the `ui.*` events, and
+`turn.complete`.
+
+**The excluded case is real and wanted** — responding to an approval prompt with
+"yes, but add `--verbose`" instead of rejecting and retyping. See E5.
+
+---
+
+### D29 — The band is the source of truth; the prompt box is a scratch copy
+**Status:** settled · added and resolved 2026-10-12
+
+**The whole decision:**
+
+1. The generated prompt appears as a **dim preview in the band above the prompt
+   box** (`AbovePrompt`), regenerating live as marks change.
+2. **One key submits it** — straight to the agent via
+   `$.prompt.submit({ asUser: true })`.
+3. **One key copies it into the box**, overwriting whatever is there, for when
+   the user wants to edit before sending.
+
+Default path is one keypress. The edit path exists and is never touched unless
+wanted.
+
+#### Why the band, not the box
+
+The box is where the user types; the band is the mod's own surface. Putting the
+preview there means the user's typing is never disturbed, the preview
+regenerates freely, and there is no divergence state to explain or display.
+`AbovePrompt` is a documented render site and the `token-weather` sample already
+draws there, so this needs no verification.
+
+#### Band is authoritative, box is scratch
+
+| | Behaviour |
+|---|---|
+| Band | always reflects current marks. Never edited, never stale. |
+| Copy to box | **overwrites** the box every time. |
+| Edits in the box | the user's, until they copy again — which discards them. |
+
+**Overwrite-on-copy is correct** because copying is an explicit keypress, not a
+side effect. The data-loss objection applies to *automatic* overwriting; an
+explicit "give me a fresh copy" replacing the box is ordinary behaviour.
+
+It also removes all merge logic: copy replaces, so there is no case where mod
+text and user text must be combined.
+
+**Possible mitigation, only if it stings in use:** show `box has edits — copy
+will replace` in the band. Not worth building until felt.
+
+#### `asUser: true` is required
+
+The plain form of `$.prompt.submit` prepends a sentence naming the mod as
+sender, which would tell the agent the mod exists. `asUser: true` sends the text
+as the user's own words. See P1.
+
+**P1 is not violated by direct submission.** The band already showed the user
+the exact text; submitting it is not sending something behind their back. An
+earlier draft of this decision routed everything through the box to preserve
+P1 — that round trip bought only an edit the user did not want.
+
+#### Rejected alternatives
+
+| | Why rejected |
+|---|---|
+| Regenerate into the box, overwriting user edits automatically | data loss as a side effect of marking |
+| Live preview in the box until the user edits it, then detach | needs a divergence state and a destructive re-sync key; the band makes it unnecessary |
+| Merge mod text with typed text on submit via `prompt.submit` | the agent would receive text the user never saw |
+
+#### Still open
+
+- **The accept gesture** — which key submits, which copies. A candidate worth
+  trying: `Tab` or Enter-on-empty-box to accept the band's preview, so it reads
+  as accepting a suggestion rather than invoking a command. Settle by feel in
+  slice 1.
+- **`prompt.suggest`** (Q11) might allow the preview to live in the box as a
+  true separate layer, skipping the copy step. **Not a dependency** — the band
+  works. If `suggest` turns out nicer, it swaps in without redesigning anything.
+- **After sending, the tray clears** — the marks were consumed. Interacts with
+  Q7 (what happens to marks when a new message arrives); decide the two
+  together.
+
+---
+
+## 4. MVP definition
+
+**The whole of it:**
+
+1. Parse the last **completed** assistant message into blocks (D4, D5)
+2. Modal navigation, gutter highlight, visible controls on the selected block (D20, D21)
+3. Four verbs: accept, reject, comment, thread (D2)
+4. Tray state keyed by block position, with overwrite/toggle/clear (D5)
+5. Show the compiled prompt as a live preview in the band; one key submits it, one key copies it to the box (D6 §compile, D29)
+6. Threads via `$.model.fork`, include/exclude toggle, model-written summary (D3, D14)
+
+**Hooks registered:**
+
+| Hook | Purpose |
+|---|---|
+| `ui.render` on `AssistantMessage` | Gutter, marks, selection |
+| `ui.render` on `AbovePrompt` | Status band |
+| `ui.press` / `ui.input` | Navigation, verbs, thread input |
+| `turn.complete` | Open marking once the message is final |
+
+**No tool hooks. No prompt-composition hooks. Nothing the agent can observe.**
+
+**Out of MVP:** everything in §5.
+
+---
+
+## 5. Extension points
+
+Parked capabilities, each with what it needs and which decisions it reactivates.
+Nothing in the MVP design blocks any of these.
+
+> These are parked for *different reasons*, which matters. E1 got **weaker** as
+> a result of D15, not merely postponed. E5 is blocked on a hook-ordering
+> problem that may have no clean solution. E7 is probably dead. E12 is
+> straightforwardly valuable and was cut for implementation cost alone.
+
+### E1 — Branched sub-sessions (was D16, D17)
+A full Claude Code session **with the mod loaded**, so its responses carry the
+same gutter, verb bar and threads — the mod running recursively, not a read-only
+subagent view.
+**Needs:** depth cap (was 2), lineage in `$.store` (shared machine-wide, 4 MiB).
+**Open:** whether a mod can trigger `/branch` via `$.command.run`, or must start
+the session another way *(was Q4)*. `session.end` fires on `/branch` with reason
+`resume`, so a branch must not be treated as a real session end.
+**Reconsider only after** living with D15's delegate loop — the remaining
+argument is context isolation, not tool access.
+
+### E2 — Promote a thread to a branched session
+**Mechanism:** `/branch` forks the *main* conversation, which by design does
+**not** contain the thread (D14). So the mod carries it deliberately: write the
+thread to `$.store` → branch → the new session's `session.start` hook reads it
+back and seeds the conversation. Better than implicit inheritance — you choose
+what crosses over (anchor block + thread) and leave the rest behind.
+**Open:** the handshake — how the new session knows it is a branch and which
+thread it carries. Probably a `$.store` key written before branching and claimed
+on start. Untested. Also *(was Q5)*: what a subagent session view exposes to a
+mod, which may provide a ready-made pane for watching a branch.
+
+### E3 — Worktree isolation (was D19)
+Branches share the working directory by default; the moment one edits files, the
+main session's picture is stale and it does not know. Isolated git worktrees are
+the correct answer. **Hooks:** `$.session.cwd`, `$.session.repo`.
+
+### E4 — Summary-based merge between sessions (was D18)
+`$.session.send` from branch to parent → `session.receive` hook returns
+`{ consumed }` so Claude does not read it immediately → summary surfaces in a
+pane with a Merge button → `$.prompt.fill`. Explicitly lossy for discussion;
+applied file changes need a real git merge, not a conversation merge.
+
+### E5 — Edit and resend a denied command
+**Rebuilt additively 2026-10-13 under P3. The gating design below is abandoned.**
+
+The case: Claude proposes a Bash command, you deny it — but you did not want to
+refuse the *command*, only to change a flag. Today that means denying, then
+retyping the whole thing as a prompt.
+
+#### The additive design
+
+Deny normally, through Claude Code's own prompt, untouched. **The mod then sees
+the denied call in the transcript** (`$.session.messages()`) and offers *"edit
+and resend"*: an `Input` pre-filled with the command. Edit it, and it compiles to
+
+```
+run this instead: npm test -- --verbose
+```
+
+No tool hooks. No interception. The permission prompt is never touched, so its
+hard constraint is simply irrelevant.
+
+**It is also better UX than gating.** At a permission prompt you want to say no
+quickly; composing a modified command is a separate activity. Denying first and
+editing after matches what the user is actually doing at each moment.
+
+#### The abandoned gating design, and why
+
+Originally: intercept the approval and let the user answer it with an
+instruction. **A mod can restyle most of the interface but not the permission
+prompt** — the docs are unambiguous that "it can't change what a prompt shows
+you."
+
+The workaround was to compose two hooks: `tool.call` can return
+`{ deny: reason }` and the reason reaches Claude (that *is*
+reject-with-a-comment), while `tool.check` fires afterwards and reveals the
+decision the rules and permission mode reached, which would let the mod act only
+on calls that *would* have been asked about.
+
+**The blocker:** `tool.check` returns only a decision, with no documented reason
+field — and the reason lives on `tool.call`, which fires *earlier*, before the
+mod knows whether approval will be asked for at all. The design is ordered
+wrong, with no clean fix visible from the docs.
+
+**Kept as a record of why not to try it again.** The additive version needs none
+of it.
+
+### E6 — Auto-classify thread outcomes
+Decide automatically whether a thread has something worth appending, removing
+the manual commit step.
+**Primitive exists:** `$.model.classify`, alongside `complete` and `fork` — a
+cheap classification call, so the work is the prompt and threshold, not
+machinery.
+**Design:** classify **auto-stages into the tray; it never auto-sends.** The
+tray stays the one place where everything riding along is visible and removable.
+**Show the verdict live in the thread pane** as an include/exclude state the
+user can flip, with the summary that would be staged — a state reading
+"included" without showing what gets sent is still opaque. Per D3's build note,
+MVP already ships this as a toggle, so E6 changes one default.
+**Failure modes, both hard to notice:** a false negative silently drops a needed
+conclusion; a false positive quietly injects noise.
+**Open:** Q9 — whether `classify` is cheap enough to run per thread turn rather
+than only on close.
+
+### E7 — Mod-driven Run verb (cut from D2)
+Execute a proposed command from the response directly, with edits.
+**Requires:** `$.process.run`, output capture, and **feeding results back** —
+running without feedback silently desyncs the agent's picture of the world.
+**Weak case now:** D15's delegate loop covers it at the cost of one round trip.
+
+### E8 — Other built-in tools
+**Largely superseded by P3.** Most of what this entry wanted is reached by
+*reading* the transcript rather than hooking the tool:
+
+| Tool | Reached by | Entry |
+|---|---|---|
+| `Edit` / `Write` | reading the diff after the fact | **E15** |
+| `Bash` (denied) | reading the denied call | **E5** |
+| `TodoWrite` | reading the list | P3 source table |
+| `ExitPlanMode` | possibly already text in the transcript | P3 source table — may come free in phase 1 |
+
+**What is left that genuinely needs a hook:**
+
+| Tool | Why | Gate or enrich |
+|---|---|---|
+| `Task` (subagents) | a *live* status pane needs to follow the run, not read it afterwards | Enrich |
+| `WebSearch` / `WebFetch` | results as a pickable list, if picking should feed back into the same turn | Enrich |
+
+**The principle worth keeping from the original entry:** `AskUserQuestion` is the
+only built-in tool whose *purpose* is a human decision. Every other tool is
+Claude doing work — so intercepting those adds interruptions rather than
+decisions. Confusing the two produces a mod that interrupts constantly.
+
+### E9 — Nudge Claude toward `AskUserQuestion` (was D25)
+A `prompt.compose` section could raise the tool-usage rate. **Three cautions:**
+it changes behaviour session-wide; the tool's shape (a few short options) does
+not fit open-ended questions, so pushing hard would produce *worse questions in
+tool form* rather than better ones in prose; and it sits in tension with P1.
+Only relevant if E12 is built.
+
+### E10 — Config surface (was D26)
+The `userConfig` manifest field declares options and gives a `/config` surface
+for free — rows rendered by Claude Code, with `config.set` and `config.describe`
+hooks available if a row needs guarding or relabelling.
+
+**Its real purpose is hedging the unknowns.** Several decisions in this document
+were made on reasoning rather than use, and the honest position is that some will
+be wrong. Making those configurable converts a wrong guess from a rewrite into a
+default change:
+
+| Option | Hedges |
+|---|---|
+| Which verbs are enabled | D2 — maybe reject is never used, maybe comment is everything |
+| Entry key | D20 — unresolved, and terminal-dependent |
+| Gutter vs background highlight | D21 — depends on Q10's answer |
+| Submit directly vs copy to box | D29 — the "natural UX" question left to feel |
+| Threads default excluded or included | D3 — flips to classifier-driven under E6 |
+| Quote length in the compile format | §9 of the spec — 6–8 words is a guess |
+
+**But config is not a substitute for deciding.** A mod with twenty options is a
+mod nobody tuned. Add an option when use reveals a genuine split, not in
+anticipation of one.
+
+### E16 — Extended mode: cooperate with the agent (**analysis needed**)
+**Added 2026-10-14. The deliberate inverse of P1 — read that first.**
+
+A mode switch: **simple** (the default, P1 intact — the agent never knows the mod
+exists) versus **extended**, where the mod modifies the system prompt so the
+agent *knows* its response will be marked up, and writes accordingly.
+
+**Mechanism exists and is not in doubt.** `prompt.compose` hands over the system
+prompt as a list of `{ id, text, scope }` sections and takes a modified list
+back; `prompt.section` rewrites one section by name. So the question is never
+*can* we — it is *what is worth asking for*.
+
+#### What the agent could be asked to do, best ratio first
+
+| Ask | Buys | Costs |
+|---|---|---|
+| **One decision per list item** — don't bury three choices in a paragraph | the single biggest win for marking: every decision becomes markable | low compliance risk; changes writing style on every turn |
+| **Prefer `AskUserQuestion` when concrete options exist** (E9) | structured payloads instead of prose to parse | the tool's shape fits short options, not open questions — push too hard and you get *worse questions in tool form* |
+| **Semantic tags** — mark which blocks are decisions vs explanation | the gutter could offer verbs only where they mean something | highest compliance risk, and markers must be stripped before drawing — the failure that killed D7 |
+
+#### Why this is filed as analysis, not design
+
+**The coupling is the whole problem.** This session's consistent finding was that
+every design depending on model cooperation got harder (D7, D8, E9) and every
+design depending only on reading got simpler (P3). Extended mode reintroduces
+that dependency on purpose.
+
+Specific costs, all real:
+
+- **Variance.** Compliance is good but never total. A missed item means the UI
+  silently degrades, indistinguishable from "there was nothing to mark" — the
+  exact failure mode that killed prose markup in D7.
+- **Session-wide.** A prompt section cannot be scoped to the moments it helps. It
+  shapes every response, including ones never marked up.
+- **Leakage.** `claude -p`, subagents and cloud sessions inherit the modified
+  prompt. Output drifts from what the same model gives without the mod
+  installed.
+- **Doubled test surface.** Every feature now has two behaviours, and bugs can
+  live in the interaction between them.
+- **Harder to attribute.** When something feels off, is it the mod, the prompt
+  section, or the model?
+
+#### The honest conclusion
+
+**This analysis cannot usefully be done yet, because the question is not
+answerable from the armchair.** The right order is:
+
+1. Build phase 1 with P1 intact.
+2. Use it, and record **specifically** where marking is awkward — decisions
+   buried mid-paragraph, options stated as prose, questions that should have been
+   a tool call.
+3. Ask for exactly the thing that fixes the observed friction, and nothing else.
+
+Designing the prompt section before knowing the friction produces a wishlist, and
+a wishlist is how compliance budget gets spent on things that did not matter.
+
+**If it ships, it ships off by default**, with the switch as an `E10` option, and
+P1 remains the documented norm rather than a legacy mode.
+Marking older messages, not just the last (relaxing D24). Reintroduces the
+stale-mark problem D24 exists to avoid, and requires E13.
+
+### E12 — `AskUserQuestion` interception (was D9, D11, D12, D13)
+Hold the tool call, render questions inline with their options, gate the resume
+on all questions being answered, and fix Discuss so it does not destroy its
+siblings.
+**Why it was cut:** implementation cost, not value. It is the single most
+valuable extension — it fixes a real bug in the current UX.
+**Carries the riskiest unknowns:** Q1 (how long Claude Code tolerates a held
+tool call — **test an intentionally long hold on day one**) and Q2 (the exact
+semantics of `$.ui.ask`, which appears purpose-built for holding a call pending
+a human answer).
+**Reference implementation:** the `blast-radius` sample mod already holds a
+risky shell command and shows proceed/cancel buttons. Read it first.
+**Design notes preserved:** questions render at the end of the message in order
+(D8); the answer-and-forward escape hatch returns partial answers and sends
+typed text as a separate turn, without classifying answers as complete or
+partial (D13).
+
+### E13 — Persisted block identity (was D5's `session.append`)
+Assign stable IDs at store time so marks survive a restart and can attach to
+messages that are no longer last. Prerequisite for E11.
+
+### E15 — Review a diff or a generated file in a Synaptik pane
+**Added 2026-10-13. Promising; likely the strongest extension point.**
+
+Claude edits or creates a file. You want to leave **several comments across it
+and submit once** — how a pull-request review works, and the same batching
+insight the whole mod rests on (D1). Today each comment costs a round trip or
+gets hand-assembled into prose.
+
+#### Shape: additive, never a restyle
+
+**Nothing of Claude Code's is replaced.** The mod notices that the last turn
+produced a diff or a file, offers *"open in Synaptik"*, and draws **its own
+pane** with the four verbs available.
+
+**The permission prompt is off-limits** — the docs are unambiguous that a mod
+"can't change what a prompt shows you" (the same wall as E5). So the diff shown
+*with* an approval request is untouchable. That is fine: this feature is not
+about the approval moment. At a permission prompt you are deciding yes-or-no
+under time pressure, not writing four comments. Review belongs *after* the change
+lands.
+
+#### Why this is easier than the main feature, not harder
+
+**The pane is the mod's own surface.** The diff is drawn from source text, so the
+mod controls every character — **Q10 does not apply at all.** No reproducing
+Claude Code's markdown rendering, no fighting `Markdown`'s missing background
+prop, nothing to match. By contrast §6 has to redraw a message Claude Code
+already renders well.
+
+**A diff is frozen.** It is a snapshot of a change, not a live file, so **line
+numbers are stable** — nothing can move them. That dissolves the staleness
+problem rather than mitigating it, and it is precisely why PR review works.
+
+**The pane shape is proven.** The built-in
+[`diff` mod](https://github.com/anthropics/claude-code/tree/main/mods/diff) draws
+a scrollable pane with buttons bound to keyboard actions and handles its own
+scrolling. Public source, closest reference implementation.
+
+#### Compile format
+
+Grouped by file, anchored by line:
+
+```
+on index.js
+  line 10 — change x to y
+  line 15 — use async here
+on server.js
+  line 42 — this should be behind the feature flag
+```
+
+#### Two entry points
+
+| Trigger | How | Content from |
+|---|---|---|
+| Claude edited files | mod sees `Edit`/`Write` happened in the last turn | `$.process.run` with `git diff`, or the tool's own input |
+| Claude created a file | mod sees a path in the last response | `$.fs.read` (4 MiB per file) |
+
+Detection can be a `/command` on a path to start with — simplest, no inference,
+and it works before any of this is automatic.
+
+#### Still open
+
+- **Which diff source.** `git diff` on the working tree needs no tool hooks at
+  all and is the cleaner choice; the `Edit` tool's input gives exactly what
+  Claude changed but drifts toward E8's territory.
+- **Render cost for a large diff.** `Text` per line avoids the 10,000-character
+  `Markdown` cap, but a 2,000-line diff redrawing on each keypress may need
+  windowing. `diff`'s source shows how it handles this.
+- **Hunk-level verbs.** Accept/reject reads naturally on a hunk; comment and
+  discuss read naturally on a line. Whether both granularities are needed, or
+  lines suffice, is a feel question.
+
+#### Relationship to E8 and D28
+
+E8's `Edit`/`Write` entry is about **gating** a tool call before it runs. This is
+reviewing **after** — a different moment, and it keeps D28 intact: the mod never
+touches a tool call, it only reads what already happened.
+
+**Do this after phase 1**, when the tray and compile step exist to reuse rather
+than guess at. It may well be worth more than phase 2's threads — reviewing
+generated code is where the most comments batch up.
+
+---
+
+### E14 — Custom structured payload via `$.tool.register` (was half of D7)
+A mod-registered tool letting Claude hand over arbitrary structured items.
+**Depends on** Claude choosing to call a tool it has no habit of calling, and
+sits in tension with P1.
+
+---
+
+## 6. Open questions
+
+To verify against the build's own TypeScript declarations
+(`.claude-plugin/types/claude-code/index.d.ts`, written per installed version)
+rather than the published docs.
+
+| # | Question | Why it matters |
+|---|---|---|
+| Q3 | Does `ui.press` see raw arrow keys, or only bound keybinding actions? | `Button` has an `action` prop naming Claude Code's own keybinding actions. Decides whether D20 navigation is native or needs raw-key capture. **The main MVP unknown.** |
+| Q6 | `$.model.fork` exact signature — how much context does it carry? | Determines what a thread sees, and how much the mod must re-send each turn (D14). |
+| Q7 | What happens to staged marks when a new assistant message arrives? | Candidates: auto-submit, discard with warning, or block the new turn. Leaning **discard with warning** — staging and typing a normal prompt are otherwise ambiguous. |
+| Q8 | The hook/event framework in depth — ordering, matchers, `next()` chaining, tiers | Flagged as needing study before implementation. The `plugin-authoring` skill is likely the fastest route. |
+| Q9 | Is `$.model.classify` cheap enough to run per thread turn? | E6 only. |
+| Q10 | Can a `ui.render` hook on `AssistantMessage` reliably reproduce Claude Code's own markdown rendering? | The mod replaces the whole message rendering to add a gutter. Anything it renders worse than the original is a regression on every response. |
+| Q11 | Can `prompt.suggest` hold a dim suggestion **alongside** text the user has typed, as its own layer — or is it just pre-filled draft text? | **Not blocking.** D29 is settled on the band. If `suggest` is a real layer, the preview could live in the box and the copy step disappears — a refinement, swappable later. |
+
+*Q1, Q2, Q4, Q5 retired or moved into §5 with their features.*
+
+---
+
+## 7. Framework primitives in use
+
+| Primitive | Role | MVP? |
+|---|---|---|
+| `ui.render` on `AssistantMessage` | Redraw the reply with gutter, marks and the selected block's controls | Yes |
+| `ui.render` on `AbovePrompt` | Band: compiled-prompt preview, status, discard warning | Yes |
+| `ui.press` / `ui.input` | Buttons, inline comment input, navigation | Yes |
+| `$.prompt.read()` | Tell whether the box has text, for the discard warning (D24) | Yes |
+| `turn.complete` | Open marking once the message is final | Yes |
+| `$.ui.open` / `Pane` | Thread panes (`placement: 'dock'`) | Yes |
+| `$.model.fork` | Thread conversations and the commit summary | Yes |
+| `$.prompt.submit({ asUser: true })` | Submit the compiled prompt as the user's own words (D29) | Yes |
+| `$.prompt.fill` | Copy the compiled prompt into the box for editing (D29) | Yes |
+| `$.prompt.suggest` | Possible refinement if Q11 allows a true separate layer (D29) | No |
+| `$.store` | Thread persistence within the session | Yes |
+| `tool.call` | E5, E12 | No |
+| `session.append` | E13 | No |
+| `$.model.classify` | E6 | No |
+| `$.tool.register` | E14 | No |
+| `$.session.send` / `session.receive` | E4 | No |
+| `prompt.compose` | E9 | No |
+
+**Known limits:** `Markdown` and `Code` elements cap at 10,000 characters — long
+responses need chunking regardless, which suits per-block rendering. Hook
+execution: 10s. `$.model.complete`: 1024 max tokens by default, raisable to
+64,000. `$.session.messages()`: newest 4,096 entries.
+
+**Security note (relevant to corporate use):** mods are not sandboxed and run
+with the user's full permissions. Administrators can set `allowManagedModsOnly`
+to block user-installed mods.
+
+### Pane layout sketch
+
+```
+┌─ Thread: "Use Redis for the session cache" ──┐
+│ <anchor text pinned>                          │
+│                                               │
+│ <exchange scrolls here>                       │
+│                                               │
+│ > <Input>                                     │
+│ ○ excluded — ⌃S to include                    │
+│ ⏎ send · Esc close                            │
+└───────────────────────────────────────────────┘
+```
+
+The include/exclude row is D3's toggle. When included, it shows the summary that
+would be staged.
+
+---
+
+## 8. Dogfooding note
+
+The mod will be used to build the mod, and a broken `ui.render` hook makes the
+authoring session unusable. Run two checkouts, or `--plugin-dir` in one terminal
+and plain `claude` in another.
+
+---
+
+## 9. Next step
+
+Finish the review (§10), then the requirements document: state transitions, the
+compile format specification, key bindings, and the slice-1 build plan.
+
+---
+
+## 10. Review status
+
+| # | Decision | Status |
+|---|---|---|
+| P1 | Agent never knows the mod exists | ✅ settled |
+| P2 | The mod relays, it does not analyse | ✅ settled |
+| P3 | One mechanism, many sources — review, never gate | ✅ settled |
+| D1 | Response is a fillable form | ✅ reviewed, revised |
+| D2 | Four verbs, two mechanisms | ✅ reviewed, revised |
+| D3 | Deferred vs waiting; threads commit explicitly | ✅ reviewed, revised |
+| D4 | Block segmentation | ✅ reviewed, substantially revised |
+| D5 | Render-time blocks, no IDs | ✅ reviewed, substantially revised |
+| D6 | Reference expansion | ☠️ dead (compile format survives) |
+| D7 | Structure from tool payloads | ☠️ reduced to nothing in MVP |
+| D8 | Anchor by quote | ☠️ dead |
+| D9 | Unified question model | ☠️ dead in MVP → E12 |
+| D10 | Prose path first | ☠️ absorbed into D4 |
+| D11–D13 | Held calls, Discuss, answer-and-forward | ☠️ moved to E12 |
+| D14 | Thread isolation via `fork` | ✅ settled |
+| D15 | Escalation ladder | ✅ revised |
+| D16–D19 | Branched sessions, depth, merge, worktrees | ☠️ deferred → E1–E4 |
+| D20 | Modal nav + visible controls on the selected block | ✅ reviewed, revised |
+| D21 | Gutter column highlighting | ✅ reviewed |
+| D22 | Conflicts not resolved by the mod | ✅ settled |
+| D23 | Trivially disableable, fails to vanilla | ✅ reviewed, extended |
+| D24 | Last message only (**Q7 resolved**) | ✅ reviewed |
+| D25 | Nudge toward `AskUserQuestion` | ☠️ deferred → E9 |
+| D26 | Config surface | ☠️ deferred → E10 |
+| D27 | Spike, then two thin phases | ✅ reviewed, revised |
+| D28 | No intervention in Claude Code's tool runs | ✅ settled |
+| D29 | Band is source of truth, box is scratch | ✅ settled |
+
+### Open questions, by weight
+
+| # | What | Weight |
+|---|---|---|
+| Q10 | How much control does a `ui.render` hook have over message text — can it reproduce Claude Code's own markdown rendering, and can a background paint behind it? | **Highest — could change the design.** A worse-looking transcript on *every* response is a regression the gutter does not pay for. Also decides D21's background highlighting. |
+| Q3 | Raw arrow keys in `ui.press`, or only bound keybinding actions? | High — D20's navigation and entry key |
+| Q8 | The hook framework in depth — ordering, matchers, `next()` chaining, tiers | High — needed before implementation; try the `plugin-authoring` skill |
+| Q6 | `$.model.fork` signature: how much context it carries, **and whether two calls can be in flight at once** | Medium — sizes phase 2. Concurrency matters only for typing in one thread while another is thinking; MVP can sidestep it by focusing one pane at a time. |
+| Q12 | Does `Box`'s `hover` prop mean mouse clicks work in the terminal? | Medium — would give discoverability free, independent of the keyboard design |
+| Q11 | Is `prompt.suggest` a real layer, or pre-filled draft text? | Low — refinement to D29 only |
+| Q9 | Is `$.model.classify` cheap enough to run per thread turn? | Low — E6 only |
+
+**Q3, Q10, Q11 and Q12 are all answered by the spike** (D27): load a throwaway
+mod with `--plugin-dir`, draw a hardcoded message, read the generated types.
+
+### Prior art noted 2026-10-13
+
+The Claude Mac app now shows a **reply button on selected text**, which copies
+it into the prompt as a quotation.
+
+**It validates the premise** — pointing at part of a response is a real
+friction, and someone else reached the same conclusion.
+
+**It solves a different piece.** Quote-reply is one-at-a-time: select, quote,
+type a response in prose, send. That fixes scrolling, not batching. This design's
+value is marking five blocks with five keypresses and sending once — no quote
+mechanism reaches that, because each quote still needs a hand-written sentence.
+**The tray is the part nobody else is building.**
+
+**Strategic read:** if Anthropic is working this seam in the chat app, something
+similar landing in Claude Code is not unlikely. That argues for phase 1 being
+small and fast — find out whether marking changes the work before another
+version arrives, and if theirs ships first, know exactly what is missing from it.
+
+It also supports the gutter over text selection: mouse drag-select is not
+available in the terminal, and block-level selection is arguably better for
+marking anyway — whole decisions, not arbitrary character ranges.
