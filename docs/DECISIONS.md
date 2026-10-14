@@ -1,9 +1,8 @@
-# Interactive Claude Code Mod — Design Decision Record
+# Synaptik — Design Decision Record
 
-**Project:** Interactive AI Terminal
-**Created:** 2026-10-12 · **Last updated:** 2026-10-12 (second review pass)
-**Status:** **Decision review complete — all 29 decisions and 2 principles
-reviewed.** Next: the requirements document. See §9–§10.
+**Created:** 2026-10-12 · **Last updated:** 2026-10-14
+**Status:** Decision review complete — **29 decisions and 3 principles**. The
+build spec is `SPEC.md`; this file holds the rationale behind it.
 **Framework:** Claude Code mods (CLI v2.1.287+, Desktop Code tab v2.1.286+)
 
 > **Review convention.** Decisions keep their original numbers even when revised,
@@ -247,11 +246,12 @@ keeps "never mind, I was wrong" from reaching the agent.
 #### Commit flow
 
 1. **Esc** closes the thread. Nothing sent. *This is the default.*
-2. **⌃S** commits. The mod fires one more `fork` call at the thread:
+2. **The commit key** commits. The mod fires one more `fork` call at the thread:
    *"summarize what was decided here as an instruction to the main agent."*
 3. The summary lands in the tray as an **editable** row.
-4. On main submit, it compiles with the other marks, and `$.prompt.fill` puts
-   the whole thing in the prompt box for a final edit.
+4. It compiles with the other marks into the band preview, and goes out with
+   them when the tray is submitted (D29). The copy key puts the whole thing in
+   the prompt box first, if a final edit is wanted.
 
 Per P2, the mod never analyses what is worth sending — the model summarizes and
 the user approves. Two review points, both free.
@@ -268,16 +268,23 @@ needs frequent rewriting, fix the summarizer prompt — not the mod.
 
 Render the commit control as an **include/exclude state the user can flip**,
 showing the summary that would be staged. In MVP it defaults to *excluded* and
-`⌃S` flips it. With auto-classification (E6) it defaults to the classifier's
-verdict and the same key overrides it. Costs nothing now; makes E6 a change to
-one default rather than a UI rework.
+the commit key flips it. With auto-classification (E6) it defaults to the
+classifier's verdict and the same key overrides it. Costs nothing now; makes E6
+a change to one default rather than a UI rework.
 
 #### Two submits, two surfaces
 
 | Action | Where | Effect |
 |---|---|---|
-| `⌃S` | thread pane | thread summary joins the tray |
-| `Enter` | main prompt box | the whole tray compiles and sends |
+| commit key | thread pane | thread summary joins the tray |
+| submit key | band | the whole tray compiles and sends (D29) |
+
+`Enter` in the prompt box is **not** a tray submit: with text in the box it
+sends that text alone and the marks are discarded, with a warning (D24).
+
+**Key bindings are deliberately unnamed here.** `⌃S` was an early candidate and
+is **rejected** — see D20: it is the classic terminal XOFF and some terminals
+freeze output on it. Actual bindings are settled in the spike (D27).
 
 This separation is what allows threading on three blocks, committing all three,
 and sending once. Requirements must give these distinct keys and clear
@@ -318,11 +325,13 @@ rejecting one child is normal refinement, not a contradiction — and the agent
 can only read it that way if the output shows the nesting:
 
 ```
-Accepted: "Use Redis for the session cache"
-  ✓ per-user key prefix
-  ✓ 5 minute TTL
-  ✗ write-through on logout
+✓ "Use Redis for the session cache"
+    ✓ "per-user key prefix"
+    ✓ "5 minute TTL"
+    ✗ "write-through on logout"
 ```
+
+(Format as in D6's compile section and `SPEC.md` §9.)
 
 Cheap to record now, impossible to retrofit once the compile format is fixed.
 
@@ -374,8 +383,9 @@ conversation and can be flipped back to included — that is D3's toggle reached
 from the block rather than the pane, not a second mechanism. A cleared comment
 keeps its text, so a misfire costs nothing.
 
-The gutter shows the result directly: a cleared block drops back to a dim `▎`
-with no symbol. No state the user cannot see.
+The gutter shows the result directly: a cleared block drops back to a dim `▏`
+with no symbol. No state the user cannot see. (Gutter characters are defined in
+D21: bright `▎` for the selected block, dim `▏` for the rest.)
 
 ---
 
@@ -711,7 +721,7 @@ where work can be lost. Everything else is reversible.
 hook, which needs no extra registration — the band redraws anyway. The
 `prompt.edit` event (fires when the user edits the box, observe-only, returns
 `next(e)`) is the fallback if `read()` does not serve. Prefer `read()`: one
-fewer hook, and the surface stays at four.
+fewer hook, and the surface stays at four event types (`SPEC.md` §11).
 
 **If discarding turns out to be annoying in practice, the fix is E13** —
 persisted marks that survive a new message — not a confirm dialog.
@@ -768,8 +778,8 @@ falls on a natural seam — two different surfaces, never confusable at runtime:
 | Command Claude **is calling** | `tool.call` | No — untouched |
 
 **Consequence, now stronger than when written:** MVP registers **no tool hooks
-at all**. The surface is two render sites, the `ui.*` events, and
-`turn.complete`.
+at all**. The surface is three render sites (`AssistantMessage`, `AbovePrompt`,
+`Pane`), the `ui.*` events, and `turn.complete`.
 
 **The excluded case is real and wanted** — responding to an approval prompt with
 "yes, but add `--verbose`" instead of rejecting and retyping. See E5.
@@ -845,9 +855,9 @@ P1 — that round trip bought only an edit the user did not want.
 - **`prompt.suggest`** (Q11) might allow the preview to live in the box as a
   true separate layer, skipping the copy step. **Not a dependency** — the band
   works. If `suggest` turns out nicer, it swaps in without redesigning anything.
-- **After sending, the tray clears** — the marks were consumed. Interacts with
-  Q7 (what happens to marks when a new message arrives); decide the two
-  together.
+- ~~**After sending, the tray clears**~~ — **resolved** together with Q7 (D24):
+  the tray clears after sending, since the marks were consumed, and is
+  discarded with a warning when a new message arrives by any other route.
 
 ---
 
@@ -862,13 +872,18 @@ P1 — that round trip bought only an edit the user did not want.
 5. Show the compiled prompt as a live preview in the band; one key submits it, one key copies it to the box (D6 §compile, D29)
 6. Threads via `$.model.fork`, include/exclude toggle, model-written summary (D3, D14)
 
-**Hooks registered:**
+Items 1–5 are phase 1; item 6 is phase 2 (D27).
+
+**Hooks registered** — six registrations across four event types, as in
+`SPEC.md` §11:
 
 | Hook | Purpose |
 |---|---|
 | `ui.render` on `AssistantMessage` | Gutter, marks, selection |
 | `ui.render` on `AbovePrompt` | Status band |
-| `ui.press` / `ui.input` | Navigation, verbs, thread input |
+| `ui.render` on `Pane` | Thread pane (phase 2) |
+| `ui.press` | Navigation, verbs, buttons |
+| `ui.input` | Comment input, thread input |
 | `turn.complete` | Open marking once the message is final |
 
 **No tool hooks. No prompt-composition hooks. Nothing the agent can observe.**
@@ -1041,64 +1056,7 @@ default change:
 mod nobody tuned. Add an option when use reveals a genuine split, not in
 anticipation of one.
 
-### E16 — Extended mode: cooperate with the agent (**analysis needed**)
-**Added 2026-10-14. The deliberate inverse of P1 — read that first.**
-
-A mode switch: **simple** (the default, P1 intact — the agent never knows the mod
-exists) versus **extended**, where the mod modifies the system prompt so the
-agent *knows* its response will be marked up, and writes accordingly.
-
-**Mechanism exists and is not in doubt.** `prompt.compose` hands over the system
-prompt as a list of `{ id, text, scope }` sections and takes a modified list
-back; `prompt.section` rewrites one section by name. So the question is never
-*can* we — it is *what is worth asking for*.
-
-#### What the agent could be asked to do, best ratio first
-
-| Ask | Buys | Costs |
-|---|---|---|
-| **One decision per list item** — don't bury three choices in a paragraph | the single biggest win for marking: every decision becomes markable | low compliance risk; changes writing style on every turn |
-| **Prefer `AskUserQuestion` when concrete options exist** (E9) | structured payloads instead of prose to parse | the tool's shape fits short options, not open questions — push too hard and you get *worse questions in tool form* |
-| **Semantic tags** — mark which blocks are decisions vs explanation | the gutter could offer verbs only where they mean something | highest compliance risk, and markers must be stripped before drawing — the failure that killed D7 |
-
-#### Why this is filed as analysis, not design
-
-**The coupling is the whole problem.** This session's consistent finding was that
-every design depending on model cooperation got harder (D7, D8, E9) and every
-design depending only on reading got simpler (P3). Extended mode reintroduces
-that dependency on purpose.
-
-Specific costs, all real:
-
-- **Variance.** Compliance is good but never total. A missed item means the UI
-  silently degrades, indistinguishable from "there was nothing to mark" — the
-  exact failure mode that killed prose markup in D7.
-- **Session-wide.** A prompt section cannot be scoped to the moments it helps. It
-  shapes every response, including ones never marked up.
-- **Leakage.** `claude -p`, subagents and cloud sessions inherit the modified
-  prompt. Output drifts from what the same model gives without the mod
-  installed.
-- **Doubled test surface.** Every feature now has two behaviours, and bugs can
-  live in the interaction between them.
-- **Harder to attribute.** When something feels off, is it the mod, the prompt
-  section, or the model?
-
-#### The honest conclusion
-
-**This analysis cannot usefully be done yet, because the question is not
-answerable from the armchair.** The right order is:
-
-1. Build phase 1 with P1 intact.
-2. Use it, and record **specifically** where marking is awkward — decisions
-   buried mid-paragraph, options stated as prose, questions that should have been
-   a tool call.
-3. Ask for exactly the thing that fixes the observed friction, and nothing else.
-
-Designing the prompt section before knowing the friction produces a wishlist, and
-a wishlist is how compliance budget gets spent on things that did not matter.
-
-**If it ships, it ships off by default**, with the switch as an `E10` option, and
-P1 remains the documented norm rather than a legacy mode.
+### E11 — Multi-message interactivity
 Marking older messages, not just the last (relaxing D24). Reintroduces the
 stale-mark problem D24 exists to avoid, and requires E13.
 
@@ -1122,6 +1080,11 @@ partial (D13).
 ### E13 — Persisted block identity (was D5's `session.append`)
 Assign stable IDs at store time so marks survive a restart and can attach to
 messages that are no longer last. Prerequisite for E11.
+
+### E14 — Custom structured payload via `$.tool.register` (was half of D7)
+A mod-registered tool letting Claude hand over arbitrary structured items.
+**Depends on** Claude choosing to call a tool it has no habit of calling, and
+sits in tension with P1.
 
 ### E15 — Review a diff or a generated file in a Synaptik pane
 **Added 2026-10-13. Promising; likely the strongest extension point.**
@@ -1205,12 +1168,64 @@ touches a tool call, it only reads what already happened.
 than guess at. It may well be worth more than phase 2's threads — reviewing
 generated code is where the most comments batch up.
 
----
+### E16 — Extended mode: cooperate with the agent (**analysis needed**)
+**Added 2026-10-14. The deliberate inverse of P1 — read that first.**
 
-### E14 — Custom structured payload via `$.tool.register` (was half of D7)
-A mod-registered tool letting Claude hand over arbitrary structured items.
-**Depends on** Claude choosing to call a tool it has no habit of calling, and
-sits in tension with P1.
+A mode switch: **simple** (the default, P1 intact — the agent never knows the mod
+exists) versus **extended**, where the mod modifies the system prompt so the
+agent *knows* its response will be marked up, and writes accordingly.
+
+**Mechanism exists and is not in doubt.** `prompt.compose` hands over the system
+prompt as a list of `{ id, text, scope }` sections and takes a modified list
+back; `prompt.section` rewrites one section by name. So the question is never
+*can* we — it is *what is worth asking for*.
+
+#### What the agent could be asked to do, best ratio first
+
+| Ask | Buys | Costs |
+|---|---|---|
+| **One decision per list item** — don't bury three choices in a paragraph | the single biggest win for marking: every decision becomes markable | low compliance risk; changes writing style on every turn |
+| **Prefer `AskUserQuestion` when concrete options exist** (E9) | structured payloads instead of prose to parse | the tool's shape fits short options, not open questions — push too hard and you get *worse questions in tool form* |
+| **Semantic tags** — mark which blocks are decisions vs explanation | the gutter could offer verbs only where they mean something | highest compliance risk, and markers must be stripped before drawing — the failure that killed D7 |
+
+#### Why this is filed as analysis, not design
+
+**The coupling is the whole problem.** This session's consistent finding was that
+every design depending on model cooperation got harder (D7, D8, E9) and every
+design depending only on reading got simpler (P3). Extended mode reintroduces
+that dependency on purpose.
+
+Specific costs, all real:
+
+- **Variance.** Compliance is good but never total. A missed item means the UI
+  silently degrades, indistinguishable from "there was nothing to mark" — the
+  exact failure mode that killed prose markup in D7.
+- **Session-wide.** A prompt section cannot be scoped to the moments it helps. It
+  shapes every response, including ones never marked up.
+- **Leakage.** `claude -p`, subagents and cloud sessions inherit the modified
+  prompt. Output drifts from what the same model gives without the mod
+  installed.
+- **Doubled test surface.** Every feature now has two behaviours, and bugs can
+  live in the interaction between them.
+- **Harder to attribute.** When something feels off, is it the mod, the prompt
+  section, or the model?
+
+#### The honest conclusion
+
+**This analysis cannot usefully be done yet, because the question is not
+answerable from the armchair.** The right order is:
+
+1. Build phase 1 with P1 intact.
+2. Use it, and record **specifically** where marking is awkward — decisions
+   buried mid-paragraph, options stated as prose, questions that should have been
+   a tool call.
+3. Ask for exactly the thing that fixes the observed friction, and nothing else.
+
+Designing the prompt section before knowing the friction produces a wishlist, and
+a wishlist is how compliance budget gets spent on things that did not matter.
+
+**If it ships, it ships off by default**, with the switch as an `E10` option, and
+P1 remains the documented norm rather than a legacy mode.
 
 ---
 
@@ -1224,13 +1239,19 @@ rather than the published docs.
 |---|---|---|
 | Q3 | Does `ui.press` see raw arrow keys, or only bound keybinding actions? | `Button` has an `action` prop naming Claude Code's own keybinding actions. Decides whether D20 navigation is native or needs raw-key capture. **The main MVP unknown.** |
 | Q6 | `$.model.fork` exact signature — how much context does it carry? | Determines what a thread sees, and how much the mod must re-send each turn (D14). |
-| Q7 | What happens to staged marks when a new assistant message arrives? | Candidates: auto-submit, discard with warning, or block the new turn. Leaning **discard with warning** — staging and typing a normal prompt are otherwise ambiguous. |
 | Q8 | The hook/event framework in depth — ordering, matchers, `next()` chaining, tiers | Flagged as needing study before implementation. The `plugin-authoring` skill is likely the fastest route. |
 | Q9 | Is `$.model.classify` cheap enough to run per thread turn? | E6 only. |
 | Q10 | Can a `ui.render` hook on `AssistantMessage` reliably reproduce Claude Code's own markdown rendering? | The mod replaces the whole message rendering to add a gutter. Anything it renders worse than the original is a regression on every response. |
 | Q11 | Can `prompt.suggest` hold a dim suggestion **alongside** text the user has typed, as its own layer — or is it just pre-filled draft text? | **Not blocking.** D29 is settled on the band. If `suggest` is a real layer, the preview could live in the box and the copy step disappears — a refinement, swappable later. |
+| Q12 | Does `Box`'s `hover` prop mean mouse clicks work in the terminal? | Would give discoverability free, independent of the keyboard design (D20). |
 
-*Q1, Q2, Q4, Q5 retired or moved into §5 with their features.*
+*Q1, Q2, Q4, Q5 retired or moved into §5 with their features. Q7 resolved —
+discard with warning, see D24.*
+
+**`SPEC.md` §15 is the canonical spike checklist.** It also covers questions not
+numbered here: the entry key on macOS and Linux (D20), whether `$.prompt.read()`
+returns the box text (D24), whether a hooks module resolves imports from a
+sibling `src/`, and whether `claude plugin test` runs without a session.
 
 ---
 
@@ -1240,7 +1261,8 @@ rather than the published docs.
 |---|---|---|
 | `ui.render` on `AssistantMessage` | Redraw the reply with gutter, marks and the selected block's controls | Yes |
 | `ui.render` on `AbovePrompt` | Band: compiled-prompt preview, status, discard warning | Yes |
-| `ui.press` / `ui.input` | Buttons, inline comment input, navigation | Yes |
+| `ui.press` | Buttons, navigation | Yes |
+| `ui.input` | Inline comment input, thread input | Yes |
 | `$.prompt.read()` | Tell whether the box has text, for the discard warning (D24) | Yes |
 | `turn.complete` | Open marking once the message is final | Yes |
 | `$.ui.open` / `Pane` | Thread panes (`placement: 'dock'`) | Yes |
@@ -1274,7 +1296,7 @@ to block user-installed mods.
 │ <exchange scrolls here>                       │
 │                                               │
 │ > <Input>                                     │
-│ ○ excluded — ⌃S to include                    │
+│ ○ excluded — <key> to include                 │
 │ ⏎ send · Esc close                            │
 └───────────────────────────────────────────────┘
 ```
@@ -1294,8 +1316,14 @@ and plain `claude` in another.
 
 ## 9. Next step
 
-Finish the review (§10), then the requirements document: state transitions, the
-compile format specification, key bindings, and the slice-1 build plan.
+The build spec exists: **`SPEC.md`**. Next is the spike (D27) — a throwaway mod
+drawing one hardcoded message, to answer the open questions in §6 and judge
+whether the look holds up.
+
+**This file is no longer the working document.** It records why the design is
+what it is. When a decision changes, update it here *and* in `SPEC.md`; when
+proposing a change, read the relevant entry first — most obvious ideas were
+already considered and cut for a reason.
 
 ---
 
