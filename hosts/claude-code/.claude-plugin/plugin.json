@@ -1,0 +1,6 @@
+{
+  "name": "synaptik",
+  "version": "0.0.0-spike",
+  "description": "SPIKE — throwaway rendering test for Synaptik. See docs/SPEC.md §15.",
+  "types": "./types/index.d.ts"
+}
