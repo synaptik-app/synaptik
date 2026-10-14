@@ -349,15 +349,20 @@ in the terminal** — if so, discoverability comes free.
 
 ## 11. Hooks registered
 
-Four. **No tool hooks.** The mod cannot interfere with the agent's operation.
+**No tool hooks.** The mod cannot interfere with the agent's operation — it
+draws, and it writes the prompt box.
 
 | Hook | Matcher | Purpose |
 |---|---|---|
 | `ui.render` | `{ component: 'AssistantMessage' }` | gutter, marks, controls |
 | `ui.render` | `{ component: 'AbovePrompt' }` | band: preview, status, warning |
-| `ui.render` | `{ component: 'Pane' }` | thread pane |
-| `ui.press` / `ui.input` | — | buttons, comment input, navigation |
+| `ui.render` | `{ component: 'Pane' }` | thread pane (§8 only) |
+| `ui.press` | — | buttons and navigation |
+| `ui.input` | — | comment input, thread input |
 | `turn.complete` | — | open marking once the message is final |
+
+Six registrations across four event types. Phase 1 needs all but the `Pane`
+render site.
 
 API calls used: `$.ui.resolve`, `$.ui.invalidate`, `$.ui.open`, `$.ui.close`,
 `$.model.fork`, `$.prompt.read`, `$.prompt.fill`, `$.prompt.submit`, `$.store`.
