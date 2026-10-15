@@ -15,6 +15,8 @@ declare module 'claude-code' {
       focusedVerb: string
       isPaneShown: boolean
       commentSeed: string
+      entryKey: string
+      commentSeq: number
     }
   }
 }

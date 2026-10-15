@@ -28,6 +28,8 @@ const isPaneShown = atom({ plugin: 'synaptik', key: 'isPaneShown' } as const, fa
 // What the comment field is drawn with when it opens. The field is never redrawn
 // from the live comment: a redraw replaces what the person typed (InputProps).
 const commentSeed = atom({ plugin: 'synaptik', key: 'commentSeed' } as const, '')
+const entryKey = atom({ plugin: 'synaptik', key: 'entryKey' } as const, 'ctrl+x tab')
+const commentSeq = atom({ plugin: 'synaptik', key: 'commentSeq' } as const, 0)
 
 // Module variable, not $.state: a render hook may not write state. Lost on reload.
 const observed: string[] = []
@@ -43,7 +45,10 @@ const VERBS = [
   { key: 'verb-comment', glyph: '✎', label: '✎ comment', hotkey: 'c' },
   { key: 'verb-discuss', glyph: '💬', label: '💬 discuss', hotkey: 'd' },
 ] as const
-const COMMENT_INPUT = 'comment-input'
+// Each opening of the comment field gets a fresh key: a field drawn again
+// under the same key and the same value keeps what was typed last time.
+const COMMENT_PREFIX = 'comment-'
+const commentKey = (seq: number) => `${COMMENT_PREFIX}${seq}`
 
 // The pane's tree is always bodyRows + 2 rows with its window pinned at offset
 // 1, so ↑ and ↓ always have a row to scroll to and each raises ui.scroll with a
@@ -58,6 +63,11 @@ const ACCENT = 'cyan'
 // The transcript row of the reply being marked, for revealing it when a block
 // key cannot be scrolled to. Set while drawing; lost on reload.
 let replyRequestId = ''
+
+// Whether the navigator holds the keyboard. Esc raises no ui.focus event, so
+// the only reliable source is the navigator's own drawing (Pane isFocused);
+// a drawing may not write state, so it lands here and asks for a redraw.
+let isNavigatorFocused = false
 
 // Assistant rows the engine writes itself, never the model: a resumed session
 // ends with one. SessionMessage carries no flag for them, so match the text.
@@ -123,8 +133,9 @@ async function runVerb($: EngineInterface, verb: string) {
   if (verb === 'verb-discuss') return $.ui.toast('discuss: phase 2')
   const existing = (await read($, comments))[i] ?? ''
   await update($, commentSeed, () => existing)
+  await update($, commentSeq, n => n + 1)
   await update($, isCommenting, () => true)
-  const moved = await $.ui.focus({ requestId: PANE, key: COMMENT_INPUT })
+  const moved = await $.ui.focus({ requestId: PANE, key: commentKey(await read($, commentSeq)) })
   observe(`focus comment-input: ${JSON.stringify(moved)}`)
 }
 
@@ -174,7 +185,7 @@ async function compile($: EngineInterface): Promise<string> {
     const tail = m === 'comment' ? ` → ${commented[i]}` : ''
     return [`${'    '.repeat(b.depth)}${GLYPH[m]} "${quote(b.text)}"${tail}`]
   })
-  return lines.length ? ['Re your last message:', ...lines].join('\n') : ''
+  return lines.join('\n')
 }
 
 async function sendTray($: EngineInterface) {
@@ -183,6 +194,42 @@ async function sendTray($: EngineInterface) {
   await $.prompt.submit({ text, asUser: true })
   await update($, marks, () => ({}))
   await update($, comments, () => ({}))
+}
+
+// The key that focuses the band and panes: the person's own binding for
+// abovePrompt:focus if they made one, else Claude Code's default. A plain read
+// of their file; the mod never writes it.
+async function readEntryKey($: EngineInterface) {
+  try {
+    const home = await $.env.get('HOME')
+    const file = JSON.parse(await $.fs.read(`${home}/.claude/keybindings.json`)) as {
+      bindings?: { context?: string; bindings?: Record<string, string | null> }[]
+    }
+    const chat = (file.bindings ?? []).filter(b => b.context === 'Chat')
+    const key = chat
+      .flatMap(b => Object.entries(b.bindings ?? {}))
+      .find(([, action]) => action === 'abovePrompt:focus')?.[0]
+    if (key) await update($, entryKey, () => key)
+  } catch {
+    // No file, or not JSON: keep the default.
+  }
+}
+
+// "2 accepted · 1 rejected · 1 comment", zero counts left out.
+async function summary($: EngineInterface): Promise<string> {
+  const marked = Object.values(await read($, marks))
+  const commented = (await read($, comments)) as Record<number, string>
+  const count = (m: SpikeMark) => marked.filter(x => x === m).length
+  const notes = Object.entries(await read($, marks)).filter(
+    ([i, m]) => m === 'comment' && commented[Number(i)]?.trim(),
+  ).length
+  return [
+    count('accept') && `${count('accept')} accepted`,
+    count('reject') && `${count('reject')} rejected`,
+    notes && `${notes} comment${notes === 1 ? '' : 's'}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 // Rows per block in the minimap, proportional to each block's length and at
@@ -199,6 +246,7 @@ export const register: Register = on => {
       name: 'synaptik',
       description: 'Synaptik spike: toggle, or `log` for observations',
     })
+    await readEntryKey($)
     // A resumed session (and every reload of this mod) already has a reply.
     await adoptLastReply($)
     return next(e)
@@ -242,7 +290,7 @@ export const register: Register = on => {
     const marked = await read($, marks)
     const commented = (await read($, comments)) as Record<number, string>
     const isTyping = await read($, isCommenting)
-    const cursor = await read($, focusedVerb)
+    const cursor = isNavigatorFocused ? await read($, focusedVerb) : ''
 
     let index = -1
     return (
@@ -305,6 +353,7 @@ export const register: Register = on => {
     observe(`pane closed by ${e.origin.kind}`)
     await finishComment($)
     await update($, isPaneShown, () => false)
+    isNavigatorFocused = false
     return next(e)
   }).catch(($, e, next) => next(e))
 
@@ -318,12 +367,16 @@ export const register: Register = on => {
   // The ring stops on the verbs and the comment field only, so ←→ walk them.
   on('ui.focus', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     observe(`pane focus → ${e.element ?? '(none)'} by ${e.origin.kind}`)
-    const isStop =
-      e.element === undefined || e.element.startsWith('verb-') || e.element === COMMENT_INPUT
+    const isField = e.element?.startsWith(COMMENT_PREFIX) ?? false
+    const isStop = e.element === undefined || e.element.startsWith('verb-') || isField
     if (!isStop) return { deny: 'synaptik: not a stop' }
-    if (e.element !== COMMENT_INPUT) await finishComment($)
     const result = await next(e)
-    if (!result.deny) await update($, focusedVerb, () => e.element ?? '')
+    // Finish the comment only once the ring has left the field: removing the
+    // field while it still holds the ring loses the move, and ←→ with it.
+    if (!result.deny && !isField) await finishComment($)
+    if (!result.deny) {
+      await update($, focusedVerb, () => e.element ?? '')
+    }
     return result
   }).catch(($, e, next) => next(e))
 
@@ -334,10 +387,15 @@ export const register: Register = on => {
     const sel = await read($, selected)
     const marked = await read($, marks)
     const seed = await read($, commentSeed)
+    const seq = await read($, commentSeq)
     const isTyping = await read($, isCommenting)
     const working = await read($, isWorking)
 
     observe(`pane drawn ${e.props.placement} ${e.props.bodyColumns}×${e.props.scroll.bodyRows} focused=${e.props.isFocused}`)
+    if (e.props.isFocused !== isNavigatorFocused) {
+      isNavigatorFocused = e.props.isFocused
+      $.ui.invalidate('ui.render')
+    }
     const rows = Math.max(6, e.props.scroll.bodyRows)
     const mapRows = Math.max(blocks.length, rows - 5)
     const heights = minimap(
@@ -389,7 +447,7 @@ export const register: Register = on => {
             // Hidden too: the text shows under the block as it is typed.
             <Box display="none">
               <Input
-                key={COMMENT_INPUT}
+                key={commentKey(seq)}
                 placeholder="✎"
                 value={seed}
                 onInput={async value => {
@@ -414,7 +472,7 @@ export const register: Register = on => {
     )
   }).catch(($, e, next) => next(e))
 
-  // --- The band: read-only ----------------------------------------------------
+  // --- The band: read-only. Says what you can do now, never names a component.
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (!(await read($, isOn)) || e.props.hasSurvey || e.props.isWorking) return next(e)
@@ -426,25 +484,41 @@ export const register: Register = on => {
     const blocks = segment(target).filter(s => s.isBlock)
     const sel = await read($, selected)
     const isShown = await read($, isPaneShown)
+    const reviewing = isNavigatorFocused
+    const key = await read($, entryKey)
+    const staged = await summary($)
     const compiled = await compile($)
-    const count = compiled ? compiled.split('\n').length - 1 : 0
     const box = await $.prompt.read()
+
+    // Bottom line, just above the prompt: what the keys do right now.
+    const action = reviewing
+      ? `Block ${sel + 1} of ${blocks.length} · ↑↓ move · ←→ choose · ⏎ apply · s send · esc done`
+      : `Synaptik · ${key} to ${staged ? 'continue responding' : 'respond in place'}`
+    const isTyping = box.text.trim() !== ''
+    observe(
+      `band shown=${isShown} reviewing=${reviewing} staged=${JSON.stringify(staged)} ` +
+        `lines=${compiled ? compiled.split('\n').length : 0} maxRows=${e.props.maxRows} cols=${e.props.bodyColumns}`,
+    )
 
     return (
       <Box flexDirection="column" width={e.props.bodyColumns}>
-        <Box flexDirection="row">
-          <Text dimColor>
-            synaptik · {sel + 1}/{blocks.length} · {count} marks ·{' '}
-            {isShown ? 'ctrl+s to mark · s in the pane sends' : 'ctrl+s then '}
-          </Text>
-          {!isShown && (
-            <Button key="open-pane" plain autoFocus label="⏎ open the pane" onPress={() => openPane($)} />
-          )}
-        </Box>
-        {count > 0 && box.text.trim() !== '' && (
-          <Text color="yellow">{count} marks staged · ⏎ sends your text only — marks discarded</Text>
-        )}
         {compiled && <Text dimColor>{compiled}</Text>}
+        {staged &&
+          (isTyping ? (
+            <Text color="yellow">{staged} staged · ⏎ sends only what you typed and drops them</Text>
+          ) : (
+            <Text>{staged}</Text>
+          ))}
+        {isShown || reviewing ? (
+          <Text dimColor wrap="truncate">{action}</Text>
+        ) : (
+          // Edge case, design deferred: the navigator is not on screen (narrow
+          // terminal, or closed), so the band offers the press that opens it.
+          <Box flexDirection="row">
+            <Text dimColor>Synaptik · {key}, then </Text>
+            <Button key="open-pane" plain autoFocus label="⏎ to respond in place" onPress={() => openPane($)} />
+          </Box>
+        )}
       </Box>
     )
   }).catch(($, e, next) => next(e))
