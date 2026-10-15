@@ -7,8 +7,9 @@ comment, discuss — and turn those marks into one prompt.
 2–5 and 9 describe host-neutral behaviour; 6, 7, 10 and 11 are Claude Code
 specifics. See §14 for how a second host would fit.
 
-**Status:** pre-implementation. Everything marked ⚠️ is unverified against the
-mods API and must be checked in the spike before it is relied on.
+**Status:** spike done (branch `spike/rendering`, Claude Code 2.1.287). §15 holds
+its answers; §6, §7, §10 and §11 describe what it showed works. Anything still
+marked ⚠️ is unverified. Open design questions are listed in `DECISIONS.md` §11.
 
 > **For the rationale** behind anything here — why Run was cut, why there are no
 > block IDs, what was parked — see `DECISIONS.md`. This file says only what to
@@ -20,21 +21,32 @@ mods API and must be checked in the spike before it is relied on.
 
 ```
 Claude replies
-  → you arrow to a block, press accept / reject / comment / discuss
+  → ctrl+s, then ↑↓ to a block, ←→ and ⏎ to accept / reject / comment / discuss
   → marks accumulate in a tray
-  → the band above the prompt shows the prompt they compile into
-  → one key sends it
+  → the prompt box shows the prompt they compile into, as a dim suggestion
+  → tab takes it, ⏎ sends it
 ```
 
-Nothing reaches the agent until you send. The agent never learns the mod exists:
-no markers, no IDs, no attribution.
+Nothing reaches the agent until you send, and what it receives is text you saw
+first. The mod never interferes with the prompt/response flow: it adds no
+markers or IDs, and never writes the box, submits, or holds a turn on its own.
 
 ---
 
 ## 2. Scope
 
 **Only the last assistant message is interactive, and only after its turn
-completes.** Marking is off while text is streaming.
+completes.** Marking is off from `turn.start` until `turn.complete`: the reply
+and the band draw as vanilla Claude Code while a turn runs, since the reply that
+is coming will replace the tray anyway (§5).
+
+**A resumed session is markable at once.** On `session.start` the mod reads the
+transcript (`$.session.messages()`) and adopts its last assistant reply. A
+resume ends the transcript with an engine-written `No response requested.`
+row, which is skipped.
+
+⚠️ That row is recognised by its text: `SessionMessage` carries no flag for rows
+the engine writes itself.
 
 Older messages are inert. Nothing is persisted across sessions.
 
@@ -152,89 +164,117 @@ warning).
 
 ## 6. Rendering the message
 
-Hook: `ui.render` with `{ component: 'AssistantMessage' }`. `e.props` carries
-the reply's text; `e.requestId` is the message id.
+Hook: `ui.render` with `{ component: 'AssistantMessage' }`. It fires **once per
+text block of a reply** — a reply interleaved with tool calls arrives as several
+pieces. `e.props.text` is the piece's markdown; `e.requestId` is its message id.
+A rewrite changes the drawing only; the stored message is untouched.
 
-Each block renders as a `Box` with a one-character gutter column, then the text.
+Each piece works out where its blocks start in the whole reply, so block
+numbering runs across pieces.
 
-- Selected block: bright `▎`
-- Other blocks: dim `▏`
-- Mark symbol sits beside the gutter when present
+Each block renders as a row: a 1-cell column, the mark glyph, then the block as
+`Markdown`.
 
-**The selected block also shows a row of `Button` elements.** This is the
-primary interaction — hotkeys are secondary, for whoever learns them. `Button`
-takes both `label` and `hotkey`.
+- **Selected block:** the column is a `Box` of width 1 with an accent
+  `backgroundColor`. It stretches to the block's full height, so the whole block
+  carries a solid bar.
+- **Other blocks:** the column is empty. Only their mark glyph, if any, shows.
+- **Under the selected block:** the verb menu, tied to the bar with an accent
+  `└`. The verb under the keyboard cursor (§10) draws as the primary button, the
+  others dim. With the navigator unfocused, nothing is highlighted.
+- **Under a commented block:** `→ comment text`, dim. While the comment is being
+  typed, the text appears here live with a `▏` cursor.
 
 ### Example render
 
 ```
   Here's what I'd suggest:
 
-▏ ✓ Use Redis for the session cache
-▏     per-user key prefix
-▎ ✗   5 minute TTL
-      [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
-▏   Add a rate limiter
-▏ ✎ Run the migration before deploying.
+▌ ✓ Use Redis for the session cache
+ └ [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
+      per-user key prefix
+  ✗   5 minute TTL
+  ✎ Add a rate limiter
+    → make it 5 req/sec
+    Run the migration before deploying.
 ```
 
-The control row moves with the selection, so **only one block's controls are on
-screen at a time.**
+Menu buttons are **mouse-clickable** in the fullscreen terminal. The reply
+itself **never takes keyboard focus** — a transcript message has no focus ring —
+so every keyboard path goes through the navigator (§10).
 
-Comment renders as an `Input` **in place under the block**, so the text being
-commented on stays visible while typing.
-
-Call `$.ui.invalidate('ui.render')` after any state change so the message
-redraws.
-
-⚠️ **Unverified and critical:** how much control this hook has over message text
-— whether markdown renders as well as Claude Code's own, and whether a
-background colour can paint behind it. `Markdown` has no background prop. **The
-gutter works regardless** (it is the mod's own column); background highlighting
-is a nice-to-have. Resolve in the spike.
+The mod cannot measure how Claude Code wraps Markdown, so nothing it draws
+elsewhere can be guaranteed to line up with the reply's on-screen lines.
 
 ---
 
 ## 7. The band
 
-Hook: `ui.render` with `{ component: 'AbovePrompt' }`. One instance. Draw to
-`e.props.bodyColumns`.
+Hook: `ui.render` with `{ component: 'AbovePrompt' }`. One instance, drawn to
+`e.props.bodyColumns`. **Read-only**: it holds no focusable element, so the
+entry key goes past it to the navigator (§10).
 
-The band is **the source of truth for the outgoing prompt.** It shows the
-compiled text, dim, regenerating as the tray changes.
+The band never names a component ("pane", "band") or uses jargon ("marks"). It
+says what you can do now. Up to two lines, the last one sitting just above the
+prompt:
 
-### Two keys
-
-| Key | Action |
+| Line | Shows |
 |---|---|
-| submit | sends the compiled prompt via `$.prompt.submit({ text, asUser: true })` |
-| copy | writes it into the prompt box via `$.prompt.fill`, **overwriting** whatever is there |
+| Summary *(only when something is staged)* | `2 accepted · 1 rejected · 1 comment` |
+| Action *(always)* | what the keys do right now |
 
-`asUser: true` is **required** — the plain form prepends a sentence naming the
-mod as sender.
+The action line:
 
-**Overwrite on copy is correct.** Copying is an explicit keypress; the box is a
-scratch copy, the band is authoritative. Edits in the box survive until you copy
-again. There is no merge logic anywhere.
+| State | Text |
+|---|---|
+| Not in the navigator, nothing staged | `Synaptik · ctrl+s to respond in place` |
+| Not in the navigator, something staged | `Synaptik · ctrl+s to continue responding` |
+| Suggestion showing in the prompt box | `Synaptik · tab to take it into the prompt · ctrl+s to continue responding` |
+| In the navigator | `Block 3 of 12 · ↑↓ move · ←→ choose · ⏎ apply · esc done` |
+
+The key named is the person's own binding for `abovePrompt:focus` in the `Chat`
+context, read from `~/.claude/keybindings.json` (a plain read; the mod never
+writes it), or `ctrl+x tab` when there is none.
+
+### Sending: a live suggestion
+
+The compiled prompt (§9) is proposed in the **empty prompt box** with
+`$.prompt.suggest`, the same dim text Claude Code uses for its own suggestions.
+It is re-proposed after every change to the tray (a mark, an unmark, a comment
+finishing). `→` or `Tab` takes it into the box, where it can be edited; `⏎`
+sends it as the person's own message; `ctrl+c` clears it.
+
+- The text is proposed with **a leading space**: the box draws its cursor over a
+  suggestion's first cell, which would hide the first mark glyph.
+- **A suggestion cannot be withdrawn**: there is no call for it, a blank one
+  cannot show, and writing to the box does not dismiss it. When the last mark is
+  cleared, the mod proposes a harmless placeholder instead — currently `Give me a
+  sec to read through this.` (wording provisional).
+- `s` in the navigator sends the compiled prompt directly, via
+  `$.prompt.submit({ text, asUser: true })`. It is not advertised in the legend.
+
+⚠️ On at least one surface `$.prompt.suggest` always resolves `isShown: false`,
+keeping the box for Claude's own suggestions (from the published docs; which
+surface is unconfirmed). There the band offers `s` instead.
+
+**The tray clears after sending.**
 
 ### The discard warning
 
-When the tray is non-empty **and** the prompt box has text, the band says so —
-loudly, in a different colour from its usual dim:
+When something is staged **and** the prompt box holds text other than the taken
+suggestion, the summary line turns yellow:
 
 ```
-5 marks staged · ⏎ sends your text only — marks discarded · <key> to use marks instead
+2 accepted · 1 comment staged · ⏎ sends only what you typed and drops them
 ```
 
-This is the only place in the mod where work can be lost; everything else is
-reversible.
+When the box holds exactly the taken suggestion, the summary reads
+`… · ⏎ sends your feedback` instead.
 
-**The mod does not hook `prompt.submit`.** No interception, no double-Enter, no
-dialog. Read the box with `$.prompt.read()` from the band's render hook — the
-band redraws anyway, so this needs no extra registration.
+⚠️ Open: what to say when the person has taken the suggestion and edited it.
 
-⚠️ If `$.prompt.read()` does not serve, fall back to the `prompt.edit` event
-(observe only; return `next(e)`).
+**The mod does not hook `prompt.submit`.** The box is read with
+`$.prompt.read()` from the band's render hook, which redraws anyway.
 
 ---
 
@@ -253,8 +293,9 @@ conversation.**
 
 ### The pane
 
-`$.ui.open` with `placement: 'dock'`, then `ui.render` with
-`{ component: 'Pane' }`.
+`$.ui.open`, then `ui.render` with `{ component: 'Pane' }`. Placement is the
+surface's: docked beside a fullscreen transcript, inline above the prompt
+otherwise.
 
 ```
 ┌─ Thread: "Use Redis for the session cache" ──┐
@@ -287,9 +328,17 @@ the model summarizes and you approve.
 Thread history persists within the session in `$.store` (4 MiB, shared by every
 session on the machine — namespace your keys).
 
-⚠️ Unverified: `$.model.fork`'s exact signature, how much context it carries,
-and whether two calls can be in flight at once. One focused pane sidesteps the
-concurrency question.
+`$.model.fork({ prompt })` asks one tool-less question over the session's own
+transcript as the main thread last sent it — same model, same system prompt,
+served from the prompt cache. So a thread sees the main conversation for free and
+re-sends only its own side exchange. It resolves `isAnswered: false` with a
+`reason` rather than rejecting (`nothing-to-fork` before a session's first turn).
+
+⚠️ Read from the types, not yet exercised. Whether two calls can be in flight at
+once is still unknown; one focused pane sidesteps it.
+
+The navigator (§10) is the natural home for the thread pane: same pane, a
+different body while a thread is open.
 
 ---
 
@@ -297,20 +346,21 @@ concurrency question.
 
 Walk blocks in **document order**. Emit a line for each block that has a mark, a
 comment, or an included thread. Nest by parent. Quote roughly the first 6–8
-words.
+words, ending in `...` (three plain dots) when cut.
 
-**No prose scaffolding.** Not "the user approved step 3", not "the user asked to
-explain". The agent wrote this message one turn ago; a short quote locates
-anything.
+**No header and no prose scaffolding.** Not "Re your last message", not "the
+user approved step 3", not "the user asked to explain". The agent wrote this
+message one turn ago; a short quote locates anything.
 
 ```
-Re your last message:
 ✓ "Use Redis for the session cache"
     ✓ "per-user key prefix"
     ✗ "5 minute TTL"
 ✎ "Add a rate limiter" → make it 5 req/sec
 💬 "Run the migration" → do it after the backfill, not before
 ```
+
+A comment with no text is never emitted.
 
 Marks and thread summaries **interleave by position**, never grouped by type —
 document order is the order you read it in and the order the agent wrote it.
@@ -326,48 +376,140 @@ send it anyway and let the agent sort it out.
 
 ## 10. Navigation
 
-Modal. Enter navigation → arrows move between blocks → Esc backs out one level
-per nesting depth (pane → selection → off).
+### Why a pane
 
-**Entry key: undecided.**
+Keyboard input reaches a mod only through a **focus ring**, and only two sites
+have one: the band and panes. The reply never takes focus.
 
-- ❌ `Cmd+S` — macOS terminals usually swallow Cmd before it reaches the TUI, and
-  Cmd does not exist in Linux or Windows terminals
-- ❌ `Ctrl+S` — classic terminal XOFF; some terminals still freeze output
-- ✅ candidates: a plain unmodified key while the prompt box is empty; `Ctrl+G`;
-  Esc-prefixed; or `Button`'s `action` prop, which fires on one of Claude Code's
-  own keybindings
+A focus ring is **linear**: Tab, ←/→ and ↑/↓ all mean "previous" or "next", and
+`ui.focus` names only the element focus moves to, never the key. So inside the
+band ↑ cannot be told from ←.
 
-Visible controls make the mode self-evident once entered, so this matters less
-than it first appears. Settle it in the spike.
+A pane can: there ↑/↓ are bound to **scrolling**, and `ui.scroll` carries a
+signed direction (`by`). That is the only way to get ↑/↓ apart from ←/→.
 
-⚠️ Unverified: whether `ui.press` receives raw arrow keys or only bound
-keybinding actions. Also whether `Box`'s `hover` prop means **mouse clicks work
-in the terminal** — if so, discoverability comes free.
+### The navigator
+
+A pane (id `synaptik-map`), opened when a reply is adopted. Its body:
+
+```
+▲ Your notes · ✓2 ✗1 ✎1
+│
+█ ✓ Use Redis for the se...
+█   → keyed per user
+┃
+┃ ✗ 5 minute TTL
+│
+▼ Block 3 of 12
+```
+
+- One bar per block, its height proportional to the block's length.
+- Bar glyph: `█` selected (accent), `┃` on screen, `│` off screen (dim); the
+  selected bar dims too when off screen.
+- Staged blocks show one row of their mark and opening words, sized to the
+  pane's width less a 2-cell margin; a comment sits right under its block.
+- Top row: `Your notes · <counts>` or `Nothing marked yet`. Bottom row: the
+  position.
+
+**The scroll trick.** The tree is always `bodyRows + 2` rows and its window is
+pinned at offset 1, so ↑ and ↓ always have a row to scroll to. Each person scroll
+moves the selection by its sign and the window back to offset 1.
+
+**The verb ring.** The four verbs and `send` are drawn in the pane hidden
+(`display: none`); they still take focus and arm their hotkeys. A `ui.focus` hook
+lets the ring stop on verbs and the comment field only. The menu under the
+selected block in the reply shows which verb holds the ring.
+
+**Comments** are typed into a hidden `Input` in the pane; the text shows under
+the block in the reply as it is typed. Each opening of the field gets a fresh
+`key` — a field redrawn under the same key and value keeps what was typed last
+time. Leaving the field finishes the comment: with text it is staged, empty it is
+dropped. `⏎` or backspace on an empty line cancels it.
+
+### Keys
+
+| Key | Default (no setup) | With the recommended bindings |
+|---|---|---|
+| Enter the navigator | `ctrl+x tab` (`abovePrompt:focus`) | a single chord, e.g. `ctrl+s` |
+| Move between blocks | ↑ / ↓ | same |
+| Walk the verbs | Tab / ⇧Tab | ← / → |
+| Apply the verb under the cursor | ⏎ | same |
+| Apply a verb directly | `a` `x` `c` `d` | same |
+| Leave | Esc | same |
+| Resize the docked pane | `ctrl+x ←` / `ctrl+x →` | conflicts with ←/→ above |
+
+**A mod cannot ship key bindings.** Every improvement on the default column is
+the person's own `~/.claude/keybindings.json`:
+
+```json
+{ "context": "Chat", "bindings": { "ctrl+s": "abovePrompt:focus" } },
+{ "context": "Pane", "bindings": { "left": "abovePrompt:previous", "right": "abovePrompt:next" } }
+```
+
+`ctrl+s` is Claude Code's default for `chat:stash`; binding it gives that up. The
+`Pane` arrows apply to every mod's pane.
+
+Esc raises no `ui.focus` event, so whether the navigator holds the keyboard is
+read from its own drawing (`e.props.isFocused`) and passed to the band and reply
+with a redraw.
+
+### Following the selection in the transcript
+
+`$.ui.scroll({ to: { key } })` does not find elements drawn inside a transcript
+message, so the transcript can only be scrolled to the **whole reply**
+(`to: { requestId }`), which counts as the person's input when a navigator key
+caused it.
+
+Which blocks are on screen is estimated from the reply's `e.props.onScreen`
+(`{ first, last, of }`, reported in fullscreen only), each block's estimated
+rows, and a scale to the reported total. It is approximate.
+
+### Opening the navigator
+
+A pane opened unasked waits undrawn below 144 terminal columns (110 for an id the
+person has opened before), and a module reload closes it. When it is not on
+screen, the band's action line becomes a button — `ctrl+s, then ⏎ to respond in
+place` — since an open answering the person's press is placed at any width.
+
+⚠️ This case is an edge case with its design deferred, as is the navigator's
+inline layout below 110 columns, where a vertical map does not fit.
 
 ---
 
 ## 11. Hooks registered
 
 **No tool hooks.** The mod cannot interfere with the agent's operation — it
-draws, and it writes the prompt box.
+draws, and it proposes text for the prompt box.
 
 | Hook | Matcher | Purpose |
 |---|---|---|
-| `ui.render` | `{ component: 'AssistantMessage' }` | gutter, marks, controls |
-| `ui.render` | `{ component: 'AbovePrompt' }` | band: preview, status, warning |
-| `ui.render` | `{ component: 'Pane' }` | thread pane (§8 only) |
-| `ui.press` | — | buttons and navigation |
-| `ui.input` | — | comment input, thread input |
-| `turn.complete` | — | open marking once the message is final |
+| `session.start` | — | register the kill switch, read the entry key, adopt the last reply |
+| `turn.start` | — | marking off while a turn runs |
+| `turn.complete` | — | adopt the new reply, marking on |
+| `ui.render` | `{ component: 'AssistantMessage' }` | bar, marks, menu, comments; visible-block estimate |
+| `ui.render` | `{ component: 'AbovePrompt' }` | summary and action line |
+| `ui.render` | `{ component: 'Pane', requestId }` | the navigator |
+| `ui.scroll` | `{ component: 'Pane', requestId }` | ↑/↓ → block moves |
+| `ui.focus` | `{ component: 'Pane', requestId }` | keep the ring on the verbs |
+| `ui.close` | `{ id }` | track whether the navigator is on screen |
 
-Six registrations across four event types. Phase 1 needs all but the `Pane`
-render site.
+`ui.press` and `ui.input` need no hooks: a Button's `onPress` and an Input's
+`onInput` / `onSubmit` run as closures.
 
-API calls used: `$.ui.resolve`, `$.ui.invalidate`, `$.ui.open`, `$.ui.close`,
-`$.model.fork`, `$.prompt.read`, `$.prompt.fill`, `$.prompt.submit`, `$.store`.
+API calls used: `$.session.messages`, `$.ui.resolve`, `$.ui.invalidate`,
+`$.ui.open`, `$.ui.scroll`, `$.ui.focus`, `$.ui.toast`, `$.prompt.read`,
+`$.prompt.suggest`, `$.prompt.submit`, `$.command.register`, `$.env.get`,
+`$.fs.read`, `$.state`; phase 2 adds `$.model.fork` and `$.store`.
 
 Elements used: `Box`, `Text`, `Button`, `Input`, `Markdown`.
+
+**State** a drawing reads lives in `$.state` (declared in the plugin's
+`types/index.d.ts` contract). A render hook may not write state; facts only a
+drawing learns (`isFocused`, `onScreen`) go into module variables and a
+`$.ui.invalidate('ui.render')`, which a render hook may call.
+
+⚠️ The band hook answers without calling `next(e)`, so a mod beneath it in the
+chain may lose its band. Untested with other mods enabled.
 
 ---
 
@@ -384,7 +526,12 @@ Check every future feature against this.
 **Ship a kill switch.** A key or `/command` that makes the render hooks pass
 through while the session continues. The failure you will actually hit while
 developing is rendering being *wrong*, not throwing — and restarting a session to
-escape it is painful mid-task.
+escape it is painful mid-task. The spike's is `/synaptik`; a slash command's
+output row is read by the model, which P1 (as revised) allows.
+
+**Never interfere with the prompt/response flow.** The mod proposes and draws; it
+never writes the prompt box behind the person's back, never submits on its own,
+and never blocks or rewrites a turn.
 
 **Keep the logic free of `$.` calls.** Segmentation, tray state and the compile
 step are plain functions over text and data, living in `src/` with the hooks as a
@@ -398,7 +545,7 @@ and what a second host would build on.
 
 | | What | Done when |
 |---|---|---|
-| **Spike** | throwaway mod drawing one hardcoded message with a gutter, fake marks and a selected row | the ⚠️ questions are answered and the look is judged |
+| **Spike** ✅ | throwaway mod on the real last reply: marks, navigator, band, suggestion | §15 answered; branch `spike/rendering` |
 | **Phase 1** | real segmentation, accept / reject / comment, tray, band, submit. **No threads.** | usable daily |
 | **Phase 2** | threads, commit toggle, summary | §8 works |
 
@@ -424,8 +571,10 @@ synaptik/
 │       ├── .claude-plugin/
 │       │   └── plugin.json        manifest
 │       ├── hooks/
-│       │   ├── hooks.json         { "modules": ["./register.ts"] }
-│       │   └── register.ts        exports register(on, options)
+│       │   ├── hooks.json         { "modules": ["./register.tsx"] }
+│       │   └── register.tsx       exports register(on, options); JSX against h
+│       ├── types/
+│       │   └── index.d.ts         $.state contract, named in plugin.json
 │       └── src/
 │           ├── blocks.ts          text → Block[]
 │           ├── tray.ts            state + transitions
@@ -483,34 +632,49 @@ Code tab. The mod draws in both; `Raster` and `Image` are terminal-only and
 | `Markdown` / `Code` text | 10,000 characters — chunk per block |
 | `$.store` | 4 MiB of JSON, shared machine-wide |
 | `ui.render` redraws | throttled to ~10–30/s, coalesced |
+| Render hooks | may not write `$.state`; may call `$.ui.invalidate` |
+| Docked pane | ~23 columns in practice; a request for 4 was not honoured |
+| Unasked `$.ui.open` | waits undrawn below 144 columns (110 once opened by the person) |
+| Module reload | closes the mod's panes (`ui.close`, origin `unload`) |
+| `onScreen` | fullscreen only; per reply piece, not per element |
 
 ---
 
 ## 15. Spike checklist
 
-Answer all of these before phase 1:
+Answered by the spike on Claude Code 2.1.287 (macOS, fullscreen terminal).
 
-- [ ] Can a `ui.render` hook on `AssistantMessage` render markdown as well as
-      Claude Code does? (**Highest risk** — a worse transcript on *every*
-      response is a regression the gutter does not pay for.)
-- [ ] Can a background colour paint behind block text?
-- [ ] Does `ui.press` receive raw arrow keys, or only bound keybinding actions?
-- [ ] Does `Box`'s `hover` prop mean mouse clicks work in the terminal?
-- [ ] Does `$.prompt.read()` return the box's current text?
-- [ ] `$.model.fork` signature: context carried, concurrency allowed?
-- [ ] Does the chosen entry key reach the TUI on macOS **and** Linux?
-- [ ] Does a hooks module resolve imports from a sibling `src/` directory inside
-      the plugin root? (If not: bundle step, or move the modules next to
-      `register.ts`.)
-- [ ] Does `claude plugin test` run `src/*.test.ts` without a session?
+- [x] **Markdown fidelity.** Per-block `Markdown` was used throughout testing
+      with no regression reported. Not compared side by side for every
+      construct; list numbering restarting per item is unchecked. ⚠️
+- [x] **Background behind block text.** `Box` takes `backgroundColor`;
+      `Markdown` does not. A 1-cell `Box` with a background beside the block
+      stretches to its height — the accent bar.
+- [x] **Raw arrow keys.** No. `ui.press` fires only for `Button`s; keys reach a
+      mod only through a focus ring (band, panes), which is linear. ↑/↓ apart
+      from ←/→ needs a pane's scroll (§10).
+- [x] **Mouse.** Buttons drawn in a reply are clickable in the fullscreen
+      terminal.
+- [x] **`$.prompt.read()`** returns the box's text and cursor.
+- [x] **`$.model.fork`** — from the types: one tool-less question over the
+      session's transcript, cached; concurrency unknown. Not exercised. ⚠️
+- [x] **Entry key.** `abovePrompt:focus` (`ctrl+x tab` by default); a person can
+      bind a single chord. Tested on macOS only; Linux unchecked. ⚠️
+- [x] **Sibling `src/` imports** resolve from a hooks module inside the plugin
+      root.
+- [x] **`claude plugin test`** runs `src/*.test.ts` with no session and no mock
+      `$`.
+
+Found along the way, not on the original list:
+
+- `AssistantMessage` fires per text block of a reply, not per reply.
+- Esc raises no `ui.focus`; a pane's `isFocused` prop is the reliable signal.
+- An `Input` keeps typed text across redraws under the same key and value.
+- `$.prompt.suggest` shows multi-line text; its first cell sits under the
+  cursor; it cannot be withdrawn.
+- `$.ui.scroll` cannot target a transcript element by key.
+- Resuming appends a synthetic `No response requested.` assistant row.
 
 Read the types Claude Code writes for your build —
 `.claude-plugin/types/claude-code/index.d.ts` after loading any mod with
 `--plugin-dir`. **Trust those over the published docs.**
-
-Worth reading first: the built-in [`diff`
-mod](https://github.com/anthropics/claude-code/tree/main/mods/diff) (a pane with
-buttons bound to keyboard actions and scrolling it handles itself) and the
-[`token-weather`
-sample](https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/token-weather)
-(draws in the band).
