@@ -84,5 +84,5 @@ export function quote(text: string, words = 7): string {
     .replace(/\s+/g, ' ')
     .trim()
   const parts = plain.split(' ')
-  return parts.length <= words ? plain : parts.slice(0, words).join(' ') + '…'
+  return parts.length <= words ? plain : parts.slice(0, words).join(' ') + '...'
 }
