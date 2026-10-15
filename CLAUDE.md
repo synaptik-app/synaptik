@@ -14,14 +14,15 @@ comment, discuss — and compile those marks into one prompt.
 If the two disagree, SPEC.md is wrong — fix it.
 
 Anything marked ⚠️ in the spec is **unverified against the mods API**. Do not
-rely on it or build on it without checking first; `docs/SPEC.md` §15 lists the
-open questions.
+rely on it or build on it without checking first. `docs/SPEC.md` §15 holds what
+the spike answered; `docs/DECISIONS.md` §11 lists what is still open.
 
 ## Layout
 
 ```
 hosts/claude-code/
-├── hooks/register.ts    the only file that touches $.
+├── hooks/register.tsx   the only file that touches $.
+├── types/index.d.ts     the $.state contract
 └── src/                 pure logic: blocks, tray, compile
 ```
 
@@ -29,15 +30,18 @@ hosts/claude-code/
 
 **`src/` never mentions a host type.** Its functions take and return plain data —
 strings, arrays, the `Tray` map. No `$`, no event objects, no element trees in
-any signature. `register.ts` depends on `src/`; never the reverse.
+any signature. `register.tsx` depends on `src/`; never the reverse.
 
 *The test:* `claude plugin test` runs everything in `src/` with no session. **If a
 test needs a mock `$`, the separation has leaked.**
 
-**The agent never learns the mod exists.** No markers, no identifiers, no
-attribution in anything sent to it. Submission uses
-`$.prompt.submit({ text, asUser: true })` — the plain form prepends a sentence
-naming the mod as sender.
+**Never interfere with the prompt/response flow.** Nothing reaches the agent that
+the person did not see and choose; the mod never writes the prompt box behind
+their back, submits on its own, or holds a turn. No markers or identifiers in
+what is sent — they are noise. The agent knowing the mod exists is fine
+(`DECISIONS.md` P1, revised). Sending is a suggestion the person takes
+(`$.prompt.suggest`), or `$.prompt.submit({ text, asUser: true })` on an explicit
+key.
 
 **The mod relays; it does not analyse.** It captures what the user meant and
 hands it over verbatim. It does not reconcile contradictory marks, decide what is

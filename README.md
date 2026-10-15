@@ -9,19 +9,19 @@ didn't. Synaptik lets you mark the response itself and compiles the prompt for
 you.
 
 ```
-▏ ✓ Use Redis for the session cache
-▏     per-user key prefix
-▎ ✗   5 minute TTL
-      [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
-▏   Add a rate limiter
-▏ ✎ Run the migration before deploying.
+  ✓ Use Redis for the session cache
+        per-user key prefix
+▌ ✗     5 minute TTL
+ └ [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
+    Add a rate limiter
+  ✎ Run the migration before deploying.
+    → do it after the backfill, not before
 ```
 
-Marks accumulate. A band above the prompt shows what they compile into, and one
-key sends it:
+Marks accumulate, and what they compile into appears in the prompt box as a dim
+suggestion. `Tab` takes it, `⏎` sends it:
 
 ```
-Re your last message:
 ✓ "Use Redis for the session cache"
     ✓ "per-user key prefix"
     ✗ "5 minute TTL"
@@ -30,7 +30,8 @@ Re your last message:
 ```
 
 Nothing reaches the agent until you send, and what it receives is an ordinary
-prompt — Synaptik adds no markers, no identifiers, and no mention of itself.
+prompt you saw first — Synaptik adds no markers or identifiers, and never
+interferes with the prompt/response flow.
 
 ## Requirements
 
