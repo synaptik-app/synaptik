@@ -75,44 +75,6 @@ let replyRequestId = ''
 // a drawing may not write state, so it lands here and asks for a redraw.
 let isNavigatorFocused = false
 
-// The blocks the terminal shows right now, [first, last], or null when the
-// reply is off screen or the surface does not report it. Derived in the
-// reply's drawing from onScreen (fullscreen only) and estimated row heights;
-// the navigator draws them brighter. Scrolling never moves the selection.
-let visibleBlocks: [number, number] | null = null
-
-// A reply split around tool calls is drawn as several AssistantMessage pieces,
-// each reporting its own onScreen; their visible ranges are kept per piece and
-// joined.
-const visibleByPiece = new Map<string, [number, number] | null>()
-function joinVisible(): [number, number] | null {
-  const ranges = [...visibleByPiece.values()].filter((r): r is [number, number] => r !== null)
-  if (!ranges.length) return null
-  return [Math.min(...ranges.map(r => r[0])), Math.max(...ranges.map(r => r[1]))]
-}
-
-// Rows each segment takes when drawn `columns` wide: a rough estimate from
-// text length, since the mod cannot measure how Markdown wraps.
-function estimateRows(
-  segments: { text: string; isBlock: boolean; depth: number; hasGapBefore: boolean }[],
-  columns: number,
-  extraRows: (blockIndex: number) => number,
-): { start: number; end: number; block: number }[] {
-  let row = 0
-  let block = -1
-  return segments.map(seg => {
-    if (seg.isBlock) block += 1
-    if (seg.hasGapBefore) row += 1
-    const width = Math.max(10, columns - 4 - seg.depth * 2)
-    const lines = seg.text
-      .split('\n')
-      .reduce((n, line) => n + Math.max(1, Math.ceil(line.length / width)), 0)
-    const start = row
-    row += lines + (seg.isBlock ? extraRows(block) : 0)
-    return { start, end: row - 1, block: seg.isBlock ? block : -1 }
-  })
-}
-
 // Whether the compiled prompt is the prompt box's dim suggestion right now
 // (Tab takes it). Set from prompt.suggest's answer; the band words itself by it.
 let isSuggested = false
@@ -161,8 +123,6 @@ async function adoptLastReply($: EngineInterface) {
   const text = last?.text ?? ''
   observe(`adopt ${messages.length} messages, picked ${text.length} chars`)
   if (text !== (await read($, lastText))) {
-    visibleByPiece.clear()
-    visibleBlocks = null
     await update($, lastText, () => text)
     await update($, selected, () => 0)
     await update($, marks, () => ({}))
@@ -320,7 +280,20 @@ async function summary($: EngineInterface): Promise<string> {
 function minimap(lengths: number[], rows: number): number[] {
   const total = lengths.reduce((a, b) => a + b, 0) || 1
   const spare = Math.max(0, rows - lengths.length)
-  return lengths.map(len => 1 + Math.floor((len / total) * spare))
+  const shares = lengths.map(len => (len / total) * spare)
+  const heights = shares.map(share => 1 + Math.floor(share))
+  // Hand the rows lost to rounding down to the largest remainders, so the
+  // column fills `rows` exactly instead of leaving space at the bottom.
+  let left = rows - heights.reduce((a, b) => a + b, 0)
+  const byRemainder = shares
+    .map((share, i) => [share - Math.floor(share), i] as const)
+    .sort((a, b) => b[0] - a[0])
+  for (const [, i] of byRemainder) {
+    if (left <= 0) break
+    heights[i]! += 1
+    left -= 1
+  }
+  return heights
 }
 
 export const register: Register = on => {
@@ -378,31 +351,6 @@ export const register: Register = on => {
     const commented = (await read($, comments)) as Record<number, string>
     const isTyping = await read($, isCommenting)
     const cursor = isNavigatorFocused ? await read($, focusedVerb) : ''
-
-    const onScreen = e.props.onScreen
-    let seen: [number, number] | null = null
-    if (onScreen) {
-      const rows = estimateRows(segments, e.viewport?.columns ?? 80, i =>
-        (i + offset === sel ? 1 : 0) + (commented[i + offset] && marked[i + offset] === 'comment' ? 1 : 0),
-      )
-      // The estimate drifts over a long reply; scale it to the true total the
-      // surface reports, so its errors stay local instead of adding up.
-      const estimated = Math.max(1, (rows[rows.length - 1]?.end ?? 0) + 1)
-      const k = onScreen.of / estimated
-      const shown = rows.filter(
-        r => r.block >= 0 && r.end * k >= onScreen.first && r.start * k <= onScreen.last,
-      )
-      if (shown.length) seen = [shown[0]!.block + offset, shown[shown.length - 1]!.block + offset]
-    }
-    visibleByPiece.set(e.requestId, seen)
-    const joined = joinVisible()
-    if (JSON.stringify(joined) !== JSON.stringify(visibleBlocks)) {
-      visibleBlocks = joined
-      observe(
-        `on screen ${e.requestId.slice(0, 8)} ${JSON.stringify(onScreen)} offset=${offset} → blocks ${JSON.stringify(joined)}`,
-      )
-      $.ui.invalidate('ui.render')
-    }
 
     let index = offset - 1
     return (
@@ -520,7 +468,12 @@ export const register: Register = on => {
       .map(([m, n]) => `${GLYPH[m]}${n}`)
       .join(' ')
     const heading = counts ? `Your notes · ${counts}` : 'Nothing marked yet'
-    const mapRows = Math.max(blocks.length, rows - 5)
+    // Everything but the heading and position rows, less one row for each
+    // comment, which may need a row of its own under a one-row block.
+    const commentRows = Object.entries(marked).filter(
+      ([i, m]) => m === 'comment' && commented[Number(i)]?.trim(),
+    ).length
+    const mapRows = Math.max(blocks.length, rows - 2 - commentRows)
     const heights = minimap(
       blocks.map(b => b.text.length),
       mapRows,
@@ -543,8 +496,10 @@ export const register: Register = on => {
             blocks.map((_, i) => {
               const mark = marked[i]
               const isSelected = i === sel
-              const isVisible = visibleBlocks !== null && i >= visibleBlocks[0] && i <= visibleBlocks[1]
-              const bar = isSelected ? '█' : isVisible ? '┃' : '│'
+              // Selected: a solid accent bar. Staged: a thick bar. The rest: thin
+              // and dim. (Tracking which blocks the terminal shows was tried and
+              // dropped: estimating rows from text was never steady enough.)
+              const bar = isSelected ? '█' : mark ? '┃' : '│'
               // Only staged blocks carry words: one row with the mark and the
               // opening of the block, and the comment beneath. Each row is one
               // Text of fixed length; pieces side by side broke the layout.
@@ -554,12 +509,7 @@ export const register: Register = on => {
               // lines never quite aligned.
               const opening = mark ? clip(quote(blocks[i]!.text, 10_000), words) : ''
               const comment = mark === 'comment' ? clip(commented[i]?.trim() ?? '', words - 2) : ''
-              // Off screen draws dim, the selected block included; with no
-              // report (not fullscreen) only the unselected ones dim, as before.
-              const tone = {
-                color: isSelected ? ACCENT : undefined,
-                dimColor: visibleBlocks === null ? !isSelected : !isVisible,
-              }
+              const tone = { color: isSelected ? ACCENT : undefined, dimColor: !isSelected && !mark }
               return (
                 <Box flexDirection="column">
                   {/* The comment sits right under its block's first row: in the
