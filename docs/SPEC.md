@@ -404,8 +404,7 @@ A pane (id `synaptik-map`), opened when a reply is adopted. Its body:
 ```
 
 - One bar per block, its height proportional to the block's length.
-- Bar glyph: `█` selected (accent), `┃` on screen, `│` off screen (dim); the
-  selected bar dims too when off screen.
+- Bar glyph: `█` selected (accent), `┃` staged, `│` everything else (dim).
 - Staged blocks show one row of their mark and opening words, sized to the
   pane's width less a 2-cell margin; a comment sits right under its block.
 - Top row: `Your notes · <counts>` or `Nothing marked yet`. Bottom row: the
@@ -460,9 +459,9 @@ message, so the transcript can only be scrolled to the **whole reply**
 (`to: { requestId }`), which counts as the person's input when a navigator key
 caused it.
 
-Which blocks are on screen is estimated from the reply's `e.props.onScreen`
-(`{ first, last, of }`, reported in fullscreen only), each block's estimated
-rows, and a scale to the reported total. It is approximate.
+The navigator does not follow the terminal's own scrolling. Estimating which
+blocks are on screen from `e.props.onScreen` was tried and dropped: the mod
+cannot measure how the reply wraps, and the estimate was never steady.
 
 ### Opening the navigator
 
@@ -486,7 +485,7 @@ draws, and it proposes text for the prompt box.
 | `session.start` | — | register the kill switch, read the entry key, adopt the last reply |
 | `turn.start` | — | marking off while a turn runs |
 | `turn.complete` | — | adopt the new reply, marking on |
-| `ui.render` | `{ component: 'AssistantMessage' }` | bar, marks, menu, comments; visible-block estimate |
+| `ui.render` | `{ component: 'AssistantMessage' }` | bar, marks, menu, comments |
 | `ui.render` | `{ component: 'AbovePrompt' }` | summary and action line |
 | `ui.render` | `{ component: 'Pane', requestId }` | the navigator |
 | `ui.scroll` | `{ component: 'Pane', requestId }` | ↑/↓ → block moves |
