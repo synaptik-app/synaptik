@@ -1,8 +1,9 @@
 # Synaptik — Design Decision Record
 
-**Created:** 2026-10-12 · **Last updated:** 2026-10-14
-**Status:** Decision review complete — **29 decisions and 3 principles**. The
-build spec is `SPEC.md`; this file holds the rationale behind it.
+**Created:** 2026-10-12 · **Last updated:** 2026-10-15 (spike results)
+**Status:** Spike done — **32 decisions and 3 principles**; P1, D20, D21, D24 and
+D29 revised from it. The build spec is `SPEC.md`; this file holds the rationale
+behind it. Open items from the spike are in §11.
 **Framework:** Claude Code mods (CLI v2.1.287+, Desktop Code tab v2.1.286+)
 
 > **Review convention.** Decisions keep their original numbers even when revised,
@@ -52,8 +53,9 @@ that, not the central metaphor.
 
 Constraints that govern decisions rather than being decisions themselves.
 
-### P1 — The agent never knows the mod exists
-**Status:** settled · added 2026-10-12
+### P1 — The mod never interferes with the prompt/response flow
+**Status:** settled · added 2026-10-12 · **revised 2026-10-15** (was: "the agent
+never knows the mod exists" — see the revision note at the end)
 
 The compiled prompt reads exactly like something the user typed. No markers, no
 IDs, no mod structures, no sender attribution. The mod does not ask the model
@@ -76,6 +78,22 @@ E12 is ever built.
 "extended" mode where the agent is told its response will be marked up. **P1
 stays the default and the documented norm** — extended mode is the deviation, not
 the other way round. The reasoning for keeping it that way is in E16.
+
+#### Revision 2026-10-15 — what P1 actually protects
+
+Secrecy was never the point. The concern is **interference**: the mod must never
+put something into the flow between the person and the agent that the person did
+not see and choose, and never block, rewrite or hold that flow. The agent
+knowing the mod exists is fine.
+
+**What stays:** no markers, IDs or protocol in the compiled prompt — not to hide
+the mod, but because they are noise the agent would have to parse. The person
+sees every word before it is sent (now in the prompt box, D30). `asUser: true`
+stays, because the text *is* the person's.
+
+**What this frees:** a slash command whose output the model reads (the kill
+switch, a `/synaptik configure`); naming the mod where useful. E9 and E16 are
+judged by the same test: do they change the flow, or only inform it?
 
 ### P2 — The mod relays, it does not analyse
 **Status:** settled · added 2026-10-12 (implicit from the start)
@@ -405,13 +423,17 @@ No prose scaffolding. No "the user approved step 3", no "the user asked to
 explain…". A marked-up outline of what Claude wrote:
 
 ```
-Re your last message:
 ✓ "Use Redis for the session cache"
     ✓ "per-user key prefix"
     ✗ "write-through on logout"
 ✎ "Add a rate limiter" → make it 5 req/sec
 💬 "Shard by tenant id" → defer sharding until >10k tenants
 ```
+
+**Revision 2026-10-15:** the `Re your last message:` header is dropped. It read
+like an email reply; the quotes alone locate everything, and no header is the
+closest thing to text a person would type. Cut quotes end in three plain dots
+(`...`), not the single `…` character.
 
 Symbol, short quote, optional text, nesting preserved. The agent wrote this
 message one turn ago, so a six-word quote locates anything — the user is
@@ -598,6 +620,39 @@ appeared.
   terminal**. Worth checking in the spike — if clicking works, discoverability
   comes free without touching the keyboard design.
 
+#### Revision 2026-10-15 — what the spike found
+
+**Q3 answered: no raw keys.** `ui.press` fires only for `Button`s. Keys reach a
+mod only through a focus ring, which only the band and panes have — the reply
+never takes focus. And a ring is **linear**: ↑, ←, ⇧Tab all mean "previous";
+`ui.focus` reports where focus goes, never which key sent it. Arrowing through
+blocks *of the reply*, as designed, is not possible.
+
+**What works: a pane, and its scrolling.** In a pane ↑/↓ scroll, and `ui.scroll`
+carries a signed direction. With the pane's tree kept two rows taller than its
+window and the window pinned in the middle, every ↑/↓ is a direction signal; the
+mod moves the selection and cancels the scroll. ←/→ (or Tab) walk the verbs on
+the ring. That is D31.
+
+**Tried and dropped along the way:**
+- *Verbs and blocks on one band ring*: ↓ walked the verbs, then fell through to
+  the next block. Confusing.
+- *Borrowed Global actions for blocks* (`app:diffFileListUp/Down`, `ctrl`/`⌥` +
+  ↑↓): did not fire on macOS — Mission Control takes `ctrl+↑`, and `⌥` needs the
+  terminal's Option-as-Meta. Borrowing another feature's action is fragile anyway.
+- *A bare digit from the empty prompt* to enter: it presses a band button, but
+  `$.ui.focus` from there is refused; it did not give the band the keyboard.
+
+**Entry key: settled as a user binding** (D32). `abovePrompt:focus` is an
+ordinary action, `ctrl+x tab` by default.
+
+**Still open — the navigation model (§11, item 1):**
+- **A.** The pane: ↑/↓ blocks, ←/→ verbs. Costs ~23 columns.
+- **B.** No pane: every arrow moves blocks on the band's ring; verbs are letter
+  keys only; the menu becomes a legend. Costs nothing on screen.
+The deciding question is whether the pane earns its space — the overview it now
+shows (D31), and phase 2's threads, are the candidates.
+
 ---
 
 ### D21 — Selection highlighting is a gutter column
@@ -639,6 +694,21 @@ Everything else was decided by reasoning; how a marked-up transcript actually
 [interface gallery](https://code.claude.com/docs/en/plugins/mods/gallery) has
 screenshots of most elements — the fastest way to judge a background behind
 markdown before building it.
+
+#### Revision 2026-10-15 — an accent bar on the selected block only
+
+In use, a dim `▏` on every block was noise, and a single `▎` on the selected
+block was too faint: the selection and its menu blended into the reply.
+
+**Now:** unselected blocks carry no gutter, only their mark glyph. The selected
+block gets a **solid accent bar down its full height** — a 1-cell `Box` with a
+`backgroundColor` beside the text, which stretches to the block's height
+(`Markdown` itself still takes no background). The menu hangs off it with an
+accent `└`; the verb under the cursor is the primary button, the rest dim. A
+comment shows under its block as `→ text`, not a second ✎.
+
+The original gutter's promise survives: it is the mod's own column, so it cannot
+fail by restyling Claude's text.
 
 ---
 
@@ -725,6 +795,16 @@ fewer hook, and the surface stays at four event types (`SPEC.md` §11).
 
 **If discarding turns out to be annoying in practice, the fix is E13** —
 persisted marks that survive a new message — not a confirm dialog.
+
+#### Additions 2026-10-15
+
+- **Off during a turn.** From `turn.start` to `turn.complete` the reply and band
+  draw as vanilla. A reply on its way will replace the tray; staging against it
+  has no use.
+- **On after a resume.** `session.start` adopts the transcript's last reply, so a
+  resumed session is markable without a new turn. A resume appends a synthetic
+  `No response requested.` assistant row, skipped by its text — `SessionMessage`
+  has no flag for engine-written rows (§11, item 11).
 
 ---
 
@@ -858,6 +938,87 @@ P1 — that round trip bought only an edit the user did not want.
 - ~~**After sending, the tray clears**~~ — **resolved** together with Q7 (D24):
   the tray clears after sending, since the marks were consumed, and is
   discarded with a warning when a new message arrives by any other route.
+
+#### Revision 2026-10-15 — the box, not the band, shows the prompt
+
+The band preview worked, but the spike found a better place: **the prompt box
+itself, as a dim suggestion** (D30). The band keeps a one-line summary and an
+action line (SPEC §7) and no longer holds the compiled text. The principle of
+this decision — the person sees the exact text, and the mod never merges into
+what they typed — carries over unchanged.
+
+---
+
+### D30 — Send by live suggestion in the prompt box
+**Status:** provisional · added 2026-10-15
+
+The compiled prompt is proposed with `$.prompt.suggest` into the **empty** prompt
+box after every tray change. `→`/`Tab` takes it, the box is where it is edited,
+`⏎` sends it, `ctrl+c` clears it — all Claude Code's own gestures for its own
+suggestions. A multi-line suggestion renders fine.
+
+**Why:** the person sees the prompt where they will send it, and the edit step
+comes free. It answers Q11: a suggestion cannot sit beside typed text, but it
+need not — it is only proposed into an empty box, and the discard warning covers
+the other case.
+
+**Mechanics the spike settled:**
+- A leading space: the box's cursor sits on a suggestion's first cell and would
+  hide the first mark glyph.
+- Comments re-propose when they finish (⏎, or focus leaving the field), not per
+  keystroke.
+- A suggestion **cannot be withdrawn**. When the last mark is cleared, a harmless
+  placeholder replaces it (`Give me a sec to read through this.`) — something a
+  person might type and safe to send by accident, guessing nothing about intent.
+- When the box holds exactly the taken suggestion the band says `⏎ sends your
+  feedback`; any other text brings back the discard warning.
+
+**Open:** what the band says once the taken suggestion is edited (§11, item 6);
+whether to veto Claude Code's own suggestions while feedback is staged (item 7);
+surfaces where plugin suggestions never show (item 4) — there `s` in the
+navigator sends directly.
+
+---
+
+### D31 — The navigator: a docked pane that maps the reply
+**Status:** provisional · added 2026-10-15 · depends on §11 item 1 (A vs B)
+
+A pane beside the transcript serves two jobs:
+
+1. **Keys** — the scroll trick for ↑/↓, the ring for ←/→ (D20 revision). Its
+   verb buttons and comment field are drawn hidden; the reply shows the cursor.
+2. **Overview** — one bar per block sized by length; selected, on-screen and
+   off-screen bars distinct; staged blocks show their mark and opening words;
+   comments under their block; `Your notes · ✓2 ✗1 ✎1` on top, the position at
+   the bottom.
+
+The overview exists because the pane could not be made narrow: a request for 4
+columns drew ~23, so the width is spent on content.
+
+**Limits found:** an unasked open waits undrawn below 144 columns; a module
+reload closes it; the width a person sets is remembered and wins. On-screen
+blocks are an estimate (§11, item 16). Mirroring the reply line-for-line was
+tried and dropped — the mod cannot see how the reply wraps.
+
+---
+
+### D32 — Key bindings belong to the person
+**Status:** settled · added 2026-10-15
+
+A mod cannot declare key bindings or actions. So the mod **works with Claude
+Code's defaults** (`ctrl+x tab`, ↑↓, Tab, ⏎, letter hotkeys, Esc), and better keys
+are the person's own `keybindings.json` — documented, never written silently.
+The band names whatever chord the person bound to `abovePrompt:focus`, read from
+that file.
+
+Recommended: a single chord for `abovePrompt:focus` in `Chat`, and ←/→ for
+`abovePrompt:previous/next` in `Pane`. Costs to state alongside: `ctrl+s` gives up
+`chat:stash`; the `Pane` arrows apply to every mod's pane and swallow the second
+key of `ctrl+x ←/→` (pane resize).
+
+**Candidate:** a `/synaptik configure` that shows the bindings it would add, asks
+for confirmation, and merges them into the file (§11, item 10). Allowed under P1
+as revised.
 
 ---
 
@@ -1235,23 +1396,21 @@ To verify against the build's own TypeScript declarations
 (`.claude-plugin/types/claude-code/index.d.ts`, written per installed version)
 rather than the published docs.
 
-| # | Question | Why it matters |
+| # | Question | Answer (spike, 2026-10-15) |
 |---|---|---|
-| Q3 | Does `ui.press` see raw arrow keys, or only bound keybinding actions? | `Button` has an `action` prop naming Claude Code's own keybinding actions. Decides whether D20 navigation is native or needs raw-key capture. **The main MVP unknown.** |
-| Q6 | `$.model.fork` exact signature — how much context does it carry? | Determines what a thread sees, and how much the mod must re-send each turn (D14). |
-| Q8 | The hook/event framework in depth — ordering, matchers, `next()` chaining, tiers | Flagged as needing study before implementation. The `plugin-authoring` skill is likely the fastest route. |
-| Q9 | Is `$.model.classify` cheap enough to run per thread turn? | E6 only. |
-| Q10 | Can a `ui.render` hook on `AssistantMessage` reliably reproduce Claude Code's own markdown rendering? | The mod replaces the whole message rendering to add a gutter. Anything it renders worse than the original is a regression on every response. |
-| Q11 | Can `prompt.suggest` hold a dim suggestion **alongside** text the user has typed, as its own layer — or is it just pre-filled draft text? | **Not blocking.** D29 is settled on the band. If `suggest` is a real layer, the preview could live in the box and the copy step disappears — a refinement, swappable later. |
-| Q12 | Does `Box`'s `hover` prop mean mouse clicks work in the terminal? | Would give discoverability free, independent of the keyboard design (D20). |
+| Q3 | Does `ui.press` see raw arrow keys? | **No.** Keys reach a mod only through a linear focus ring; ↑/↓ apart from ←/→ needs a pane's scroll. See D20's revision. |
+| Q6 | `$.model.fork` signature and context | From the types: one tool-less question over the session's own transcript, same model and system prompt, cached. Concurrency unknown. Not exercised. |
+| Q8 | The hook framework in depth | Learned in use: `on(event, matcher, hook)`, `.catch` for fail-to-vanilla, render hooks may not write state but may `$.ui.invalidate`, `$.state` contracts in `types/`. Chain order among several mods untested (§11, item 15). |
+| Q9 | Is `$.model.classify` cheap enough per thread turn? | Open — E6 only. |
+| Q10 | Can the `AssistantMessage` hook match Claude Code's markdown? | **Acceptable in use** with per-block `Markdown`; not compared construct by construct. A background behind text needs a `Box` beside it, not on `Markdown`. |
+| Q11 | Is `prompt.suggest` a separate layer beside typed text? | **No** — it shows only in an empty box. Turned out not to matter: D30. |
+| Q12 | Do mouse clicks work in the terminal? | **Yes**, on `Button`s drawn in a reply, in the fullscreen terminal. |
 
 *Q1, Q2, Q4, Q5 retired or moved into §5 with their features. Q7 resolved —
 discard with warning, see D24.*
 
-**`SPEC.md` §15 is the canonical spike checklist.** It also covers questions not
-numbered here: the entry key on macOS and Linux (D20), whether `$.prompt.read()`
-returns the box text (D24), whether a hooks module resolves imports from a
-sibling `src/`, and whether `claude plugin test` runs without a session.
+**`SPEC.md` §15** holds the full spike checklist, with the questions not numbered
+here. New open questions are in §11.
 
 ---
 
@@ -1259,18 +1418,23 @@ sibling `src/`, and whether `claude plugin test` runs without a session.
 
 | Primitive | Role | MVP? |
 |---|---|---|
-| `ui.render` on `AssistantMessage` | Redraw the reply with gutter, marks and the selected block's controls | Yes |
-| `ui.render` on `AbovePrompt` | Band: compiled-prompt preview, status, discard warning | Yes |
-| `ui.press` | Buttons, navigation | Yes |
-| `ui.input` | Inline comment input, thread input | Yes |
+| `ui.render` on `AssistantMessage` | Redraw the reply with the accent bar, marks, menu and comments | Yes |
+| `ui.render` on `AbovePrompt` | Band: summary, discard warning, action line | Yes |
+| `ui.render` on `Pane` | The navigator (D31), later threads | Yes |
+| `ui.scroll` on the pane | ↑/↓ as block moves (D20 revision) | Yes |
+| `ui.focus` on the pane | Keep the ring on the verbs | Yes |
+| `ui.close` | Know whether the navigator is on screen | Yes |
+| `Button.onPress`, `Input.onInput/onSubmit` | Verbs, comments — closures, no `ui.press`/`ui.input` hooks needed | Yes |
 | `$.prompt.read()` | Tell whether the box has text, for the discard warning (D24) | Yes |
-| `turn.complete` | Open marking once the message is final | Yes |
-| `$.ui.open` / `Pane` | Thread panes (`placement: 'dock'`) | Yes |
-| `$.model.fork` | Thread conversations and the commit summary | Yes |
-| `$.prompt.submit({ asUser: true })` | Submit the compiled prompt as the user's own words (D29) | Yes |
-| `$.prompt.fill` | Copy the compiled prompt into the box for editing (D29) | Yes |
-| `$.prompt.suggest` | Possible refinement if Q11 allows a true separate layer (D29) | No |
-| `$.store` | Thread persistence within the session | Yes |
+| `turn.start` / `turn.complete` | Marking off during a turn; adopt the new reply | Yes |
+| `session.start` + `$.session.messages()` | Adopt the last reply on resume | Yes |
+| `$.prompt.suggest` | Send by suggestion (D30) | Yes |
+| `$.prompt.submit({ asUser: true })` | Direct send, `s` in the navigator | Yes |
+| `$.env.get` + `$.fs.read` | Read the person's entry-key binding (D32) | Yes |
+| `$.ui.scroll` | Bring the reply into view (whole reply only) | Yes |
+| `$.model.fork` | Thread conversations and the commit summary | Phase 2 |
+| `$.prompt.fill` | No longer used — the suggestion replaced the copy key | No |
+| `$.store` | Thread persistence within the session | Phase 2 |
 | `tool.call` | E5, E12 | No |
 | `session.append` | E13 | No |
 | `$.model.classify` | E6 | No |
@@ -1316,9 +1480,14 @@ and plain `claude` in another.
 
 ## 9. Next step
 
-The build spec exists: **`SPEC.md`**. Next is the spike (D27) — a throwaway mod
-drawing one hardcoded message, to answer the open questions in §6 and judge
-whether the look holds up.
+The spike is done (branch `spike/rendering`). Before phase 1:
+
+1. Decide the navigation model, A or B (§11, item 1).
+2. Decide the band wording left open, and what follows an edited suggestion
+   (§11, items 5–6).
+3. Test with another mod enabled (§11, item 15).
+
+Then phase 1, built fresh from `SPEC.md` — the spike is throwaway code.
 
 **This file is no longer the working document.** It records why the design is
 what it is. When a decision changes, update it here *and* in `SPEC.md`; when
@@ -1331,7 +1500,7 @@ already considered and cut for a reason.
 
 | # | Decision | Status |
 |---|---|---|
-| P1 | Agent never knows the mod exists | ✅ settled |
+| P1 | Never interfere with the prompt/response flow | ✅ revised 2026-10-15 |
 | P2 | The mod relays, it does not analyse | ✅ settled |
 | P3 | One mechanism, many sources — review, never gate | ✅ settled |
 | D1 | Response is a fillable form | ✅ reviewed, revised |
@@ -1348,31 +1517,23 @@ already considered and cut for a reason.
 | D14 | Thread isolation via `fork` | ✅ settled |
 | D15 | Escalation ladder | ✅ revised |
 | D16–D19 | Branched sessions, depth, merge, worktrees | ☠️ deferred → E1–E4 |
-| D20 | Modal nav + visible controls on the selected block | ✅ reviewed, revised |
-| D21 | Gutter column highlighting | ✅ reviewed |
+| D20 | Modal nav + visible controls on the selected block | ✅ revised by the spike; model A/B open |
+| D21 | Accent bar on the selected block (was: gutter column) | ✅ revised by the spike |
 | D22 | Conflicts not resolved by the mod | ✅ settled |
 | D23 | Trivially disableable, fails to vanilla | ✅ reviewed, extended |
-| D24 | Last message only (**Q7 resolved**) | ✅ reviewed |
+| D24 | Last message only (**Q7 resolved**); off during turns, on after resume | ✅ reviewed, extended |
 | D25 | Nudge toward `AskUserQuestion` | ☠️ deferred → E9 |
 | D26 | Config surface | ☠️ deferred → E10 |
 | D27 | Spike, then two thin phases | ✅ reviewed, revised |
 | D28 | No intervention in Claude Code's tool runs | ✅ settled |
-| D29 | Band is source of truth, box is scratch | ✅ settled |
+| D29 | Band is source of truth, box is scratch | ✅ revised — the box shows it (D30) |
+| D30 | Send by live suggestion | 🟡 provisional |
+| D31 | The navigator pane | 🟡 provisional — depends on A/B |
+| D32 | Key bindings belong to the person | ✅ settled |
 
 ### Open questions, by weight
 
-| # | What | Weight |
-|---|---|---|
-| Q10 | How much control does a `ui.render` hook have over message text — can it reproduce Claude Code's own markdown rendering, and can a background paint behind it? | **Highest — could change the design.** A worse-looking transcript on *every* response is a regression the gutter does not pay for. Also decides D21's background highlighting. |
-| Q3 | Raw arrow keys in `ui.press`, or only bound keybinding actions? | High — D20's navigation and entry key |
-| Q8 | The hook framework in depth — ordering, matchers, `next()` chaining, tiers | High — needed before implementation; try the `plugin-authoring` skill |
-| Q6 | `$.model.fork` signature: how much context it carries, **and whether two calls can be in flight at once** | Medium — sizes phase 2. Concurrency matters only for typing in one thread while another is thinking; MVP can sidestep it by focusing one pane at a time. |
-| Q12 | Does `Box`'s `hover` prop mean mouse clicks work in the terminal? | Medium — would give discoverability free, independent of the keyboard design |
-| Q11 | Is `prompt.suggest` a real layer, or pre-filled draft text? | Low — refinement to D29 only |
-| Q9 | Is `$.model.classify` cheap enough to run per thread turn? | Low — E6 only |
-
-**Q3, Q10, Q11 and Q12 are all answered by the spike** (D27): load a throwaway
-mod with `--plugin-dir`, draw a hardcoded message, read the generated types.
+Superseded by §11, which lists what the spike left open.
 
 ### Prior art noted 2026-10-13
 
@@ -1396,3 +1557,75 @@ version arrives, and if theirs ships first, know exactly what is missing from it
 It also supports the gutter over text selection: mouse drag-select is not
 available in the terminal, and block-level selection is arguably better for
 marking anyway — whole decisions, not arbitrary character ranges.
+
+---
+
+## 11. Spike findings — open items
+
+Recorded 2026-10-15 from the spike (`spike/rendering`). Numbered for reference;
+the numbers are not decision numbers.
+
+### Design decisions to make
+
+1. **Navigation model: A (pane, ↑/↓ blocks + ←/→ verbs) or B (no pane, all arrows
+   move blocks, letter keys for verbs).** Turns on whether the pane earns ~23
+   columns — the overview (D31) and phase 2 threads are its candidates.
+2. **The pane is shared space.** With other mods, panes become tabs; check how
+   the navigator reads as one tab among several.
+3. **Navigator not on screen** (narrow terminal, closed, after a reload): the band
+   offers `ctrl+s, then ⏎`. Edge case, design deferred; below 110 columns the
+   pane opens inline, where a vertical map does not fit.
+4. **Surfaces where `$.prompt.suggest` always returns `isShown: false`** (from the
+   published docs; surface unconfirmed). Needs a fallback — `s` to send, or a
+   copy into the box — and the band should switch to it automatically.
+5. **Placeholder wording** for an emptied suggestion, and the band wording overall
+   ("respond in place"), are provisional.
+6. **What the band says once a taken suggestion is edited.** Today: the discard
+   warning, which is no longer accurate. Escalated.
+7. **Whether to veto Claude Code's own suggestions** (a `prompt.suggest` hook
+   answering `{ isShown: false }`) while feedback is staged. Would be interference
+   with Claude Code's behaviour — decide deliberately.
+
+### Limits found
+
+8. **The docked pane is ~23 columns**; a request for 4 was not honoured, and no
+   way to go narrower was found.
+9. **The transcript scrolls to the whole reply, never to a block**:
+   `$.ui.scroll({ to: { key } })` does not find elements inside a transcript
+   message.
+10. **Key bindings cannot ship with the mod** (D32). Candidate: `/synaptik
+    configure`.
+11. **Engine-written rows are recognised by text** (`No response requested.`).
+12. **A reply split around tool calls** arrives as several `AssistantMessage`
+    pieces. The spike numbers blocks across pieces by locating each in the full
+    text; phase 1 needs this from the start.
+13. **The mod cannot see how Claude Code wraps Markdown**, so nothing it draws can
+    be guaranteed to line up with the reply's on-screen lines.
+14. **Esc raises no `ui.focus`**; the navigator's own `isFocused` prop is the
+    reliable signal. **An `Input` keeps typed text** across redraws under the
+    same key and value — each opening needs a fresh key.
+
+### To test
+
+15. **Coexistence with other mods.** The band hook answers without calling
+    `next(e)`, so a mod beneath it may lose its band; phase 1's band should
+    compose with what is beneath it. Panes: tabs.
+16. **Following terminal scrolling.** On-screen blocks are estimated from
+    `onScreen` and scaled to its row total; it is rough. Options: an honest
+    coarse indicator (reply above / below / in view, or a thumb from
+    `first`/`last`/`of`); a navigator that scrolls with the terminal; better
+    estimates for tables and code; or the upstream request below.
+
+### Extension points noted
+
+- **Navigation inside tables** — rows, possibly cells, as blocks of their own.
+
+### To ask upstream
+
+- Plugin-declared actions with default chords, as `userConfig` declares options
+  (removes D32's gap).
+- `$.ui.scroll` to an element inside a transcript message, by key.
+- A way for a plugin to withdraw its own prompt suggestion.
+- `onScreen`, or a row measurement, per element rather than per message.
+- A narrower floor for a docked pane, or a reason it is ~23 columns.
+- A flag on `SessionMessage` for engine-written rows.
