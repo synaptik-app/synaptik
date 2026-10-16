@@ -1257,19 +1257,44 @@ A mod-registered tool letting Claude hand over arbitrary structured items.
 **Depends on** Claude choosing to call a tool it has no habit of calling, and
 sits in tension with P1.
 
-### E15 — Review a diff or a generated file in a Synaptik pane
-**Added 2026-10-13. Promising; likely the strongest extension point.**
+### E15 — Review the files a turn touched, in the same review
+**Added 2026-10-13. Reframed 2026-10-14 and 2026-10-16. Likely the strongest
+extension point — possibly worth more than phase 2's threads, since reviewing
+generated code is where comments batch up most.**
 
 Claude edits or creates a file. You want to leave **several comments across it
 and submit once** — how a pull-request review works, and the same batching
 insight the whole mod rests on (D1). Today each comment costs a round trip or
 gets hand-assembled into prose.
 
+#### The reframe: files are more of the same review, not a parallel surface
+
+**One review scope per turn.** A turn completes; the review window covers the
+reply **and the files that turn touched**. Marks on both go into **one tray** and
+compile into **one prompt**. Submit, the tray clears, the next turn brings a new
+reply and new files.
+
+```
+turn completes → review the reply + the files it touched
+  → marks accumulate in one tray
+  → submit → tray clears
+  → next turn: new reply, new files
+```
+
+**This dissolves the staleness problem rather than mitigating it.** During review
+the agent is idle, waiting for input — so nothing can move under you. No
+snapshotting, no re-reading, no stale line numbers. It is D24's guarantee
+("only the last turn, only once it is complete") extended to the files, and the
+same reasoning as D5: derive once from fixed input.
+
+An earlier draft of this entry treated files as a separate feature with their own
+lifecycle, and argued the stability case only for diffs (frozen) and not for
+created files (live). The turn boundary already covers both.
+
 #### Shape: additive, never a restyle
 
-**Nothing of Claude Code's is replaced.** The mod notices that the last turn
-produced a diff or a file, offers *"open in Synaptik"*, and draws **its own
-pane** with the four verbs available.
+**Nothing of Claude Code's is replaced.** The mod reads what the turn produced
+and offers its own pane.
 
 **The permission prompt is off-limits** — the docs are unambiguous that a mod
 "can't change what a prompt shows you" (the same wall as E5). So the diff shown
@@ -1278,17 +1303,53 @@ about the approval moment. At a permission prompt you are deciding yes-or-no
 under time pressure, not writing four comments. Review belongs *after* the change
 lands.
 
+#### Surface: the navigator lists files; ⏎ opens one
+
+The navigator (`synaptik-map`, SPEC §10) already lists the reply's blocks. Files
+the turn touched are listed in it too, below the blocks. `⏎` on a file opens a
+**file review pane**:
+
+| | Navigator | File review pane |
+|---|---|---|
+| ↑ / ↓ | blocks, then files | lines |
+| ← / → (or Tab) | the verb ring | the verb ring |
+| ⏎ | open the selected file | apply the verb under the cursor |
+| Esc | leave | back to the navigator |
+
+**The mechanics already exist.** SPEC §10's scroll trick — a tree of
+`bodyRows + 2` rows with its window pinned at offset 1, so ↑/↓ always have a row
+to scroll to — is what separates ↑/↓ from ←/→ in a pane. A file pane gets its own
+instance of it, with lines in place of blocks. The hidden verb ring works
+unchanged.
+
+**Staging a file** puts its comments in the tray like any block's.
+
+#### Fetching the content
+
+| | Fetch with | View |
+|---|---|---|
+| **Created** file | `$.fs.read(path)` — 4 MiB per file | whole content, line-numbered |
+| **Updated** file | `$.process.run` → `git diff -- <path>` | diff, line-numbered |
+
+Paths come from the `Edit`/`Write` tool calls in `$.session.messages()` (newest
+4,096 entries) — so the mod knows which files the turn touched **even when the
+reply never mentions them**.
+
+⚠️ **Precondition to verify first:** whether `messages()` entries expose a tool
+call's *input* (the `file_path`), or only a summary of the call. The reference
+says what `messages()` returns but not the entry shape. **The whole entry rests
+on this** — check the types before building.
+
+Fallback if it does not: `git status` for changed paths (imprecise about which
+turn, mixes in your own uncommitted work, and needs a repo), or a `/command`
+taking a path explicitly — the simplest first version, no inference at all.
+
 #### Why this is easier than the main feature, not harder
 
-**The pane is the mod's own surface.** The diff is drawn from source text, so the
+**The pane is the mod's own surface.** Content is drawn from source text, so the
 mod controls every character — **Q10 does not apply at all.** No reproducing
-Claude Code's markdown rendering, no fighting `Markdown`'s missing background
-prop, nothing to match. By contrast §6 has to redraw a message Claude Code
-already renders well.
-
-**A diff is frozen.** It is a snapshot of a change, not a live file, so **line
-numbers are stable** — nothing can move them. That dissolves the staleness
-problem rather than mitigating it, and it is precisely why PR review works.
+Claude Code's markdown rendering, nothing to match. By contrast SPEC §6 has to
+redraw a reply that Claude Code already renders well.
 
 **The pane shape is proven.** The built-in
 [`diff` mod](https://github.com/anthropics/claude-code/tree/main/mods/diff) draws
@@ -1297,47 +1358,50 @@ scrolling. Public source, closest reference implementation.
 
 #### Compile format
 
-Grouped by file, anchored by line:
+File comments join the reply's marks in the same prompt, grouped by file and
+anchored by line:
 
 ```
-on index.js
-  line 10 — change x to y
-  line 15 — use async here
-on server.js
-  line 42 — this should be behind the feature flag
+✓ "Use Redis for the session cache"
+✎ "Add a rate limiter" → make it 5 req/sec
+
+in DbConnection.java
+  line 5 — this should come from config, not a literal
+  line 8 — close this in a finally block
+in index.js
+  line 42 — behind the feature flag please
 ```
 
-#### Two entry points
-
-| Trigger | How | Content from |
-|---|---|---|
-| Claude edited files | mod sees `Edit`/`Write` happened in the last turn | `$.process.run` with `git diff`, or the tool's own input |
-| Claude created a file | mod sees a path in the last response | `$.fs.read` (4 MiB per file) |
-
-Detection can be a `/command` on a path to start with — simplest, no inference,
-and it works before any of this is automatic.
+Consistent with SPEC §9: no prose scaffolding, no explanation that a review
+happened. The reply's marks keep document order; files follow, since they are a
+different axis and interleaving them with prose blocks would read as noise.
 
 #### Still open
 
-- **Which diff source.** `git diff` on the working tree needs no tool hooks at
-  all and is the cleaner choice; the `Edit` tool's input gives exactly what
-  Claude changed but drifts toward E8's territory.
 - **Render cost for a large diff.** `Text` per line avoids the 10,000-character
-  `Markdown` cap, but a 2,000-line diff redrawing on each keypress may need
+  `Markdown` cap, but a 2,000-line file redrawing on each keypress may need
   windowing. `diff`'s source shows how it handles this.
 - **Hunk-level verbs.** Accept/reject reads naturally on a hunk; comment and
   discuss read naturally on a line. Whether both granularities are needed, or
   lines suffice, is a feel question.
+- **Which diff source**, if `messages()` gives tool inputs: the `Edit` call's own
+  before/after, or `git diff` on the working tree. The latter needs nothing from
+  the transcript but cannot tell your edits from Claude's.
+- **Many files in one turn.** A refactor touching twenty files makes the
+  navigator long. Possibly a count with the files collapsed until opened.
 
-#### Relationship to E8 and D28
+#### Relationship to E8, D28 and issue #5
 
 E8's `Edit`/`Write` entry is about **gating** a tool call before it runs. This is
 reviewing **after** — a different moment, and it keeps D28 intact: the mod never
 touches a tool call, it only reads what already happened.
 
-**Do this after phase 1**, when the tray and compile step exist to reuse rather
-than guess at. It may well be worth more than phase 2's threads — reviewing
-generated code is where the most comments batch up.
+**Field note #5** (code blocks need line-level granularity) wants this same pane
+for a fenced code block inside a reply — line-numbered, same verbs, no file path.
+If E15 is built, #5 is close to free.
+
+**Do this after phase 1**, when the tray, navigator and compile step exist to
+reuse rather than guess at.
 
 ### E16 — Extended mode: cooperate with the agent (**analysis needed**)
 **Added 2026-10-14. The deliberate inverse of P1 — read that first.**
