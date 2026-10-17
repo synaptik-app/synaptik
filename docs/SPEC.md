@@ -372,7 +372,18 @@ different body while a thread is open.
 
 Walk blocks in **document order**. Emit a line for each block that has a mark, a
 comment, or an included thread. Nest by parent. Quote roughly the first 6–8
-words, ending in `...` (three plain dots) when cut.
+words, ending in `...` (three plain dots) when cut. A numbered item's quote
+keeps its number (`"3. Top level, numbered"`), so items that open alike stay
+apart.
+
+**An unmarked parent of a marked block is sent as context**: its quote alone, no
+glyph, so a nested mark arrives under the item it belongs to.
+
+```
+"3. Top level, numbered"
+    ✗ "1. Second level, numbered"
+    ✎ "2. Second level, numbered" → merge with the one above
+```
 
 **No header and no prose scaffolding.** Not "Re your last message", not "the
 user approved step 3", not "the user asked to explain". The agent wrote this
