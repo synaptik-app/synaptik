@@ -23,4 +23,4 @@ Part three, a paragraph after the last tool call.
 - Part three can be selected and marked
 - Block N of M counts all three parts
 - Marks in different parts all reach the suggestion, in reading order
-- Nothing can be marked while the tool calls run
+- Nothing can be marked while the tool calls run: the navigator says Waiting for the reply and ignores ↑/↓ and verbs
