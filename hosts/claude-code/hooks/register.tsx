@@ -15,6 +15,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { SpikeMark } from '../types'
 import { quote, segment } from '../src/spike-blocks'
+import { lastTurnText } from '../src/spike-turn'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
 const isWorking = atom({ plugin: 'synaptik', key: 'isWorking' } as const, false)
@@ -119,18 +120,14 @@ async function suggestTray($: EngineInterface) {
   }
 }
 
-// Assistant rows the engine writes itself, never the model: a resumed session
-// ends with one. SessionMessage carries no flag for them, so match the text.
-const SYNTHETIC = new Set(['No response requested.'])
 
 // Reads the last assistant reply from the transcript. A different reply than
 // the one marked so far starts a fresh tray; the same one (a reload) keeps it.
 async function adoptLastReply($: EngineInterface) {
+  // The whole last turn, not its last message: text before a tool call is a
+  // separate message and was left unmarkable.
   const messages = await $.session.messages()
-  const last = [...messages]
-    .reverse()
-    .find(m => m.role === 'assistant' && m.text.trim() && !SYNTHETIC.has(m.text.trim()))
-  const text = last?.text ?? ''
+  const text = lastTurnText(messages)
   observe(`adopt ${messages.length} messages, picked ${text.length} chars`)
   if (text !== (await read($, lastText))) {
     await update($, lastText, () => text)
