@@ -9,10 +9,17 @@
 //
 //   /neighbour          open the pane
 //   /neighbour suggest  propose a suggestion
+//   /neighbour greedy   toggle greedy mode: the band and the reply are drawn by
+//                       the neighbour alone, without next(e) — what Synaptik
+//                       looks like when a less polite mod sits above it
 
 import type { Register } from 'claude-code'
 
 const PANE = 'neighbour-pane'
+
+// Greedy mode, toggled by /neighbour greedy. A module variable: a reload resets
+// it to polite.
+let isGreedy = false
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
@@ -24,6 +31,11 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('command.run', { command: 'neighbour' }, async ($, e) => {
+    if (e.args.trim() === 'greedy') {
+      isGreedy = !isGreedy
+      $.ui.invalidate('ui.render')
+      return { text: `neighbour greedy: ${isGreedy ? 'on — no next(e) for band and reply' : 'off'}` }
+    }
     if (e.args.trim() === 'suggest') {
       const shown = await $.prompt.suggest({ text: 'neighbour: a suggestion of its own' })
       return { text: `neighbour suggest: ${JSON.stringify(shown)}` }
@@ -36,6 +48,7 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e.surface !== 'terminal' && e.surface !== 'desktop') return next(e)
     const { Box, Text, Button } = $.ui.resolve(e)
+    if (isGreedy) return <Text dimColor>neighbour · band (greedy: nothing beneath is drawn)</Text>
     const beneath = await next(e)
     return (
       <Box flexDirection="column">
@@ -52,7 +65,16 @@ export const register: Register = on => {
   // the neighbour sits above Synaptik in the chain and saw its drawing.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     if (e.surface !== 'terminal' && e.surface !== 'desktop') return next(e)
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Text, Markdown } = $.ui.resolve(e)
+    if (isGreedy) {
+      // Draws the reply itself and never calls next(e): no mod beneath it runs.
+      return (
+        <Box flexDirection="column">
+          <Markdown text={e.props.text} />
+          <Text dimColor>— neighbour drew this reply alone (greedy)</Text>
+        </Box>
+      )
+    }
     const beneath = await next(e)
     return (
       <Box flexDirection="column">
