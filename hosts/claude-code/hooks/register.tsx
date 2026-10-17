@@ -165,6 +165,8 @@ async function openPane($: EngineInterface) {
 // Moves the selection and brings the block into view in the transcript. The
 // transcript only scrolls while answering the person's own input.
 async function moveSelection($: EngineInterface, by: number) {
+  // While a turn runs the reply on screen is not the one adopted (SPEC §2).
+  if (await read($, isWorking)) return
   await finishComment($)
   const count = segment(await read($, lastText)).filter(s => s.isBlock).length
   const before = await read($, selected)
@@ -200,6 +202,7 @@ async function toggle($: EngineInterface, i: number, mark: SpikeMark) {
 }
 
 async function runVerb($: EngineInterface, verb: string) {
+  if (await read($, isWorking)) return
   const i = await read($, selected)
   if (verb === 'verb-accept') return toggle($, i, 'accept')
   if (verb === 'verb-reject') return toggle($, i, 'reject')
@@ -527,7 +530,11 @@ export const register: Register = on => {
       .filter(([, n]) => n > 0)
       .map(([m, n]) => `${GLYPH[m]}${n}`)
       .join(' ')
-    const heading = counts ? `Your notes · ${counts}` : 'Nothing marked yet'
+    const heading = working
+      ? 'Waiting for the reply...'
+      : counts
+        ? `Your notes · ${counts}`
+        : 'Nothing marked yet'
     // Everything but the heading and position rows, less one row for each
     // comment, which may need a row of its own under a one-row block.
     const commentRows = Object.entries(marked).filter(
@@ -603,7 +610,7 @@ export const register: Register = on => {
             })
           )}
           <Text dimColor wrap="truncate">
-            ▼ {clip(`Block ${sel + 1} of ${blocks.length}`, words + 2)}
+            ▼ {working ? '' : clip(`Block ${sel + 1} of ${blocks.length}`, words + 2)}
           </Text>
           {/* Focus stops for ←→ and the hotkeys, hidden: the reply's menu under
               the selected block is where the cursor shows. Always drawn, so
