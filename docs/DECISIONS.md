@@ -1486,6 +1486,22 @@ The mod will be used to build the mod, and a broken `ui.render` hook makes the
 authoring session unusable. Run two checkouts, or `--plugin-dir` in one terminal
 and plain `claude` in another.
 
+### First real use — 2026-10-17
+
+The spike was used for real in a separate Claude Code session, answering a reply
+about key bindings with two accepts and a comment in one send. What it showed:
+
+- **The compiled prompt needed no explanation.** The agent read `✓ "…"` as
+  approval and `✎ "…" → …` as an instruction on that point, and acted on both.
+  Evidence for D6's format as revised: no header, no prose scaffolding, a short
+  quote locates the point.
+- **Batching worked.** Mixed verbs in one prompt got one coherent answer — the
+  premise of D1, which quote-reply cannot reach.
+- **No interference.** The agent answered the content, not the mechanism (P1 as
+  revised).
+
+One data point, not a verdict: D27 still holds that phase 1 is the real test.
+
 ---
 
 ## 9. Next step
