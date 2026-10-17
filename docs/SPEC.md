@@ -40,10 +40,15 @@ completes.** Marking is off from `turn.start` until `turn.complete`: the reply
 and the band draw as vanilla Claude Code while a turn runs, since the reply that
 is coming will replace the tray anyway (§5).
 
+**The reply is the whole last turn**: every assistant message with text since
+the last prompt, joined in order. A reply that runs a tool mid-way is stored as
+several messages; all of them are markable. Tool results (stored as user rows)
+and rows recorded after the turn (a slash command) are skipped.
+
 **A resumed session is markable at once.** On `session.start` the mod reads the
-transcript (`$.session.messages()`) and adopts its last assistant reply. A
-resume ends the transcript with an engine-written `No response requested.`
-row, which is skipped.
+transcript (`$.session.messages()`) and adopts its last turn. A resume ends the
+transcript with an engine-written `No response requested.` row, which is
+skipped.
 
 ⚠️ That row is recognised by its text: `SessionMessage` carries no flag for rows
 the engine writes itself.
