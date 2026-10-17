@@ -101,6 +101,10 @@ let isNavigatorFocused = false
 let isSuggested = false
 const PLACEHOLDER = 'Give me a sec to read through this.'
 
+// The band's header, and the lead of each line under it.
+const TAGLINE = 'respond to the reply in place'
+const NEST = '⎿  '
+
 // The compiled prompt is proposed in the empty prompt box after every change,
 // as Claude Code proposes its own: → or Tab takes it, the box is where it is
 // edited and sent, ctrl+c clears it (SPIKE: send flow B).
@@ -517,10 +521,11 @@ export const register: Register = on => {
 
     observe(`pane drawn ${e.props.placement} ${e.props.bodyColumns}×${e.props.scroll.bodyRows} focused=${e.props.isFocused}`)
     if (e.props.isFocused !== isNavigatorFocused) {
-      const hasLeft = isNavigatorFocused && !e.props.isFocused
       isNavigatorFocused = e.props.isFocused
-      if (hasLeft) void suggestTray($)
-      else isSuggested = false
+      // Re-propose on entering and on leaving: the prompt box keeps one
+      // suggestion, the last proposed, and another mod may have replaced ours
+      // while the person was elsewhere (issue #12).
+      void suggestTray($)
       $.ui.invalidate('ui.render')
     }
     const rows = Math.max(6, e.props.scroll.bodyRows)
@@ -661,6 +666,12 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   // --- The band: read-only. Says what you can do now, never names a component.
+  //
+  // The band is shared by every mod: a hook that answers without next(e) hides
+  // every mod beneath it. Outside review, Synaptik draws whatever the chain
+  // beneath returns and adds its lines below it, last, just above the prompt.
+  // While the navigator holds the keyboard the band is the key legend for that
+  // mode, and Synaptik's stands alone (issue #12).
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (!(await read($, isOn)) || e.props.hasSurvey || e.props.isWorking) return next(e)
@@ -678,12 +689,14 @@ export const register: Register = on => {
     const compiled = await compile($)
     const box = await $.prompt.read()
 
-    // Bottom line, just above the prompt: what the keys do right now.
+    // Under a "Synaptik" header, each line led by ⎿ as Claude Code nests its own
+    // output, so with several mods in the band it is clear which lines are ours.
+    // The last line, just above the prompt: what the keys do right now.
     const action = reviewing
       ? `Block ${sel + 1} of ${blocks.length} · ↑↓ move · ←→ choose · ⏎ apply · esc done`
       : staged && isSuggested && box.text.trim() === ''
-        ? `Synaptik · tab to take it into the prompt · ${key} to continue responding`
-        : `Synaptik · ${key} to ${staged ? 'continue responding' : 'respond in place'}`
+        ? `tab to take it into the prompt · ${key} to continue responding`
+        : `${key} to ${staged ? 'continue responding' : 'respond in place'}`
     const boxText = box.text.trim()
     // Taken: the box holds exactly the suggestion. Edited: it holds something
     // else (what to say then is an open decision; for now, the warning).
@@ -693,27 +706,52 @@ export const register: Register = on => {
       `band shown=${isShown} reviewing=${reviewing} staged=${JSON.stringify(staged)} ` +
         `lines=${compiled ? compiled.split('\n').length : 0} maxRows=${e.props.maxRows} cols=${e.props.bodyColumns}`,
     )
+    const beneath = reviewing ? null : await next(e)
 
+    // The tree beneath may hold Claude Code's own drawing (an engine node), and
+    // an engine node under a Box with `width` is refused — the whole band then
+    // falls back to Claude Code's own. So `width` sits only on Synaptik's lines.
     return (
-      <Box flexDirection="column" width={e.props.bodyColumns}>
-        {staged &&
-          (isTyping ? (
-            <Text color="yellow">{staged} staged · ⏎ sends only what you typed and drops them</Text>
-          ) : isTaken ? (
-            <Text>{staged} · ⏎ sends your feedback</Text>
+      <Box flexDirection="column">
+        {beneath}
+        <Box flexDirection="column" width={e.props.bodyColumns}>
+          <Text wrap="truncate">
+            Synaptik<Text dimColor> · {TAGLINE}</Text>
+          </Text>
+          {staged &&
+            (isTyping ? (
+              <Text color="yellow" wrap="truncate">
+                {NEST}
+                {staged} staged · ⏎ sends only what you typed and drops them
+              </Text>
+            ) : isTaken ? (
+              <Text wrap="truncate">
+                {NEST}
+                {staged} · ⏎ sends your feedback
+              </Text>
+            ) : (
+              <Text wrap="truncate">
+                {NEST}
+                {staged}
+              </Text>
+            ))}
+          {isShown || reviewing ? (
+            <Text dimColor wrap="truncate">
+              {NEST}
+              {action}
+            </Text>
           ) : (
-            <Text>{staged}</Text>
-          ))}
-        {isShown || reviewing ? (
-          <Text dimColor wrap="truncate">{action}</Text>
-        ) : (
-          // Edge case, design deferred: the navigator is not on screen (narrow
-          // terminal, or closed), so the band offers the press that opens it.
-          <Box flexDirection="row">
-            <Text dimColor>Synaptik · {key}, then </Text>
-            <Button key="open-pane" plain autoFocus label="⏎ to respond in place" onPress={() => openPane($)} />
-          </Box>
-        )}
+            // Edge case, design deferred: the navigator is not on screen (narrow
+            // terminal, or closed), so the band offers the press that opens it.
+            <Box flexDirection="row">
+              <Text dimColor>
+                {NEST}
+                {key}, then{' '}
+              </Text>
+              <Button key="open-pane" plain autoFocus label="⏎ to respond in place" onPress={() => openPane($)} />
+            </Box>
+          )}
+        </Box>
       </Box>
     )
   }).catch(($, e, next) => next(e))
