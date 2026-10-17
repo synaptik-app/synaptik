@@ -63,6 +63,9 @@ const blockKey = (i: number) => `block-${i}`
 // words and "..." (3 cells), sized to the pane's current width less a 2-cell
 // margin, which keeps clear of the terminal's scrollbar.
 const ROW_CHROME = 9
+
+// Cells of each comment-field line taken by its submit hint (`⏎ ok`) and gaps.
+const FIELD_CHROME = 7
 const clip = (text: string, n: number) => (text.length > n ? `${text.slice(0, n)}...` : text)
 const ACCENT = 'cyan'
 
@@ -496,8 +499,22 @@ export const register: Register = on => {
     const commentRows = Object.entries(marked).filter(
       ([i, m]) => m === 'comment' && commented[Number(i)]?.trim(),
     ).length
-    // A row for the comment field while it is open.
-    const mapRows = Math.max(blocks.length, rows - 2 - commentRows - (isTyping ? 1 : 0))
+    // Rows for the comment field while it is open: as many as its text wraps
+    // to, so the whole comment — and the cursor, wherever it is — stays in view.
+    // The field reports no cursor position, so a window around the cursor is not
+    // possible; showing all of it is. Capped at half the pane.
+    // The field shares each line with its submit hint (`⏎ ok`, drawn beside
+    // it while focused) and wraps at word boundaries, so a line holds well under
+    // the pane's width: estimate generously, plus a row of margin.
+    const fieldText = commented[sel] ?? seed
+    const fieldWidth = Math.max(4, e.props.bodyColumns - FIELD_CHROME)
+    const fieldRows = isTyping
+      ? Math.min(
+          Math.max(1, Math.floor(rows / 2)),
+          Math.ceil((fieldText.length * 1.25) / fieldWidth) + 1,
+        )
+      : 0
+    const mapRows = Math.max(blocks.length, rows - 2 - commentRows - fieldRows)
     const heights = minimap(
       blocks.map(b => b.text.length),
       mapRows,
@@ -577,8 +594,8 @@ export const register: Register = on => {
             <Box>
               <Input
                 key={commentKey(seq)}
-                label="✎"
                 placeholder="comment"
+                submitLabel="ok"
                 value={seed}
                 onInput={async value => {
                   const before = (await read($, comments))[sel] ?? ''
