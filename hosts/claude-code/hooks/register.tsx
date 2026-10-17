@@ -441,17 +441,24 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   // The ring stops on the verbs and the comment field only, so ←→ walk them.
+  // Inside the comment field ↑/↓ walk the ring too (AbovePromptInput binds
+  // them), so a move off the open field onto anything that is not a verb —
+  // another button, or Claude Code's own stop on the pane (no element) — is
+  // sent to ✎ instead of refused: refusing left the ring stranded off the verbs.
   on('ui.focus', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     observe(`pane focus → ${e.element ?? '(none)'} by ${e.origin.kind}`)
     const isField = e.element?.startsWith(COMMENT_PREFIX) ?? false
-    const isStop = e.element === undefined || e.element.startsWith('verb-') || isField
+    const isVerb = e.element?.startsWith('verb-') ?? false
+    const wasField = (await read($, isCommenting)) && !isField
+    const target = !isField && !isVerb && wasField ? 'verb-comment' : e.element
+    const isStop = target === undefined || target.startsWith('verb-') || isField
     if (!isStop) return { deny: 'synaptik: not a stop' }
-    const result = await next(e)
+    const result = await next(target === e.element ? e : { ...e, element: target })
     // Finish the comment only once the ring has left the field: removing the
     // field while it still holds the ring loses the move, and ←→ with it.
     if (!result.deny && !isField) await finishComment($)
     if (!result.deny) {
-      await update($, focusedVerb, () => e.element ?? '')
+      await update($, focusedVerb, () => target ?? '')
     }
     return result
   }).catch(($, e, next) => next(e))
