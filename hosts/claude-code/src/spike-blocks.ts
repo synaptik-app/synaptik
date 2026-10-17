@@ -18,6 +18,10 @@ export function segment(text: string): Segment[] {
   let current: Segment | null = null
   let hasGap = false
   let fence: string | null = null
+  // Indent of the last list item's marker, while a list is open: a paragraph
+  // indented past it after a blank line continues that item (SPEC §3: a list
+  // item spanning several paragraphs is one block).
+  let itemIndent: number | null = null
 
   const flush = () => {
     if (current) out.push(current)
@@ -38,6 +42,7 @@ export function segment(text: string): Segment[] {
     if (fenceMatch) {
       flush()
       fence = fenceMatch[1]!
+      itemIndent = null
       current = { text: line, isBlock: true, depth: 0, hasGapBefore: hasGap }
       hasGap = false
       continue
@@ -52,6 +57,7 @@ export function segment(text: string): Segment[] {
     if (HEADING.test(line)) {
       flush()
       out.push({ text: line.trim(), isBlock: false, depth: 0, hasGapBefore: hasGap })
+      itemIndent = null
       hasGap = false
       continue
     }
@@ -60,10 +66,23 @@ export function segment(text: string): Segment[] {
     if (item) {
       flush()
       const depth = Math.floor(item[1]!.length / 2)
+      itemIndent = item[1]!.length
       current = { text: line.trimStart(), isBlock: true, depth, hasGapBefore: hasGap }
       hasGap = false
       continue
     }
+
+    const indent = line.length - line.trimStart().length
+    const last = out[out.length - 1]
+    if (!current && hasGap && itemIndent !== null && indent > itemIndent && last?.isBlock) {
+      // Keep the indent relative to the item (whose own line is trimmed), so
+      // the paragraph stays inside the list item when drawn as Markdown.
+      current = out.pop()!
+      current.text += '\n\n' + line.slice(itemIndent)
+      hasGap = false
+      continue
+    }
+    if (indent === 0) itemIndent = null
 
     if (current) {
       current.text += '\n' + line.trim()
@@ -77,12 +96,17 @@ export function segment(text: string): Segment[] {
   return out
 }
 
+// The opening words of a block, for the compiled prompt and the navigator. A
+// numbered item keeps its number ("3. Top level"), so items that open alike
+// stay apart; a bullet's marker is dropped.
 export function quote(text: string, words = 7): string {
+  const marker = text.match(LIST_ITEM)?.[2] ?? ''
+  const number = /\d/.test(marker) ? `${marker} ` : ''
   const plain = text
     .replace(LIST_ITEM, '')
     .replace(/[`*_>#]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
   const parts = plain.split(' ')
-  return parts.length <= words ? plain : parts.slice(0, words).join(' ') + '...'
+  return number + (parts.length <= words ? plain : parts.slice(0, words).join(' ') + '...')
 }
