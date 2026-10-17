@@ -16,6 +16,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { SpikeMark } from '../types'
 import { quote, segment } from '../src/spike-blocks'
 import { lastTurnText } from '../src/spike-turn'
+import { compile as compileTray, GLYPH } from '../src/spike-compile'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
 const isWorking = atom({ plugin: 'synaptik', key: 'isWorking' } as const, false)
@@ -39,7 +40,6 @@ function observe(line: string) {
   observed.splice(0, Math.max(0, observed.length - 60))
 }
 
-const GLYPH: Record<SpikeMark, string> = { accept: '✓', reject: '✗', comment: '✎' }
 const VERBS = [
   { key: 'verb-accept', glyph: '✓', label: '✓ accept', hotkey: 'a' },
   { key: 'verb-reject', glyph: '✗', label: '✗ reject', hotkey: 'x' },
@@ -250,17 +250,10 @@ async function finishComment($: EngineInterface) {
   await suggestTray($)
 }
 
+// The compiled prompt: src/spike-compile.ts, over the adopted reply's blocks.
 async function compile($: EngineInterface): Promise<string> {
   const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
-  const marked = await read($, marks)
-  const commented = (await read($, comments)) as Record<number, string>
-  const lines = blocks.flatMap((b, i) => {
-    const m = marked[i]
-    if (!m || (m === 'comment' && !commented[i]?.trim())) return []
-    const tail = m === 'comment' ? ` → ${commented[i]}` : ''
-    return [`${'    '.repeat(b.depth)}${GLYPH[m]} "${quote(b.text)}"${tail}`]
-  })
-  return lines.join('\n')
+  return compileTray(blocks, await read($, marks), (await read($, comments)) as Record<number, string>)
 }
 
 async function sendTray($: EngineInterface) {
