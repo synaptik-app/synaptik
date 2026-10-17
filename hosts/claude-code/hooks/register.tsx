@@ -66,6 +66,13 @@ const ROW_CHROME = 9
 const clip = (text: string, n: number) => (text.length > n ? `${text.slice(0, n)}...` : text)
 const ACCENT = 'cyan'
 
+// The selected block's background: Claude Code's own text-selection colour, a
+// theme key, so it follows /config's light or dark theme. Painted on the Box
+// around the block's Markdown, which takes no background itself. The key is
+// found in the binary, not the documented API; an unknown one would make the
+// reply fall back to Claude Code's own drawing.
+const SELECTED_BACKGROUND = 'selectionBg'
+
 // The transcript row of the reply being marked, for revealing it when a block
 // key cannot be scrolled to. Set while drawing; lost on reload.
 let replyRequestId = ''
@@ -366,21 +373,28 @@ export const register: Register = on => {
           index += 1
           const i = index
           const isSelected = i === sel
+          // Background and menu only while the navigator holds the keyboard:
+          // after Esc the reply reads as a plain reply again.
+          const isShownSelected = isSelected && isNavigatorFocused
           const mark = marked[i]
+          const isEditing = isSelected && isTyping
 
           return (
             <Box flexDirection="column" marginTop={seg.hasGapBefore ? 1 : 0}>
               <Box flexDirection="row">
                 <Button key={blockKey(i)} plain label=" " onPress={() => update($, selected, () => i)} />
-                <Box width={1} backgroundColor={isSelected ? ACCENT : undefined} />
-                <Text color={isSelected ? ACCENT : undefined}> {mark ? GLYPH[mark] : ' '} </Text>
-                <Box flexGrow={1} paddingLeft={seg.depth * 2}>
+                <Text> {mark ? GLYPH[mark] : ' '} </Text>
+                <Box
+                  flexGrow={1}
+                  paddingLeft={seg.depth * 2}
+                  backgroundColor={isShownSelected ? SELECTED_BACKGROUND : undefined}
+                >
                   <Markdown text={seg.text} />
                 </Box>
               </Box>
-              {isSelected && (
+              {isShownSelected && (
                 <Box flexDirection="row" paddingLeft={1}>
-                  <Text color={ACCENT}>└ </Text>
+                  <Text dimColor>└ </Text>
                   {VERBS.map(v => (
                     <Button
                       key={v.key}
@@ -392,12 +406,9 @@ export const register: Register = on => {
                   ))}
                 </Box>
               )}
-              {(isSelected && isTyping) || (commented[i] && mark === 'comment') ? (
+              {isEditing || (commented[i] && mark === 'comment') ? (
                 <Box paddingLeft={4}>
-                  <Text dimColor>
-                    → {commented[i] ?? ''}
-                    {isSelected && isTyping ? '▏' : ''}
-                  </Text>
+                  <Text dimColor>→ {commented[i] ?? ''}</Text>
                 </Box>
               ) : null}
             </Box>
@@ -473,7 +484,8 @@ export const register: Register = on => {
     const commentRows = Object.entries(marked).filter(
       ([i, m]) => m === 'comment' && commented[Number(i)]?.trim(),
     ).length
-    const mapRows = Math.max(blocks.length, rows - 2 - commentRows)
+    // A row for the comment field while it is open.
+    const mapRows = Math.max(blocks.length, rows - 2 - commentRows - (isTyping ? 1 : 0))
     const heights = minimap(
       blocks.map(b => b.text.length),
       mapRows,
@@ -547,11 +559,14 @@ export const register: Register = on => {
             <Button key="send" plain hotkey="s" label="send" onPress={() => sendTray($)} />
           </Box>
           {isTyping && (
-            // Hidden too: the text shows under the block as it is typed.
-            <Box display="none">
+            // Visible: only the field knows where its cursor is (its events carry
+            // the text, never the cursor, and ←/→ raise none), so it is shown
+            // here; the reply mirrors the full text under the block.
+            <Box>
               <Input
                 key={commentKey(seq)}
-                placeholder="✎"
+                label="✎"
+                placeholder="comment"
                 value={seed}
                 onInput={async value => {
                   const before = (await read($, comments))[sel] ?? ''
