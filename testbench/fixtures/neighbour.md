@@ -18,3 +18,4 @@ A closing paragraph.
 - Older replies show "— neighbour saw this reply"; the reply Synaptik marks does not (one mod redraws a reply at a time)
 - The neighbour pane's suggest button, prompt box empty: does its suggestion show, and which one stays after marking a block
 - Pressing n in the band pings the neighbour, and a, x, c, d still reach Synaptik in the navigator
+- With the neighbour loaded first and /neighbour greedy on: Synaptik's marks vanish from the reply, but the navigator still works — ↑/↓, verbs, comments, the suggestion
