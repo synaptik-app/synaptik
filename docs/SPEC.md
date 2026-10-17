@@ -218,6 +218,11 @@ and other mods draw it as usual. Redrawing takes the reply from every mod beneat
 Synaptik in the chain, and draws the transcript's text — bypassing any mod beneath
 that changes it.
 
+**After review, marks stay by default** (D35): a marked piece keeps its glyphs and
+comment lines after Esc. A configuration option (#8) shows them only while
+reviewing, leaving every reply to Claude Code and other mods outside review — the
+setting to suggest when another mod's drawing on replies conflicts.
+
 ### Example render
 
 ```
@@ -621,13 +626,13 @@ and what a second host would build on.
 | | What | Done when |
 |---|---|---|
 | **Spike** ✅ | throwaway mod on the real last reply: marks, navigator, band, suggestion | §15 answered; branch `spike/rendering` |
-| **Phase 1** | real segmentation, accept / reject / comment, tray, band, submit. **No threads.** | usable daily |
+| **Phase 1** | evolves the spike (D34): real segmentation (§3), tray (§5), compile (§9), the reply in place, navigator, shared band, sending by suggestion; minimal navigator-off-screen and classic-mode handling; packaging. **No threads.** | usable daily, installable |
 | **Phase 2** | threads, commit toggle, summary | §8 works |
 
-**The spike is throwaway code.** Write it to answer questions, then delete it.
-Rendering comes first because §6's uncertainty is the only thing that could
-still change the design — discovering it after building the state machinery
-would be expensive.
+**The spike answered its questions and evolves into phase 1** (D34, revising
+D27's "throwaway"): its tested behaviour is kept, the segmenter is rewritten
+properly, and the hooks file is split. Rendering came first because §6's
+uncertainty was the only thing that could still change the design.
 
 **Phase 1 is the real test.** If marking without threads does not change how the
 work feels, phase 2 will not save it.
