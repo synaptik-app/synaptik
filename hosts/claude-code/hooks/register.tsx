@@ -394,6 +394,17 @@ export const register: Register = on => {
     const isTyping = await read($, isCommenting)
     const cursor = isNavigatorFocused ? await read($, focusedVerb) : ''
 
+    // Draw only when there is something to show: while reviewing, or when a
+    // block in this piece is marked or being commented. Otherwise pass the reply
+    // through, so Claude Code and the mods beneath draw it as usual. Redrawing
+    // takes the reply from every mod beneath (one mod redraws a reply), and
+    // draws the transcript's text — bypassing any mod beneath that changes it
+    // (D33).
+    const pieceBlocks = segments.filter(s => s.isBlock).length
+    const isMarkedHere = Object.keys(marked).some(k => Number(k) >= offset && Number(k) < offset + pieceBlocks)
+    const isTypingHere = isTyping && sel >= offset && sel < offset + pieceBlocks
+    if (!isNavigatorFocused && !isMarkedHere && !isTypingHere) return next(e)
+
     // The mod draws the reply itself, so it redraws Claude Code's frame too: the
     // top margin, the 2-cell left margin, and the ⏺ bullet on the reply's first
     // line. A mark's glyph sits in that margin, so marking moves nothing.
