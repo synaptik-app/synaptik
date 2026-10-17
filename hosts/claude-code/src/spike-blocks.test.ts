@@ -19,10 +19,10 @@ test('splits the SPEC §3 example into six blocks', async () => {
 
   expect(blocks.map(b => quote(b.text))).toEqual([
     "Here's what I'd suggest:",
-    'Use Redis for the session cache',
+    '1. Use Redis for the session cache',
     'per-user key prefix',
     '5 minute TTL',
-    'Add a rate limiter',
+    '2. Add a rate limiter',
     'Run the migration before deploying.',
   ])
   expect(blocks.map(b => b.depth)).toEqual([0, 0, 1, 1, 0, 0])
