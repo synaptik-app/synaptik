@@ -172,26 +172,34 @@ A rewrite changes the drawing only; the stored message is untouched.
 Each piece works out where its blocks start in the whole reply, so block
 numbering runs across pieces.
 
-Each block renders as a row: a 1-cell column, the mark glyph, then the block as
-`Markdown`.
+Each block renders as a row: the mark glyph, then the block as `Markdown`.
 
-- **Selected block:** the column is a `Box` of width 1 with an accent
-  `backgroundColor`. It stretches to the block's full height, so the whole block
-  carries a solid bar.
-- **Other blocks:** the column is empty. Only their mark glyph, if any, shows.
-- **Under the selected block:** the verb menu, tied to the bar with an accent
-  `└`. The verb under the keyboard cursor (§10) draws as the primary button, the
-  others dim. With the navigator unfocused, nothing is highlighted.
+- **Selected block:** the `Box` around its `Markdown` gets the theme key
+  `selectionBg` as `backgroundColor` — Claude Code's own text-selection colour,
+  so it follows `/config`'s light or dark theme. It paints behind the text.
+- **Other blocks:** no background. Only their mark glyph, if any, shows.
+- **Under the selected block:** the verb menu after a dim `└`. The verb under the
+  keyboard cursor (§10) draws as the primary button, the others dim. With the
+  navigator unfocused, nothing is highlighted.
+
+The reply carries no accent colour. ⚠️ `selectionBg` was found in the Claude Code
+binary, not the documented API; an unknown key would make the reply fall back to
+Claude Code's own drawing. Making it configurable: issue #8.
 - **Under a commented block:** `→ comment text`, dim. While the comment is being
-  typed, the text appears here live with a `▏` cursor.
+  typed it shows here live; the field itself, with its cursor, is in the
+  navigator (§10).
+
+**The selection shows only while the navigator holds the keyboard.** After Esc
+the background and the menu go, and the reply reads as a plain reply with its
+mark glyphs and comments.
 
 ### Example render
 
 ```
   Here's what I'd suggest:
 
-▌ ✓ Use Redis for the session cache
- └ [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
+  ✓ Use Redis for the session cache          ← on the selection background
+  └ [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
       per-user key prefix
   ✗   5 minute TTL
   ✎ Add a rate limiter
@@ -419,8 +427,10 @@ moves the selection by its sign and the window back to offset 1.
 lets the ring stop on verbs and the comment field only. The menu under the
 selected block in the reply shows which verb holds the ring.
 
-**Comments** are typed into a hidden `Input` in the pane; the text shows under
-the block in the reply as it is typed. Each opening of the field gets a fresh
+**Comments** are typed into an `Input` shown in the pane — visible, because only
+the field knows where its cursor is: its events carry the text, never the cursor,
+and moving the cursor raises none. The text also shows under the block in the
+reply as it is typed. Each opening of the field gets a fresh
 `key` — a field redrawn under the same key and value keeps what was typed last
 time. Leaving the field finishes the comment: with text it is staged, empty it is
 dropped. `⏎` or backspace on an empty line cancels it.
