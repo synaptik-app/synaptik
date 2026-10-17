@@ -211,6 +211,13 @@ Claude Code's own drawing. Making it configurable: issue #8.
 the background and the menu go, and the reply reads as a plain reply with its
 mark glyphs and comments.
 
+**The reply is redrawn only when needed** (D33): while the navigator holds the
+keyboard, or when a block in that piece of the reply is marked or being
+commented. Otherwise the hook passes it through with `next(e)`, so Claude Code
+and other mods draw it as usual. Redrawing takes the reply from every mod beneath
+Synaptik in the chain, and draws the transcript's text — bypassing any mod beneath
+that changes it.
+
 ### Example render
 
 ```
@@ -574,8 +581,10 @@ Elements used: `Box`, `Text`, `Button`, `Input`, `Markdown`.
 drawing learns (`isFocused`, `onScreen`) go into module variables and a
 `$.ui.invalidate('ui.render')`, which a render hook may call.
 
-⚠️ The band hook answers without calling `next(e)`, so a mod beneath it in the
-chain may lose its band. Untested with other mods enabled.
+**Sharing with other mods** (D33, tested with the bench's `neighbour-mod`):
+chain order follows load order (`--plugin-dir` order). The band composes with
+`next(e)` except while reviewing; the reply is redrawn only when needed; the
+navigator, a pane of Synaptik's own, works whatever other mods do.
 
 ---
 

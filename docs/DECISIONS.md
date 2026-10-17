@@ -1032,6 +1032,46 @@ as revised.
 
 ---
 
+### D33 — Share Claude Code's surfaces with other mods; redraw only when needed
+**Status:** settled · added 2026-10-17 · tested with the bench's `neighbour-mod` (#12)
+
+Every surface Synaptik draws on except its own pane is shared with other mods,
+and each is a **chain**: a hook that answers without `next(e)` hides every mod
+beneath it. Found with the test bench's neighbour mod and its greedy toggle:
+
+- **Chain order follows load order** — the order of `--plugin-dir` flags. The
+  first loaded sits highest.
+- **One mod redraws a reply.** Synaptik's in-place marks redraw the whole reply
+  (`next(e)` returns an opaque handle that cannot be edited), so it cannot add to
+  what a mod beneath draws. Whichever mod is higher wins that reply; a mod above
+  that wraps with `next(e)` coexists.
+- **The navigator cannot be taken away.** A pane belongs to one mod; with several,
+  they become tabs. A greedy mod above Synaptik removed its in-place marks and
+  band lines — and the navigator kept working: ↑/↓, verbs, comments, the
+  suggestion.
+
+**Decisions:**
+1. **The band composes** with `next(e)`, Synaptik's lines last under a header —
+   except **while reviewing**, when its band stands alone as the key legend for
+   that mode. Brief, bounded, and the one deliberate exception.
+2. **The reply is redrawn only when needed:** while the navigator holds the
+   keyboard, or when a block in that piece of the reply is marked or being
+   commented. Otherwise it is passed through with `next(e)`. Most replies are
+   never marked, so for most of a session Synaptik is invisible in the chain.
+3. **Everything essential lives in the navigator.** The in-place view is a bonus
+   another mod can take; the function must survive any neighbour (bears on #19).
+
+**Rejected:** calling `next(e)` for the reply and discarding the result — other
+mods would run, nothing of theirs would show, and the reply would be drawn twice.
+
+**Known risk, accepted for now:** while Synaptik redraws a reply it draws the
+**transcript's** text. A mod beneath it that changes a reply's text — hiding
+secrets, translating — is bypassed for that reply. Decision 2 narrows the window
+to reviewing and marked pieces; it does not close it. Revisit if such a mod
+appears; the upstream fix is a way to share one reply drawing (#23).
+
+---
+
 ## 4. MVP definition
 
 **The whole of it:**
@@ -1633,6 +1673,7 @@ already considered and cut for a reason.
 | D30 | Send by live suggestion | 🟡 provisional |
 | D31 | The navigator pane | 🟡 provisional — depends on A/B |
 | D32 | Key bindings belong to the person | ✅ settled |
+| D33 | Share surfaces with other mods; redraw the reply only when needed | ✅ settled |
 
 ### Open questions, by weight
 
@@ -1734,7 +1775,9 @@ the numbers are not decision numbers.
     through. **Suggestion:** the last proposed wins; Synaptik re-proposes when the
     navigator takes the keyboard (its `ui.focus` with origin `plugin` — the
     pane's own redraws miss a round trip through another mod's tab, since a
-    hidden pane is not redrawn) and when it is left.
+    hidden pane is not redrawn) and when it is left. **Chain order follows
+    `--plugin-dir` order**; a greedy mod above Synaptik takes its in-place view
+    but not the navigator. Decisions in D33.
 16. **Following terminal scrolling — dropped for now** (2026-10-15). Estimating
     on-screen blocks from `onScreen` was never steady. If it returns: an honest
     coarse indicator (reply above / below / in view, or a thumb from
