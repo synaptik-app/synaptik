@@ -1,0 +1,5 @@
+{
+  "name": "neighbour",
+  "version": "0.0.0-test",
+  "description": "Test bench companion: a well-behaved mod sharing the band, panes, the reply and the prompt box with Synaptik (issue #12)."
+}

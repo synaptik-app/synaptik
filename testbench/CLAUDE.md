@@ -10,7 +10,13 @@ Start it from this folder with the mod loaded:
 claude --plugin-dir ../hosts/claude-code
 # classic renderer, this launch only (issue #11):
 CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 claude --plugin-dir ../hosts/claude-code
+# next to another mod (issue #12): the test bench's own neighbour mod
+claude --plugin-dir ../hosts/claude-code --plugin-dir ./neighbour-mod
 ```
+
+`neighbour-mod/` is a deliberately well-behaved companion mod: it shares the
+band, a pane, the reply and the prompt box with Synaptik and always calls
+`next(e)`, so anything that breaks points at Synaptik.
 
 ## Running a test
 
@@ -24,6 +30,7 @@ When the person asks to run a test — "run the rendering test", "run split",
 | nesting | `fixtures/nesting.md` |
 | long | `fixtures/long.md` |
 | all, everything, whole test | every fixture above, in that order |
+| neighbour | `fixtures/neighbour.md` — only with `neighbour-mod` loaded; not part of "all" |
 
 **Rules — the replies must be identical every run, or results are not comparable:**
 
@@ -60,7 +67,7 @@ Then:
 3. Offer to post the summary as a comment on the matching GitHub issue, and
    **post only after the person says yes**:
    - classic renderer → #11
-   - other mods enabled → #12
+   - other mods enabled, or the neighbour test → #12
    - a platform, terminal or surface other than macOS fullscreen → #13
    - anything else → ask which issue
    Use `gh issue comment <n> --body ...` from the repository root.
