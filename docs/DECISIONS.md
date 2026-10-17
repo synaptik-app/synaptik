@@ -1708,7 +1708,12 @@ the numbers are not decision numbers.
     with text since the last prompt, tool results skipped (`src/spike-turn.ts`,
     tested) — and numbers blocks across its pieces. Phase 1 keeps both.
 13. **The mod cannot see how Claude Code wraps Markdown**, so nothing it draws can
-    be guaranteed to line up with the reply's on-screen lines.
+    be guaranteed to line up with the reply's on-screen lines. Nor can it adjust
+    Claude Code's drawing: a render hook's `next(e)` returns an **opaque handle**
+    (`{ type: 'engine', ref }`), to place or wrap whole, never to edit. Changing
+    part of a reply means redrawing all of it, Claude Code's frame (left margin,
+    `⏺` bullet) included — copied by the mod, so it can drift if Claude Code
+    changes it. Upstream request: #23.
 14. **Esc raises no `ui.focus`**; the navigator's own `isFocused` prop is the
     reliable signal. **An `Input` keeps typed text** across redraws under the
     same key and value — each opening needs a fresh key.
