@@ -1287,6 +1287,15 @@ snapshotting, no re-reading, no stale line numbers. It is D24's guarantee
 ("only the last turn, only once it is complete") extended to the files, and the
 same reasoning as D5: derive once from fixed input.
 
+*Caveat:* the agent is idle, but the person is not — they can edit a file, or run
+a `!` command, mid-review, and a background agent can too. Rare, and the person
+did it, but line numbers can then shift; re-read on opening a file rather than
+caching across the review.
+
+The turn boundary is the same one the reply already uses: **the whole turn is the
+reply** (§11 item 12, fixed in #25), so text and files written between tool calls
+belong to the same review.
+
 An earlier draft of this entry treated files as a separate feature with their own
 lifecycle, and argued the stability case only for diffs (frozen) and not for
 created files (live). The turn boundary already covers both.
@@ -1304,6 +1313,10 @@ under time pressure, not writing four comments. Review belongs *after* the chang
 lands.
 
 #### Surface: the navigator lists files; ⏎ opens one
+
+*Depends on the navigation model (#19).* This surface is model A — a navigator
+pane with ↑/↓ for rows and ←/→ for verbs. Under model B there is no navigator to
+list files in, and file review needs its own entry point.
 
 The navigator (`synaptik-map`, SPEC §10) already lists the reply's blocks. Files
 the turn touched are listed in it too, below the blocks. `⏎` on a file opens a
@@ -1335,14 +1348,12 @@ Paths come from the `Edit`/`Write` tool calls in `$.session.messages()` (newest
 4,096 entries) — so the mod knows which files the turn touched **even when the
 reply never mentions them**.
 
-⚠️ **Precondition to verify first:** whether `messages()` entries expose a tool
-call's *input* (the `file_path`), or only a summary of the call. The reference
-says what `messages()` returns but not the entry shape. **The whole entry rests
-on this** — check the types before building.
-
-Fallback if it does not: `git status` for changed paths (imprecise about which
-turn, mixes in your own uncommitted work, and needs a repo), or a `/command`
-taking a path explicitly — the simplest first version, no inference at all.
+**Precondition verified (2026-10-17, types of 2.1.287):** each `messages()` row
+carries `toolUses[]`, and every entry has `input` — "the arguments the model gave
+it" — as well as `result` and `text`. So an `Edit` or `Write` call gives its
+`file_path`, and an `Edit` call gives its own before/after (`old_string` /
+`new_string`). No fallback needed; a `/command` taking a path stays a possible
+simplest first version.
 
 #### Why this is easier than the main feature, not harder
 
@@ -1384,9 +1395,11 @@ different axis and interleaving them with prose blocks would read as noise.
 - **Hunk-level verbs.** Accept/reject reads naturally on a hunk; comment and
   discuss read naturally on a line. Whether both granularities are needed, or
   lines suffice, is a feel question.
-- **Which diff source**, if `messages()` gives tool inputs: the `Edit` call's own
-  before/after, or `git diff` on the working tree. The latter needs nothing from
-  the transcript but cannot tell your edits from Claude's.
+- **Which diff source.** `messages()` does give tool inputs, so the choice is
+  real: the `Edit` call's own before/after says exactly what Claude changed;
+  `git diff` on the working tree shows the file as it stands but cannot tell
+  your edits from Claude's. Possibly both — Claude's change, with the file
+  around it.
 - **Many files in one turn.** A refactor touching twenty files makes the
   navigator long. Possibly a count with the files collapsed until opened.
 
