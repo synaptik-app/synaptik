@@ -77,6 +77,11 @@ const ACCENT = 'cyan'
 // reply fall back to Claude Code's own drawing.
 const SELECTED_BACKGROUND = 'selectionBg'
 
+// Claude Code's reply frame, redrawn by the mod: a 2-cell left margin and the
+// bullet on the reply's first line.
+const MARGIN = 2
+const BULLET = '⏺'
+
 // The transcript row of the reply being marked, for revealing it when a block
 // key cannot be scrolled to. Set while drawing; lost on reload.
 let replyRequestId = ''
@@ -359,17 +364,29 @@ export const register: Register = on => {
     const isTyping = await read($, isCommenting)
     const cursor = isNavigatorFocused ? await read($, focusedVerb) : ''
 
+    // The mod draws the reply itself, so it redraws Claude Code's frame too: the
+    // top margin, the 2-cell left margin, and the ⏺ bullet on the reply's first
+    // line. A mark's glyph sits in that margin, so marking moves nothing.
+    // Wrapping Claude Code's own drawing per block was tried: next(e) returns an
+    // opaque handle ({ type: 'engine', ref }), its spacing and margin baked in,
+    // so blocks drawn one by one gained gaps and lost the margin.
+    const margin = (glyph: string) => (
+      <Box width={MARGIN} flexShrink={0}>
+        <Text>{glyph}</Text>
+      </Box>
+    )
     let index = offset - 1
-    // Lines up with Claude Code's own drawing: no column of our own, and the
-    // top margin its reply rows carry. A 4-cell gutter made the reply read as a
-    // child of the row above it (a tool call's output).
     return (
       <Box flexDirection="column" marginTop={1}>
-        {segments.map(seg => {
+        {segments.map((seg, n) => {
+          const bullet = n === 0 && e.props.isFirstOfReply ? BULLET : ''
           if (!seg.isBlock) {
             return (
-              <Box marginTop={seg.hasGapBefore ? 1 : 0}>
-                <Markdown text={seg.text} />
+              <Box flexDirection="row" marginTop={seg.hasGapBefore ? 1 : 0}>
+                {margin(bullet)}
+                <Box flexGrow={1}>
+                  <Markdown text={seg.text} />
+                </Box>
               </Box>
             )
           }
@@ -385,10 +402,7 @@ export const register: Register = on => {
           return (
             <Box flexDirection="column" marginTop={seg.hasGapBefore ? 1 : 0}>
               <Box flexDirection="row">
-                {/* Only a marked block gets a 2-cell glyph column, so unmarked
-                    blocks line up exactly with Claude Code's drawing. A glyph
-                    placed absolutely in the margin was clipped. */}
-                {mark ? <Text>{GLYPH[mark]} </Text> : null}
+                {margin(mark ? GLYPH[mark] : bullet)}
                 <Box
                   flexGrow={1}
                   paddingLeft={seg.depth * 3}
@@ -398,7 +412,7 @@ export const register: Register = on => {
                 </Box>
               </Box>
               {isShownSelected && (
-                <Box flexDirection="row" paddingLeft={seg.depth * 3}>
+                <Box flexDirection="row" paddingLeft={MARGIN + seg.depth * 3}>
                   <Text dimColor>└ </Text>
                   {VERBS.map(v => (
                     <Button
@@ -412,7 +426,7 @@ export const register: Register = on => {
                 </Box>
               )}
               {isEditing || (commented[i] && mark === 'comment') ? (
-                <Box paddingLeft={seg.depth * 3 + 2}>
+                <Box paddingLeft={MARGIN + seg.depth * 3 + 2}>
                   <Text dimColor>→ {commented[i] ?? ''}</Text>
                 </Box>
               ) : null}
