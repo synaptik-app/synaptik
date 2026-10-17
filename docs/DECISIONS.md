@@ -987,8 +987,8 @@ A pane beside the transcript serves two jobs:
 
 1. **Keys** — the scroll trick for ↑/↓, the ring for ←/→ (D20 revision). Its
    verb buttons and comment field are drawn hidden; the reply shows the cursor.
-2. **Overview** — one bar per block sized by length; selected, on-screen and
-   off-screen bars distinct; staged blocks show their mark and opening words;
+2. **Overview** — one bar per block sized by length; selected, staged and
+   other bars distinct; staged blocks show their mark and opening words;
    comments under their block; `Your notes · ✓2 ✗1 ✎1` on top, the position at
    the bottom.
 
@@ -996,9 +996,10 @@ The overview exists because the pane could not be made narrow: a request for 4
 columns drew ~23, so the width is spent on content.
 
 **Limits found:** an unasked open waits undrawn below 144 columns; a module
-reload closes it; the width a person sets is remembered and wins. On-screen
-blocks are an estimate (§11, item 16). Mirroring the reply line-for-line was
-tried and dropped — the mod cannot see how the reply wraps.
+reload closes it; the width a person sets is remembered and wins. Two things
+were tried and dropped, both because the mod cannot see how the reply wraps:
+mirroring the reply line for line, and highlighting the blocks the terminal
+shows (§11, item 16).
 
 ---
 
@@ -1610,11 +1611,11 @@ the numbers are not decision numbers.
 15. **Coexistence with other mods.** The band hook answers without calling
     `next(e)`, so a mod beneath it may lose its band; phase 1's band should
     compose with what is beneath it. Panes: tabs.
-16. **Following terminal scrolling.** On-screen blocks are estimated from
-    `onScreen` and scaled to its row total; it is rough. Options: an honest
+16. **Following terminal scrolling — dropped for now** (2026-10-15). Estimating
+    on-screen blocks from `onScreen` was never steady. If it returns: an honest
     coarse indicator (reply above / below / in view, or a thumb from
-    `first`/`last`/`of`); a navigator that scrolls with the terminal; better
-    estimates for tables and code; or the upstream request below.
+    `first`/`last`/`of`), a navigator that scrolls with the terminal, or the
+    upstream request below.
 
 ### Extension points noted
 
