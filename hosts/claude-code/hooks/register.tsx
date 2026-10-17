@@ -360,12 +360,15 @@ export const register: Register = on => {
     const cursor = isNavigatorFocused ? await read($, focusedVerb) : ''
 
     let index = offset - 1
+    // Lines up with Claude Code's own drawing: no column of our own, and the
+    // top margin its reply rows carry. A 4-cell gutter made the reply read as a
+    // child of the row above it (a tool call's output).
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" marginTop={1}>
         {segments.map(seg => {
           if (!seg.isBlock) {
             return (
-              <Box marginTop={seg.hasGapBefore ? 1 : 0} paddingLeft={4}>
+              <Box marginTop={seg.hasGapBefore ? 1 : 0}>
                 <Markdown text={seg.text} />
               </Box>
             )
@@ -382,18 +385,20 @@ export const register: Register = on => {
           return (
             <Box flexDirection="column" marginTop={seg.hasGapBefore ? 1 : 0}>
               <Box flexDirection="row">
-                <Button key={blockKey(i)} plain label=" " onPress={() => update($, selected, () => i)} />
-                <Text> {mark ? GLYPH[mark] : ' '} </Text>
+                {/* Only a marked block gets a 2-cell glyph column, so unmarked
+                    blocks line up exactly with Claude Code's drawing. A glyph
+                    placed absolutely in the margin was clipped. */}
+                {mark ? <Text>{GLYPH[mark]} </Text> : null}
                 <Box
                   flexGrow={1}
-                  paddingLeft={seg.depth * 2}
+                  paddingLeft={seg.depth * 3}
                   backgroundColor={isShownSelected ? SELECTED_BACKGROUND : undefined}
                 >
                   <Markdown text={seg.text} />
                 </Box>
               </Box>
               {isShownSelected && (
-                <Box flexDirection="row" paddingLeft={1}>
+                <Box flexDirection="row" paddingLeft={seg.depth * 3}>
                   <Text dimColor>└ </Text>
                   {VERBS.map(v => (
                     <Button
@@ -407,7 +412,7 @@ export const register: Register = on => {
                 </Box>
               )}
               {isEditing || (commented[i] && mark === 'comment') ? (
-                <Box paddingLeft={4}>
+                <Box paddingLeft={seg.depth * 3 + 2}>
                   <Text dimColor>→ {commented[i] ?? ''}</Text>
                 </Box>
               ) : null}
