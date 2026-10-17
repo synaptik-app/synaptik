@@ -177,12 +177,20 @@ A rewrite changes the drawing only; the stored message is untouched.
 Each piece works out where its blocks start in the whole reply, so block
 numbering runs across pieces.
 
-Each block renders as its `Markdown`, with **no column of the mod's own**: unmarked
-blocks line up exactly with Claude Code's drawing, and the reply keeps the top
-margin Claude Code's rows carry. A marked block is prefixed with its glyph and a
-space (`✓ `, 2 cells). A 4-cell gutter made a reply after a tool call read as
-that tool's output; a glyph placed absolutely in the left margin was clipped.
-Nested items indent 3 cells per level.
+The mod draws the whole reply, so it redraws **Claude Code's frame** too: the
+top margin, a 2-cell left margin, and the `⏺` bullet on the reply's first line
+(first piece only). Each block is its `Markdown` beside that margin, lined up
+exactly with the vanilla drawing. A marked block's glyph sits **in the margin**
+(replacing the bullet on a marked first block), so marking moves nothing. Nested
+items indent 3 cells per level.
+
+Tried and dropped: a 4-cell gutter of the mod's own (a reply after a tool call
+read as that tool's output); a glyph placed absolutely left of the reply (clipped);
+no margin at all (text shifted 2 cells left of vanilla); and **wrapping Claude
+Code's own drawing per block** — `next(e)` returns an opaque handle
+(`{ type: 'engine', ref }`) with its spacing and margin baked in, so blocks drawn
+one by one gained gaps and lost the margin. A mod that changes part of a reply
+redraws all of it.
 
 - **Selected block:** the `Box` around its `Markdown` gets the theme key
   `selectionBg` as `backgroundColor` — Claude Code's own text-selection colour,
