@@ -828,7 +828,8 @@ persisted marks that survive a new message — not a confirm dialog.
 ---
 
 ### D27 — A throwaway spike, then two thin phases
-**Status:** settled · reviewed 2026-10-13, revised
+**Status:** settled · reviewed 2026-10-13, revised · **"throwaway" revised by D34**
+(2026-10-18): the spike evolves into phase 1
 
 Each phase is **thin but end-to-end** rather than a layer (all the parsing, then
 all the state, then all the UI), so something usable exists at the end of each.
@@ -1069,6 +1070,50 @@ mods would run, nothing of theirs would show, and the reply would be drawn twice
 secrets, translating — is bypassed for that reply. Decision 2 narrows the window
 to reviewing and marked pieces; it does not close it. Revisit if such a mod
 appears; the upstream fix is a way to share one reply drawing (#23).
+
+---
+
+### D34 — The spike evolves into phase 1
+**Status:** settled · added 2026-10-18 · **revises D27** ("the spike is throwaway")
+
+D27 called the spike throwaway: write it to answer questions, then delete it, and
+build phase 1 fresh from `SPEC.md`. By the end of spike 0 the code had outgrown
+that: tested against the bench's fixtures, the classic renderer and a second mod,
+with real fixes in it — the whole turn as the reply, multi-paragraph items, the
+shared band, focus handling, the suggestion's re-proposal.
+
+**Phase 1 evolves it, deliberately:**
+- **Keep** the hooks file's tested behaviour and the tested `src/` pieces
+  (`lastTurnText`, the compile step), renamed out of `spike-*`.
+- **Rewrite the segmenter** properly from SPEC §3 — the most naive part; tables,
+  quotes, code and multi-paragraph items with tests from the bench's fixtures.
+- **Add a tray module** for §5's state rules, with tests.
+- **Split the hooks file** (~700 lines) into a few files by surface.
+
+**Why not rewrite:** it would redo work that was tested against real use, and
+D27's reason — finding out whether rendering could work before building state on
+it — has been served. D27's other point stands: phases stay thin but end-to-end.
+
+---
+
+### D35 — In-place marks after review: a configuration option, on by default
+**Status:** settled · added 2026-10-18 · decided on #36
+
+While the navigator holds the keyboard the reply always shows the selection,
+menu, glyphs and comments. The question was what stays after Esc.
+
+**Decision:** glyphs and comment lines **stay on marked pieces** of the reply by
+default — the reply reads as the form you filled (D1). An option turns that off,
+so the reply shows marks **only while reviewing** and is otherwise left to Claude
+Code and other mods (D33). Tracked on #8.
+
+**Why both:** for someone using Synaptik alone, persistent marks are the better
+view. With other mods drawing on replies, or a mod that changes a reply's text,
+Synaptik's redraw of a marked piece takes that piece from them (D33). The option
+is the advice to give then: "switch off in-place marks after review".
+
+**Unaffected either way:** the navigator's overview, the band summary and the
+compiled prompt in the prompt box show everything staged.
 
 ---
 
@@ -1623,14 +1668,26 @@ One data point, not a verdict: D27 still holds that phase 1 is the real test.
 
 ## 9. Next step
 
-The spike is done (branch `spike/rendering`). Before phase 1:
+Spike 0 is done: tested against the bench's fixtures, the classic renderer (#11)
+and a second mod (#12); findings in D33 and §11, open work in GitHub issues.
 
-1. Decide the navigation model, A or B (§11, item 1).
-2. Decide the band wording left open, and what follows an edited suggestion
-   (§11, items 5–6).
-3. Test with another mod enabled (§11, item 15).
+**Before phase 1:** decide the navigation model (#19). Every input is in — the
+pane is needed for the classic renderer regardless; in fullscreen, ↑/↓ for blocks
+with ←/→ for verbs needs a pane too (the band cannot tell them apart, tested
+2026-10-18).
 
-Then phase 1, built fresh from `SPEC.md` — the spike is throwaway code.
+**Phase 1 evolves the spike** (D34), in order:
+1. the segmenter, rewritten from SPEC §3 with tests;
+2. the tray and compile modules, with tests;
+3. the hooks shell split by surface — reply (whole turn, redraw only when
+   needed, D35's option), navigator, shared band, suggestion;
+4. minimal versions of the edge cases: navigator not on screen (#20), classic
+   mode (#31);
+5. the test bench passing; a baseline on #13;
+6. packaging — marketplace install and README.
+
+Not blocking: wording and the edited suggestion (#21), configuration (#8), mouse
+(#14), multi-line comments (#16), code and tables (#5, #6), platforms (#13).
 
 **This file is no longer the working document.** It records why the design is
 what it is. When a decision changes, update it here *and* in `SPEC.md`; when
@@ -1674,6 +1731,8 @@ already considered and cut for a reason.
 | D31 | The navigator pane | 🟡 provisional — depends on A/B |
 | D32 | Key bindings belong to the person | ✅ settled |
 | D33 | Share surfaces with other mods; redraw the reply only when needed | ✅ settled |
+| D34 | The spike evolves into phase 1 (revises D27) | ✅ settled |
+| D35 | In-place marks after review: configurable, on by default | ✅ settled |
 
 ### Open questions, by weight
 
