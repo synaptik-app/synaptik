@@ -241,22 +241,38 @@ Hook: `ui.render` with `{ component: 'AbovePrompt' }`. One instance, drawn to
 entry key goes past it to the navigator (§10).
 
 The band never names a component ("pane", "band") or uses jargon ("marks"). It
-says what you can do now. Up to two lines, the last one sitting just above the
-prompt:
+says what you can do now, under a header — each line led by `⎿`, as Claude Code
+nests its own output — so with several mods in the band it is clear which lines
+are Synaptik's:
+
+```
+Synaptik · respond to the reply in place
+⎿  1 accepted · 1 rejected
+⎿  tab to take it into the prompt · ctrl+s to continue responding
+```
 
 | Line | Shows |
 |---|---|
-| Summary *(only when something is staged)* | `2 accepted · 1 rejected · 1 comment` |
-| Action *(always)* | what the keys do right now |
+| Header *(always)* | `Synaptik · respond to the reply in place` |
+| Summary *(only when something is staged)* | `⎿  2 accepted · 1 rejected · 1 comment` |
+| Action *(always, last, just above the prompt)* | what the keys do right now |
 
 The action line:
 
 | State | Text |
 |---|---|
-| Not in the navigator, nothing staged | `Synaptik · ctrl+s to respond in place` |
-| Not in the navigator, something staged | `Synaptik · ctrl+s to continue responding` |
-| Suggestion showing in the prompt box | `Synaptik · tab to take it into the prompt · ctrl+s to continue responding` |
-| In the navigator | `Block 3 of 12 · ↑↓ move · ←→ choose · ⏎ apply · esc done` |
+| Not in the navigator, nothing staged | `⎿  ctrl+s to respond in place` |
+| Not in the navigator, something staged | `⎿  ctrl+s to continue responding` |
+| Suggestion showing in the prompt box | `⎿  tab to take it into the prompt · ctrl+s to continue responding` |
+| In the navigator | `⎿  Block 3 of 12 · ↑↓ move · ←→ choose · ⏎ apply · esc done` |
+
+**The band is shared with every mod.** A hook that answers without `next(e)`
+hides every mod beneath it. Outside review, Synaptik draws what `next(e)` returns
+and adds its lines below it; while the navigator holds the keyboard, Synaptik's
+band stands alone as the key legend for that mode. Claude Code's own drawing
+(an engine node) may sit in what `next(e)` returns, and **an engine node under a
+`Box` with `width` is refused** — the whole band falls back to Claude Code's own —
+so `width` is set only on the box around Synaptik's own lines.
 
 The key named is the person's own binding for `abovePrompt:focus` in the `Chat`
 context, read from `~/.claude/keybindings.json` (a plain read; the mod never

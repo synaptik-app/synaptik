@@ -1724,9 +1724,16 @@ the numbers are not decision numbers.
 
 ### To test
 
-15. **Coexistence with other mods.** The band hook answers without calling
-    `next(e)`, so a mod beneath it may lose its band; phase 1's band should
-    compose with what is beneath it. Panes: tabs.
+15. **Coexistence with other mods** — tested 2026-10-17 with the bench's
+    `neighbour-mod` (#12). Panes: tabs, both work. **Band:** now composed with
+    `next(e)` outside review, alone while reviewing; Synaptik's lines sit under a
+    `Synaptik ·` header. An engine node under a `Box` with `width` is refused
+    (undocumented). Another mod's band button adds a stop before the navigator for
+    the entry key. **Reply: one mod redraws it** — whichever is higher in the chain
+    wins; a mod beneath Synaptik keeps its drawing only on replies Synaptik passes
+    through. **Suggestion:** the last proposed wins; Synaptik re-proposes when the
+    navigator gains or loses focus (the box redraws the dim text only once the
+    prompt has the keys again).
 16. **Following terminal scrolling — dropped for now** (2026-10-15). Estimating
     on-screen blocks from `onScreen` was never steady. If it returns: an honest
     coarse indicator (reply above / below / in view, or a thumb from
