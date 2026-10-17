@@ -504,6 +504,14 @@ export const register: Register = on => {
     if (!result.deny) {
       await update($, focusedVerb, () => target ?? '')
     }
+    // The navigator taking the keyboard — by the entry key, its tab or a click —
+    // raises this with origin 'plugin' (its autoFocus). Re-propose then: the
+    // prompt box keeps the last suggestion proposed, and another mod may have
+    // replaced ours meanwhile (issue #12).
+    if (!result.deny && e.origin.kind === 'plugin' && target === VERBS[0].key) {
+      isNavigatorFocused = true
+      void suggestTray($)
+    }
     return result
   }).catch(($, e, next) => next(e))
 
@@ -522,10 +530,10 @@ export const register: Register = on => {
     observe(`pane drawn ${e.props.placement} ${e.props.bodyColumns}×${e.props.scroll.bodyRows} focused=${e.props.isFocused}`)
     if (e.props.isFocused !== isNavigatorFocused) {
       isNavigatorFocused = e.props.isFocused
-      // Re-propose on entering and on leaving: the prompt box keeps one
-      // suggestion, the last proposed, and another mod may have replaced ours
-      // while the person was elsewhere (issue #12).
-      void suggestTray($)
+      // Re-propose on leaving. Entering is handled by ui.focus: a pane hidden
+      // behind another mod's tab is not redrawn, so this flag can miss a
+      // round trip through another pane.
+      if (!isNavigatorFocused) void suggestTray($)
       $.ui.invalidate('ui.render')
     }
     const rows = Math.max(6, e.props.scroll.bodyRows)

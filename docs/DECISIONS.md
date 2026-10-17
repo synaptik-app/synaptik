@@ -1732,8 +1732,9 @@ the numbers are not decision numbers.
     the entry key. **Reply: one mod redraws it** — whichever is higher in the chain
     wins; a mod beneath Synaptik keeps its drawing only on replies Synaptik passes
     through. **Suggestion:** the last proposed wins; Synaptik re-proposes when the
-    navigator gains or loses focus (the box redraws the dim text only once the
-    prompt has the keys again).
+    navigator takes the keyboard (its `ui.focus` with origin `plugin` — the
+    pane's own redraws miss a round trip through another mod's tab, since a
+    hidden pane is not redrawn) and when it is left.
 16. **Following terminal scrolling — dropped for now** (2026-10-15). Estimating
     on-screen blocks from `onScreen` was never steady. If it returns: an honest
     coarse indicator (reply above / below / in view, or a thumb from
