@@ -172,7 +172,12 @@ A rewrite changes the drawing only; the stored message is untouched.
 Each piece works out where its blocks start in the whole reply, so block
 numbering runs across pieces.
 
-Each block renders as a row: the mark glyph, then the block as `Markdown`.
+Each block renders as its `Markdown`, with **no column of the mod's own**: unmarked
+blocks line up exactly with Claude Code's drawing, and the reply keeps the top
+margin Claude Code's rows carry. A marked block is prefixed with its glyph and a
+space (`✓ `, 2 cells). A 4-cell gutter made a reply after a tool call read as
+that tool's output; a glyph placed absolutely in the left margin was clipped.
+Nested items indent 3 cells per level.
 
 - **Selected block:** the `Box` around its `Markdown` gets the theme key
   `selectionBg` as `backgroundColor` — Claude Code's own text-selection colour,
@@ -653,9 +658,10 @@ Code tab. The mod draws in both; `Raster` and `Image` are terminal-only and
 
 Answered by the spike on Claude Code 2.1.287 (macOS, fullscreen terminal).
 
-- [x] **Markdown fidelity.** Per-block `Markdown` was used throughout testing
-      with no regression reported. Not compared side by side for every
-      construct; list numbering restarting per item is unchecked. ⚠️
+- [x] **Markdown fidelity.** Compared on and off on a reply with a numbered
+      list, nested items, a table, a code block and a blockquote (2026-10-17):
+      identical, numbering kept (`1. 2. 3.`). The only differences were the
+      mod's own column and a lost top margin, both fixed.
 - [x] **Background behind block text.** `Box` takes `backgroundColor`;
       `Markdown` does not. A 1-cell `Box` with a background beside the block
       stretches to its height — the accent bar.

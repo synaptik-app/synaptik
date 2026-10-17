@@ -1412,7 +1412,7 @@ rather than the published docs.
 | Q6 | `$.model.fork` signature and context | From the types: one tool-less question over the session's own transcript, same model and system prompt, cached. Concurrency unknown. Not exercised. |
 | Q8 | The hook framework in depth | Learned in use: `on(event, matcher, hook)`, `.catch` for fail-to-vanilla, render hooks may not write state but may `$.ui.invalidate`, `$.state` contracts in `types/`. Chain order among several mods untested (§11, item 15). |
 | Q9 | Is `$.model.classify` cheap enough per thread turn? | Open — E6 only. |
-| Q10 | Can the `AssistantMessage` hook match Claude Code's markdown? | **Acceptable in use** with per-block `Markdown`; not compared construct by construct. A background behind text needs a `Box` beside it, not on `Markdown`. |
+| Q10 | Can the `AssistantMessage` hook match Claude Code's markdown? | **Yes.** Compared on and off construct by construct (lists, nesting, table, code, blockquote): identical once the mod draws no column of its own and keeps the top margin. A `Box` background around `Markdown` paints behind the text. |
 | Q11 | Is `prompt.suggest` a separate layer beside typed text? | **No** — it shows only in an empty box. Turned out not to matter: D30. |
 | Q12 | Do mouse clicks work in the terminal? | **Yes**, on `Button`s drawn in a reply, in the fullscreen terminal. |
 
@@ -1610,7 +1610,9 @@ the numbers are not decision numbers.
    warning, which is no longer accurate. Escalated.
 7. **Whether to veto Claude Code's own suggestions** (a `prompt.suggest` hook
    answering `{ isShown: false }`) while feedback is staged. Would be interference
-   with Claude Code's behaviour — decide deliberately.
+   with Claude Code's behaviour — decide deliberately. Seen in use 2026-10-17: a
+   one-line suggestion stood where the multi-line compiled prompt was expected,
+   most likely Claude Code's own after-turn suggestion replacing ours.
 
 ### Limits found
 
@@ -1623,8 +1625,10 @@ the numbers are not decision numbers.
     configure`.
 11. **Engine-written rows are recognised by text** (`No response requested.`).
 12. **A reply split around tool calls** arrives as several `AssistantMessage`
-    pieces. The spike numbers blocks across pieces by locating each in the full
-    text; phase 1 needs this from the start.
+    pieces, and the transcript holds them as separate messages. The spike adopts
+    only the last message with text, so **text before a tool call is not
+    markable** — confirmed 2026-10-17. Phase 1 must treat the whole turn as the
+    reply, numbering blocks across its pieces.
 13. **The mod cannot see how Claude Code wraps Markdown**, so nothing it draws can
     be guaranteed to line up with the reply's on-screen lines.
 14. **Esc raises no `ui.focus`**; the navigator's own `isFocused` prop is the
