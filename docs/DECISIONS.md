@@ -710,6 +710,15 @@ comment shows under its block as `→ text`, not a second ✎.
 The original gutter's promise survives: it is the mod's own column, so it cannot
 fail by restyling Claude's text.
 
+**Revision 2026-10-17 — the selection colour instead of a bar.** A `Box`
+background wrapped around a block's `Markdown` does paint behind the text (Q10's
+open half, answered). The selected block now takes Claude Code's text-selection
+colour, theme key `selectionBg`, and the cyan bar goes: the reply carries no
+accent colour, and the theme key follows light and dark themes. Tried: `gray`
+(too strong), `blackBright` (close, still bright), a raw hex (too faint), a
+background for staged blocks (too much colour in the reply). `selectionBg` comes
+from the binary, not the documented API.
+
 ---
 
 ### D22 — Conflicting marks are not resolved by the mod
