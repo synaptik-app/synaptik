@@ -54,6 +54,9 @@ A closing paragraph after the final list.
 - The minimap fits all blocks, sized by length
 - The tall paragraph in section two shows as a taller bar
 - Block N of M counts every block, headings excluded
-- The transcript scrolls to the reply when the selection moves
+- Review starts on the last block, already on screen
+- Moving up into the first third jumps the view to the reply's top
+- Moving back down into the last third jumps the view to the reply's end
+- In the middle third the view stays where you scroll it
 - Marks spread across sections all reach the suggestion in reading order
 - The navigator's staged rows show the right opening words

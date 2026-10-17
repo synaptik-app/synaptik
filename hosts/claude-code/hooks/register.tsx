@@ -58,7 +58,6 @@ const PANE = 'synaptik-map'
 const PANE_ANCHOR = 'pane-anchor'
 const PANE_COLUMNS = 4
 
-const blockKey = (i: number) => `block-${i}`
 
 // A navigator row is bar, space, glyph, space (4 cells), then the block's
 // words and "..." (3 cells), sized to the pane's current width less a 2-cell
@@ -85,6 +84,12 @@ const BULLET = '⏺'
 // The transcript row of the reply being marked, for revealing it when a block
 // key cannot be scrolled to. Set while drawing; lost on reload.
 let replyRequestId = ''
+
+// The turn-duration row Claude Code draws after a turn (`✻ Cogitated for 19s`),
+// the newest one seen. Scrolling it to the window's bottom brings the end of the
+// reply above it into view — the reply itself, taller than the window, can only
+// be scrolled to its top. Lost on reload.
+let turnRowId = ''
 
 // Whether the navigator holds the keyboard. Esc raises no ui.focus event, so
 // the only reliable source is the navigator's own drawing (Pane isFocused);
@@ -136,7 +141,10 @@ async function adoptLastReply($: EngineInterface) {
   observe(`adopt ${messages.length} messages, picked ${text.length} chars`)
   if (text !== (await read($, lastText))) {
     await update($, lastText, () => text)
-    await update($, selected, () => 0)
+    // Start on the last block: a long reply leaves the terminal at its end, so
+    // that is the block already on screen. Review runs upwards from there.
+    const count = segment(text).filter(s => s.isBlock).length
+    await update($, selected, () => Math.max(0, count - 1))
     await update($, marks, () => ({}))
     await update($, comments, () => ({}))
     await update($, isCommenting, () => false)
@@ -159,13 +167,25 @@ async function openPane($: EngineInterface) {
 async function moveSelection($: EngineInterface, by: number) {
   await finishComment($)
   const count = segment(await read($, lastText)).filter(s => s.isBlock).length
+  const before = await read($, selected)
   await update($, selected, s => Math.max(0, Math.min(count - 1, s + by)))
-  const key = blockKey(await read($, selected))
-  const shown = await $.ui.scroll({ to: { key } })
-  observe(`reveal ${key}: ${JSON.stringify(shown)}`)
-  if (shown.deny && replyRequestId) {
-    const reply = await $.ui.scroll({ to: { requestId: replyRequestId } })
-    observe(`reveal reply ${replyRequestId.slice(0, 12)}: ${JSON.stringify(reply)}`)
+  // The transcript can be scrolled to a whole row only, never to a block in a
+  // reply, and a reply taller than the window always lands on its top. So:
+  // entering the first third of the blocks brings the reply's top into view;
+  // entering the last third brings the row after it (the turn's duration) to the
+  // window's bottom, which shows the reply's end. The middle is the person's to
+  // scroll (the wheel, PgUp/PgDn).
+  const now = await read($, selected)
+  const topThird = Math.ceil(count / 3)
+  const bottomThird = count - Math.ceil(count / 3)
+  if (replyRequestId && now < topThird && before >= topThird) {
+    const shown = await $.ui.scroll({ to: { requestId: replyRequestId }, block: 'start' })
+    observe(`reveal reply top: ${JSON.stringify(shown)}`)
+  }
+  if (now >= bottomThird && before < bottomThird) {
+    if (!turnRowId) return observe('reveal reply end: no turn row seen')
+    const shown = await $.ui.scroll({ to: { requestId: turnRowId }, block: 'end' })
+    observe(`reveal reply end via ${turnRowId.slice(0, 12)}: ${JSON.stringify(shown)}`)
   }
 }
 
@@ -339,6 +359,16 @@ export const register: Register = on => {
   on('turn.complete', async ($, e, next) => {
     await adoptLastReply($)
     await update($, isWorking, () => false)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // The row after a turn, remembered so the reply's end can be scrolled into
+  // view. Drawn by Claude Code unchanged.
+  on('ui.render', { component: 'TurnDuration' }, ($, e, next) => {
+    if (e.requestId !== turnRowId) {
+      turnRowId = e.requestId
+      observe(`turn row ${e.requestId.slice(0, 12)}`)
+    }
     return next(e)
   }).catch(($, e, next) => next(e))
 
