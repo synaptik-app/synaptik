@@ -483,9 +483,21 @@ with a redraw.
 ### Following the selection in the transcript
 
 `$.ui.scroll({ to: { key } })` does not find elements drawn inside a transcript
-message, so the transcript can only be scrolled to the **whole reply**
-(`to: { requestId }`), which counts as the person's input when a navigator key
-caused it.
+message, so the transcript scrolls only to **whole rows** (`to: { requestId }`),
+which counts as the person's input when a navigator key caused it. A reply
+taller than the window always lands on its **top**, whatever the alignment. So:
+
+- **Review starts on the last block.** A long reply leaves the terminal at its
+  end, so the last block is the one already on screen; review runs upwards.
+- **Into the first third** of the blocks: the reply is scrolled to its top.
+- **Into the last third:** the row Claude Code draws after the turn
+  (`TurnDuration`, `✻ … for Ns`) is scrolled to the window's bottom, which shows
+  the reply's end just above it. Its id is remembered from its own render hook,
+  which passes it through unchanged.
+- **The middle third** is the person's to scroll (wheel, PgUp/PgDn).
+
+⚠️ The newest turn row seen is used; a turn drawn without one would scroll to an
+older turn's row.
 
 The navigator does not follow the terminal's own scrolling. Estimating which
 blocks are on screen from `e.props.onScreen` was tried and dropped: the mod
