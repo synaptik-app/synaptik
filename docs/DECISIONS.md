@@ -1625,10 +1625,11 @@ the numbers are not decision numbers.
     configure`.
 11. **Engine-written rows are recognised by text** (`No response requested.`).
 12. **A reply split around tool calls** arrives as several `AssistantMessage`
-    pieces, and the transcript holds them as separate messages. The spike adopts
-    only the last message with text, so **text before a tool call is not
-    markable** — confirmed 2026-10-17. Phase 1 must treat the whole turn as the
-    reply, numbering blocks across its pieces.
+    pieces, and the transcript holds them as separate messages. Adopting only the
+    last message left text before a tool call unmarkable (confirmed 2026-10-17).
+    **Fixed 2026-10-17:** the spike adopts the whole turn — every assistant row
+    with text since the last prompt, tool results skipped (`src/spike-turn.ts`,
+    tested) — and numbers blocks across its pieces. Phase 1 keeps both.
 13. **The mod cannot see how Claude Code wraps Markdown**, so nothing it draws can
     be guaranteed to line up with the reply's on-screen lines.
 14. **Esc raises no `ui.focus`**; the navigator's own `isFocused` prop is the
