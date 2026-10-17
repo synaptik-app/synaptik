@@ -1695,9 +1695,13 @@ the numbers are not decision numbers.
 
 8. **The docked pane is ~23 columns**; a request for 4 was not honoured, and no
    way to go narrower was found.
-9. **The transcript scrolls to the whole reply, never to a block**:
+9. **The transcript scrolls to whole rows, never to a block**:
    `$.ui.scroll({ to: { key } })` does not find elements inside a transcript
-   message.
+   message, and a reply taller than the window always lands on its top. Worked
+   around 2026-10-17: review starts on the last block; the reply's top is
+   revealed on entering the first third, its end on entering the last third (by
+   scrolling the turn-duration row after it to the window's bottom); the middle
+   is scrolled by hand.
 10. **Key bindings cannot ship with the mod** (D32). Candidate: `/synaptik
     configure`.
 11. **Engine-written rows are recognised by text** (`No response requested.`).
