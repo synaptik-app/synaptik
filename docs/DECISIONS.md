@@ -1133,6 +1133,38 @@ compiled prompt in the prompt box show everything staged.
 
 ---
 
+### D36 — Distribution: a release zip now, a marketplace at v0.1, npm held
+**Status:** settled · added 2026-10-18
+
+How people get Synaptik before and after phase 1.
+
+**Now: a zip on every release.** Pushing a tag `v<version>` builds
+`synaptik-<version>.zip` from git and drafts a GitHub release with it
+(`release.yml`). It is unzipped into `~/.claude/skills/` (every session) or passed
+to `--plugin-dir` (one session). A file is easier to hand over than a clone,
+works while the repository is private, and works on machines with no network.
+Releases are cut when something visible lands, not after every PR.
+
+**At v0.1 (#52): the repository becomes its own marketplace** —
+`.claude-plugin/marketplace.json` listing `./hosts/claude-code`, installed with
+`claude plugin marketplace add synaptik-app/synaptik`. Tried and working in #54,
+then held back: by-name install and `claude plugin update` are worth offering
+once phase 1 is done, not for an alpha. The zip stays on each release.
+
+**npm: the scope is reserved, nothing is published.** `@synaptik-app` exists on
+npm (`synaptik` unscoped is taken). A marketplace entry can name an npm package,
+fetched through the person's own npm setup — which is what makes a corporate
+mirror work — but the marketplace file itself cannot come from npm, so npm adds a
+moving part without removing one. `claude plugin install <package>@npm` appears
+in the CLI's help (2.1.287) but not in the docs, and is untested. Revisit if
+Claude Code installs plugins from npm directly.
+
+**Why not npm or a marketplace first:** the zip covers every case seen so far —
+colleagues, a private repository, air-gapped machines (a mirror can host the zip
+as an `archive` source) — with one artifact and no account on anyone's side.
+
+---
+
 ## 4. MVP definition
 
 **The whole of it:**
@@ -1699,7 +1731,7 @@ navigator's design is finished alongside (#39).
 4. minimal versions of the edge cases: navigator not on screen (#20), classic
    mode (#31);
 5. the test bench passing; a baseline on #13;
-6. packaging — marketplace install and README.
+6. packaging — marketplace install and README (D36; the zip ships already).
 
 Not blocking: wording and the edited suggestion (#21), configuration (#8), mouse
 (#14), multi-line comments (#16), code and tables (#5, #6), platforms (#13).
