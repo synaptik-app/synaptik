@@ -1,0 +1,54 @@
+name: release
+
+# Pushing a tag v<version> builds synaptik-<version>.zip and attaches it to a
+# draft release. The tag must match plugin.json's version: that string is what
+# Claude Code shows, and what an update compares.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+env:
+  CLAUDE_CODE_VERSION: 2.1.287
+  DISABLE_AUTOUPDATER: '1'
+
+jobs:
+  package:
+    name: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Tag matches plugin.json
+        run: |
+          version=$(node -p "require('./hosts/claude-code/.claude-plugin/plugin.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME but plugin.json says $version"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      # Only tracked files: the generated API types and anything ignored stay out.
+      - name: Build the zip
+        run: git archive --format=zip --prefix=synaptik/ -o "synaptik-$VERSION.zip" HEAD:hosts/claude-code
+
+      - run: npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+      - name: Validate and test the packaged plugin
+        run: |
+          mkdir unpacked && unzip -q "synaptik-$VERSION.zip" -d unpacked
+          claude plugin validate unpacked/synaptik
+          claude plugin test unpacked/synaptik
+
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=$([[ "$VERSION" == *-* ]] && echo --prerelease || true)
+          gh release create "$GITHUB_REF_NAME" "synaptik-$VERSION.zip" \
+            --draft $prerelease --title "Synaptik $VERSION" --generate-notes
