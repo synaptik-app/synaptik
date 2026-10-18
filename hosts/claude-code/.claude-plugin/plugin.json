@@ -1,6 +1,6 @@
 {
   "name": "synaptik",
-  "version": "0.1.0-dev",
+  "version": "0.1.0-alpha.1",
   "description": "Mark up the agent's response in place — accept, reject, comment — and send the marks as one prompt.",
   "types": "./types/index.d.ts",
   "author": {
