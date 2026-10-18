@@ -1,6 +1,14 @@
 {
   "name": "synaptik",
-  "version": "0.0.0-spike",
-  "description": "SPIKE — throwaway rendering test for Synaptik. See docs/SPEC.md §15.",
-  "types": "./types/index.d.ts"
+  "version": "0.1.0-dev",
+  "description": "Mark up the agent's response in place — accept, reject, comment — and send the marks as one prompt.",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Mustafa Gündoğan",
+    "email": "mgundogan@synaptik.app",
+    "url": "https://github.com/mgundogan"
+  },
+  "homepage": "https://github.com/synaptik-app/synaptik",
+  "repository": "https://github.com/synaptik-app/synaptik",
+  "license": "Apache-2.0"
 }
