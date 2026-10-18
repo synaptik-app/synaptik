@@ -3,6 +3,7 @@
 // stay manual: "Mod on and off look the same apart from marks and the selection".
 
 import { expect, test } from 'claude-code/testing'
+import type { FoundElement } from 'claude-code/testing'
 
 import { arrow, check, ENGINE_DRAWING, pane, position, reply, start } from './engine'
 
@@ -29,7 +30,7 @@ test(check(F, 'Nested bullets sit under their parent'), async ($, on) => {
   const ui = await reply($, F)
   const boxes = await ui.findAll({ type: 'Box' })
   const nested = boxes.find(
-    b => JSON.stringify(b.children).includes('Nested bullet under it') && Number(b.props.paddingLeft ?? 0) > 0,
+    (b: FoundElement) => JSON.stringify(b.children).includes('Nested bullet under it') && Number(b.props.paddingLeft ?? 0) > 0,
   )
   expect(nested).toBeDefined()
 })
@@ -72,14 +73,14 @@ test(check(F, 'The selected block shows the selection background'), async ($, on
   await start($, on, F)
   const focused = await pane($, 'dock', true)
   const drawn = await reply($, F)
-  const withBackground = (await drawn.findAll({ type: 'Box' })).filter(b => b.props.backgroundColor === 'selectionBg')
+  const withBackground = (await drawn.findAll({ type: 'Box' })).filter((b: FoundElement) => b.props.backgroundColor === 'selectionBg')
   expect(withBackground.length).toBe(1)
   await drawn.unmount()
   await focused.unmount()
 
   await pane($, 'dock', false) // Esc: the navigator lets go of the keyboard
   const plain = await reply($, F)
-  const after = (await plain.findAll({ type: 'Box' })).filter(b => b.props.backgroundColor === 'selectionBg')
+  const after = (await plain.findAll({ type: 'Box' })).filter((b: FoundElement) => b.props.backgroundColor === 'selectionBg')
   expect(after.length).toBe(0)
   // Nothing marked and not reviewing: passed through to Claude Code (D33).
   expect(await plain.find({ type: 'Text', text: ENGINE_DRAWING })).toBeDefined()
