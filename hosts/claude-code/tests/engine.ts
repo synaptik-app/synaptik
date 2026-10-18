@@ -44,8 +44,19 @@ export function check(name: string, startsWith: string): string {
   return `${name} › ${line}`
 }
 
+// Every suggestion Synaptik proposed in the prompt box, in order; the last one
+// is what the box shows. Reset by `engine`.
+export const suggestions: string[] = []
+
+// The compiled prompt as last proposed, without the leading space that keeps
+// its first glyph clear of the cursor.
+export function suggested(): string {
+  return (suggestions[suggestions.length - 1] ?? '').replace(/^ /, '')
+}
+
 // Answers every engine call Synaptik makes, with `rows` as the transcript.
 export function engine(on: On, rows: Row[]) {
+  suggestions.length = 0
   const event = (name: string, fn: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => fn(e)) as never)
   const call = (name: string, value: (e: never) => unknown) =>
@@ -59,7 +70,11 @@ export function engine(on: On, rows: Row[]) {
   event('session.start', (e: { cwd: string }) => ({ cwd: e.cwd }))
   event('ui.scroll', () => ({}))
   event('ui.focus', () => ({}))
-  event('prompt.suggest', () => ({ isShown: true }))
+  event('prompt.suggest', (e: { text: string }) => {
+    suggestions.push(e.text)
+    return { isShown: true }
+  })
+  event('turn.start', (e: { turnId: string }) => ({ turnId: e.turnId }))
   // Claude Code's own drawing, when a hook passes a component through: a
   // marker, so a test can tell "Synaptik drew it" from "passed it on".
   event('ui.render', () => ({ type: 'Text', props: {}, children: [ENGINE_DRAWING] }))
@@ -123,4 +138,29 @@ export async function position(ui: Dollar) {
   const m = found?.text.match(/Block (\d+) of (\d+)/)
   if (!m) throw new Error('no "Block N of M" drawn')
   return { at: Number(m[1]), of: Number(m[2]) }
+}
+
+// Walks the navigator up from where it is until the selected block — the one
+// Markdown the classic (inline) navigator draws — matches; throws if none does.
+export async function select($: Dollar, ui: Dollar, match: RegExp) {
+  const { of } = await position(ui)
+  for (let i = 0; i <= of; i += 1) {
+    const selected = await ui.find({ type: 'Markdown' })
+    if (match.test(String(selected?.props.text ?? selected?.text ?? ''))) return
+    await arrow($, -1)
+  }
+  throw new Error(`no block matches ${match}`)
+}
+
+// Every block's text, first to last, by walking the classic navigator from the
+// last block up. Leaves the selection on the first block.
+export async function walk($: Dollar, ui: Dollar): Promise<string[]> {
+  const { of } = await position(ui)
+  const seen: string[] = []
+  for (let i = 0; i < of; i += 1) {
+    const selected = await ui.find({ type: 'Markdown' })
+    seen.unshift(String(selected?.props.text ?? selected?.text ?? ''))
+    await arrow($, -1)
+  }
+  return seen
 }

@@ -15,13 +15,15 @@
 
 import type { Register } from 'claude-code'
 
-const PANE = 'neighbour-pane'
 
-// Greedy mode, toggled by /neighbour greedy. A module variable: a reload resets
-// it to polite.
-let isGreedy = false
-
+// Everything lives inside register: the test kit loads this function as an
+// inline plugin on its own, without the rest of the module.
 export const register: Register = on => {
+  const PANE = 'neighbour-pane'
+
+  // Greedy mode, toggled by /neighbour greedy. A reload resets it to polite.
+  let isGreedy = false
+
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'neighbour',
