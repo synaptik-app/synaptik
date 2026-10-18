@@ -49,27 +49,29 @@ says so when chosen. Expect rough edges, and changes to keys and layout.
 Claude Code **v2.1.287+** in a terminal, or **v2.1.286+** in the Claude desktop
 app's Code tab. Mods are enabled by default; `claude --version` reports yours.
 
-Install it from this repository, which is its own marketplace:
+Download `synaptik-<version>.zip` from
+[Releases](https://github.com/synaptik-app/synaptik/releases), then either:
 
 ```bash
-claude plugin marketplace add synaptik-app/synaptik
-claude plugin install synaptik@synaptik-app
+# every session: unzip it into your skills directory
+unzip synaptik-0.1.0-alpha.1.zip -d ~/.claude/skills/
+
+# or one session only, straight from the zip
+claude --plugin-dir ./synaptik-0.1.0-alpha.1.zip
 ```
 
-It loads in every session from then on. `claude plugin update synaptik@synaptik-app`
-fetches a newer release; [Releases](https://github.com/synaptik-app/synaptik/releases)
-lists them. `/plugin` inside a session lists what loaded; `/synaptik` turns it off
-and on.
+`/plugin` inside a session lists what loaded (`synaptik@skills-dir` for the
+unzipped copy); `/synaptik` turns it off and on. To update, remove
+`~/.claude/skills/synaptik` and unzip the newer release. Installing by name from
+a marketplace comes with v0.1.
 
-To work on it, run it from a clone instead — for one session, reloading when
-files change:
+To work on it, run it from a clone — for one session, reloading when files
+change. It replaces an unzipped copy for that session:
 
 ```bash
 git clone https://github.com/synaptik-app/synaptik
 claude --plugin-dir ./synaptik/hosts/claude-code
 ```
-
-For that session the clone replaces the installed copy.
 
 A mod runs inside Claude Code with your own permissions and is not sandboxed.
 `claude plugin validate` on the plugin folder prints every event it handles and
