@@ -49,20 +49,31 @@ says so when chosen. Expect rough edges, and changes to keys and layout.
 Claude Code **v2.1.287+** in a terminal, or **v2.1.286+** in the Claude desktop
 app's Code tab. Mods are enabled by default; `claude --version` reports yours.
 
-Not yet published to a marketplace. Run it from a clone:
+Install it from this repository, which is its own marketplace:
+
+```bash
+claude plugin marketplace add synaptik-app/synaptik
+claude plugin install synaptik@synaptik-app
+```
+
+It loads in every session from then on. `claude plugin update synaptik@synaptik-app`
+fetches a newer release; [Releases](https://github.com/synaptik-app/synaptik/releases)
+lists them. `/plugin` inside a session lists what loaded; `/synaptik` turns it off
+and on.
+
+To work on it, run it from a clone instead — for one session, reloading when
+files change:
 
 ```bash
 git clone https://github.com/synaptik-app/synaptik
 claude --plugin-dir ./synaptik/hosts/claude-code
 ```
 
-`--plugin-dir` loads the mod for one session only and reloads it when files
-change. `/plugin` inside a session lists what loaded; `/synaptik` turns it off
-and on.
+For that session the clone replaces the installed copy.
 
 A mod runs inside Claude Code with your own permissions and is not sandboxed.
-`claude plugin validate ./synaptik/hosts/claude-code` prints every event it
-handles and every API call it makes, without running it.
+`claude plugin validate` on the plugin folder prints every event it handles and
+every API call it makes, without running it.
 
 ### Keys
 
