@@ -1011,6 +1011,12 @@ were tried and dropped, both because the mod cannot see how the reply wraps:
 mirroring the reply line for line, and highlighting the blocks the terminal
 shows (§11, item 16).
 
+**Classic renderer, 2026-10-18 (#31):** the same pane, placed inline, is a
+**block viewer** — the selected block in full with its neighbours, menu and
+comment — since the reply above cannot be redrawn once scrolled off. Sized once
+per reply; trimmed with PgUp/PgDn beyond a third of the screen. Fullscreen keeps
+the docked navigator with in-place review.
+
 ---
 
 ### D32 — Key bindings belong to the person
@@ -1794,7 +1800,10 @@ the numbers are not decision numbers.
 ### Limits found
 
 8. **The docked pane is ~23 columns**; a request for 4 was not honoured, and no
-   way to go narrower was found.
+   way to go narrower was found. **Kept pane sizes are global**: Claude Code keeps
+   one dock width and one inline height for all mods' panes, across sessions
+   (`pluginPanes.dockColumns` / `inlineRows` in `~/.claude.json`), set by any
+   resize; they override a mod's request. Clearing those keys resets them.
 9. **The transcript scrolls to whole rows, never to a block**:
    `$.ui.scroll({ to: { key } })` does not find elements inside a transcript
    message, and a reply taller than the window always lands on its top. Worked

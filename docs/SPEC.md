@@ -70,6 +70,7 @@ The message text is split into blocks at render time. Marks are keyed by
 | Table | yes |
 | Blockquote | yes |
 | Heading | **no** |
+| Horizontal rule (`---`) | **no** |
 | List item spanning several paragraphs | yes, as **one** block |
 
 **Every block accepts every verb.** No per-type restrictions.
@@ -541,6 +542,47 @@ older turn's row.
 The navigator does not follow the terminal's own scrolling. Estimating which
 blocks are on screen from `e.props.onScreen` was tried and dropped: the mod
 cannot measure how the reply wraps, and the estimate was never steady.
+
+### The classic renderer: the navigator as a block viewer
+
+In the classic (non-fullscreen) renderer the pane opens **inline**, full width,
+above the band. Text scrolled into the terminal's scrollback cannot be redrawn,
+and the mod cannot scroll the terminal, so the reply above is reliable only while
+the block is on screen. The navigator therefore shows **the selected block
+itself** (#31):
+
+```
+▲ Your notes · ✎1  § Section two
+│
+│ ↑ 1. Choose a cache for sessions
+│ ✎ 2. Decide the key format, and how it is versioned across deploys
+│ [ ✓ accept ][ ✗ reject ][ ✎ comment ][ 💬 discuss ]
+│ → keep it short
+│ ↓ 3. Set an expiry policy
+│
+▼ Block 2 of 14
+```
+
+- **Header:** your notes and counts, and a breadcrumb — the nearest heading above
+  the selected block (`§ Section two`).
+- **Between header and footer**, beside a dim `│` edge: the previous block's
+  opening words (dim), the **selected block in full** as Markdown with its mark,
+  the menu as real buttons (←/→ or Tab walk them), the comment line (`→ …`, or the
+  comment field while typing), the next block's opening words (dim). Spare rows
+  sit after the header and before the footer, so the menu is right under the block.
+- **Height, decided once per reply:** the tallest block's estimated rows (a table
+  as drawn, a code block without its fences) plus six, between 7 rows and a third
+  of the screen — so the pane does not change height while navigating. A block
+  taller than that is trimmed; **PgUp/PgDn** scroll within it (a page-sized `by`
+  on `ui.scroll`, where ↑/↓ give 1), and the footer says `PgUp/PgDn to read on`.
+- **Claude Code's kept pane size wins over the request.** It keeps one inline
+  height and one dock width for all mods' panes, across sessions
+  (`pluginPanes.inlineRows` / `dockColumns` in `~/.claude.json`), set whenever the
+  person resizes any pane. The layout must stay usable at whatever height it gets.
+
+Fullscreen is unchanged: the pane is the docked navigator (above), the review
+happens in place in the reply. The layout follows the pane's `placement`
+(`'inline'` or `'dock'`).
 
 ### Opening the navigator
 

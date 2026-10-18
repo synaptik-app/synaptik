@@ -11,6 +11,8 @@ export type Segment = {
 const LIST_ITEM = /^(\s*)([-*+]|\d+[.)])\s+/
 const FENCE = /^\s*(```|~~~)/
 const HEADING = /^\s{0,3}#{1,6}\s/
+// A horizontal rule: drawn, but no block — nothing to mark (SPEC §3).
+const RULE = /^\s{0,3}([-*_])(\s*\1){2,}\s*$/
 
 export function segment(text: string): Segment[] {
   const out: Segment[] = []
@@ -54,7 +56,7 @@ export function segment(text: string): Segment[] {
       continue
     }
 
-    if (HEADING.test(line)) {
+    if (HEADING.test(line) || RULE.test(line)) {
       flush()
       out.push({ text: line.trim(), isBlock: false, depth: 0, hasGapBefore: hasGap })
       itemIndent = null
@@ -100,9 +102,17 @@ export function segment(text: string): Segment[] {
 // numbered item keeps its number ("3. Top level"), so items that open alike
 // stay apart; a bullet's marker is dropped.
 export function quote(text: string, words = 7): string {
+  // A table quotes its header cells: "table: Option · Latency · Cost".
+  const lines = text.trim().split('\n')
+  if (lines.length > 1 && lines.every(l => l.trim().startsWith('|'))) {
+    const cells = lines[0]!.split('|').map(c => c.trim()).filter(Boolean)
+    return `table: ${cells.join(' · ')}`
+  }
   const marker = text.match(LIST_ITEM)?.[2] ?? ''
   const number = /\d/.test(marker) ? `${marker} ` : ''
-  const plain = text
+  // A code block quotes its code, not its fence and language tag.
+  const unfenced = text.replace(/^\s*(```|~~~)[^\n]*\n?/, '').replace(/\n?\s*(```|~~~)\s*$/, '')
+  const plain = unfenced
     .replace(LIST_ITEM, '')
     .replace(/[`*_>#]/g, '')
     .replace(/\s+/g, ' ')
