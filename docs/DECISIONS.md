@@ -646,12 +646,21 @@ the ring. That is D31.
 **Entry key: settled as a user binding** (D32). `abovePrompt:focus` is an
 ordinary action, `ctrl+x tab` by default.
 
-**Still open — the navigation model (§11, item 1):**
-- **A.** The pane: ↑/↓ blocks, ←/→ verbs. Costs ~23 columns.
-- **B.** No pane: every arrow moves blocks on the band's ring; verbs are letter
-  keys only; the menu becomes a legend. Costs nothing on screen.
-The deciding question is whether the pane earns its space — the overview it now
-shows (D31), and phase 2's threads, are the candidates.
+**The navigation model — decided 2026-10-18: A, a pane in both renderers (#19).**
+The options were A (the pane: ↑/↓ blocks, ←/→ verbs) and B (no pane: every arrow
+moves blocks on the band's ring, verbs by letter keys). A won on what the spike
+found, not on whether the pane earns its space:
+- **↑/↓ apart from ←/→ needs a pane.** Only a pane turns ↑/↓ into a direction
+  (`ui.scroll`); the band raises no scroll event for them when it has nothing to
+  scroll (tested 2026-10-18), and making it overflow would take half the screen.
+- **The classic renderer needs a pane regardless** — the reply above cannot be
+  redrawn once scrolled off, so the pane is the one surface that stays current
+  (#11, #31).
+- **A pane cannot be taken by another mod** (D33): a greedy mod above Synaptik
+  removed its in-place view, never the navigator.
+
+Classic: the pane is a block viewer (#31, SPEC §10). Fullscreen: the docked
+navigator, its design to be finished on #39.
 
 ---
 
@@ -991,7 +1000,8 @@ navigator sends directly.
 ---
 
 ### D31 — The navigator: a docked pane that maps the reply
-**Status:** provisional · added 2026-10-15 · depends on §11 item 1 (A vs B)
+**Status:** settled · added 2026-10-15 · **the pane stays, in both renderers**
+(#19, 2026-10-18; see D20) · fullscreen design to finish on #39
 
 A pane beside the transcript serves two jobs:
 
@@ -1677,10 +1687,9 @@ One data point, not a verdict: D27 still holds that phase 1 is the real test.
 Spike 0 is done: tested against the bench's fixtures, the classic renderer (#11)
 and a second mod (#12); findings in D33 and §11, open work in GitHub issues.
 
-**Before phase 1:** decide the navigation model (#19). Every input is in — the
-pane is needed for the classic renderer regardless; in fullscreen, ↑/↓ for blocks
-with ←/→ for verbs needs a pane too (the band cannot tell them apart, tested
-2026-10-18).
+**Nothing blocks phase 1.** The navigation model is decided — a pane in both
+renderers (#19, D20); the classic pane is a block viewer (#31); the fullscreen
+navigator's design is finished alongside (#39).
 
 **Phase 1 evolves the spike** (D34), in order:
 1. the segmenter, rewritten from SPEC §3 with tests;
@@ -1723,7 +1732,7 @@ already considered and cut for a reason.
 | D14 | Thread isolation via `fork` | ✅ settled |
 | D15 | Escalation ladder | ✅ revised |
 | D16–D19 | Branched sessions, depth, merge, worktrees | ☠️ deferred → E1–E4 |
-| D20 | Modal nav + visible controls on the selected block | ✅ revised by the spike; model A/B open |
+| D20 | Modal nav + visible controls on the selected block | ✅ revised by the spike; model A — a pane in both renderers (#19) |
 | D21 | Accent bar on the selected block (was: gutter column) | ✅ revised by the spike |
 | D22 | Conflicts not resolved by the mod | ✅ settled |
 | D23 | Trivially disableable, fails to vanilla | ✅ reviewed, extended |
@@ -1734,7 +1743,7 @@ already considered and cut for a reason.
 | D28 | No intervention in Claude Code's tool runs | ✅ settled |
 | D29 | Band is source of truth, box is scratch | ✅ revised — the box shows it (D30) |
 | D30 | Send by live suggestion | 🟡 provisional |
-| D31 | The navigator pane | 🟡 provisional — depends on A/B |
+| D31 | The navigator pane | ✅ settled — both renderers; fullscreen design on #39 |
 | D32 | Key bindings belong to the person | ✅ settled |
 | D33 | Share surfaces with other mods; redraw the reply only when needed | ✅ settled |
 | D34 | The spike evolves into phase 1 (revises D27) | ✅ settled |
@@ -1776,9 +1785,8 @@ the numbers are not decision numbers.
 
 ### Design decisions to make
 
-1. **Navigation model: A (pane, ↑/↓ blocks + ←/→ verbs) or B (no pane, all arrows
-   move blocks, letter keys for verbs).** Turns on whether the pane earns ~23
-   columns — the overview (D31) and phase 2 threads are its candidates.
+1. **Navigation model — decided: A, a pane in both renderers** (#19, D20). Classic
+   design settled (#31); fullscreen design to finish (#39).
 2. **The pane is shared space.** With other mods, panes become tabs; check how
    the navigator reads as one tab among several.
 3. **Navigator not on screen** (narrow terminal, closed, after a reload): the band
