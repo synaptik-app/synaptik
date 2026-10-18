@@ -1,0 +1,38 @@
+name: Bug
+description: Synaptik does something wrong or draws something wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce
+      description: The steps — ideally a test bench run (`run rendering`, `run split`, …) and what you pressed.
+      placeholder: |
+        1. cd testbench && claude --plugin-dir ../hosts/claude-code
+        2. run long
+        3. ctrl+s, ↑ three times, …
+    validations:
+      required: true
+  - type: input
+    id: renderer
+    attributes:
+      label: Renderer
+      description: Fullscreen or classic (`CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1`).
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, terminal app, `claude --version`, other mods loaded.
+  - type: textarea
+    id: log
+    attributes:
+      label: /synaptik log
+      description: The output of `/synaptik log` right after it happened, if you have it.
+      render: text
