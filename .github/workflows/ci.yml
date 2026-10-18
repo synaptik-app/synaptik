@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# One run per branch; a newer push cancels the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: validate and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Pinned: a new Claude Code release cannot break CI without a deliberate bump.
+      CLAUDE_CODE_VERSION: 2.1.287
+      DISABLE_AUTOUPDATER: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Claude Code
+        run: |
+          npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          claude --version
+
+      # The UI tests read the test bench's fixtures through a generated module.
+      - name: Fixtures in sync with the test bench
+        run: node scripts/fixtures.mjs --check
+
+      - name: Validate the mod
+        run: claude plugin validate ./hosts/claude-code
+
+      - name: Validate the test bench's neighbour mod
+        run: claude plugin validate ./testbench/neighbour-mod
+
+      # Unit tests (src/) and UI tests (tests/), no session or login needed.
+      - name: Test
+        run: claude plugin test ./hosts/claude-code
