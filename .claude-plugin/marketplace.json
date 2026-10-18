@@ -1,0 +1,18 @@
+{
+  "name": "synaptik-app",
+  "description": "Synaptik: mark up the agent's last reply in place and send the marks as one prompt.",
+  "owner": {
+    "name": "Synaptik",
+    "email": "hello@synaptik.app",
+    "url": "https://github.com/synaptik-app"
+  },
+  "plugins": [
+    {
+      "name": "synaptik",
+      "source": "./hosts/claude-code",
+      "description": "Mark up the agent's last reply in place — accept, reject, comment — and send the marks as one prompt.",
+      "category": "productivity",
+      "tags": ["review", "feedback", "mod"]
+    }
+  ]
+}
