@@ -40,3 +40,4 @@ A closing paragraph after a horizontal rule.
 - The heading is skipped by ↑/↓ — it is not a block
 - The selected block shows the selection background, and only while the navigator has focus
 - Marking a block puts its glyph before it, and unmarked blocks do not move
+- Classic renderer: selecting the table shows it whole in the pane, and a neighbouring table reads as "table: Option · Latency · Cost"
