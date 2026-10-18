@@ -1,0 +1,22 @@
+name: Field note
+description: Something noticed while using Synaptik for real
+labels: [field-note]
+body:
+  - type: textarea
+    id: noticed
+    attributes:
+      label: What I noticed
+      description: What happened while reviewing a reply, and why it mattered.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: The reply or block involved, or the compiled prompt that came out.
+      render: markdown
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: What would have helped, if anything comes to mind.
