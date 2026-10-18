@@ -205,7 +205,11 @@ async function openPane($: EngineInterface) {
   askedRows = rows
   const opened = await $.ui.open({ id: PANE, title: 'Synaptik', columns: PANE_COLUMNS, rows })
   await update($, isPaneShown, () => opened.isPlaced)
-  const pinned = await $.ui.scroll({ in: PANE, to: { key: PANE_ANCHOR }, block: 'start' })
+  // Pinning can fail (the pane not drawn yet); it must not abort the caller —
+  // session.start adopts the reply around this call.
+  const pinned = await $.ui
+    .scroll({ in: PANE, to: { key: PANE_ANCHOR }, block: 'start' })
+    .catch((err: unknown) => ({ deny: String(err) }))
   observe(
     `pane open ${JSON.stringify(opened)} · asked rows=${rows} (screen ${screen.columns}×${screen.rows}) · pin ${JSON.stringify(pinned)}`,
   )
