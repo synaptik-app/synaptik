@@ -60,3 +60,5 @@ A closing paragraph after the final list.
 - In the middle third the view stays where you scroll it
 - Marks spread across sections all reach the suggestion in reading order
 - The navigator's staged rows show the right opening words
+- Classic renderer: the pane shows the selected block in full, with the previous and next blocks dim and the menu right under it
+- Classic renderer: the tall paragraph in section two is trimmed, PgUp/PgDn read on, ↑/↓ still move between blocks
