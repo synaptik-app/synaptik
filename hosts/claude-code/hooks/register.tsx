@@ -96,6 +96,14 @@ let turnRowId = ''
 // a drawing may not write state, so it lands here and asks for a redraw.
 let isNavigatorFocused = false
 
+// PREVIEW (classic layout, #31): the terminal's size, as last seen by a drawing;
+// how far the selected block is scrolled inside the classic navigator (PgUp/
+// PgDn); and how many rows its text area had at the last draw.
+let screen = { columns: 120, rows: 40 }
+let blockOffset = 0
+let blockTextRows = 1
+let askedRows = 0
+
 // Whether the compiled prompt is the prompt box's dim suggestion right now
 // (Tab takes it). Set from prompt.suggest's answer; the band words itself by it.
 let isSuggested = false
@@ -104,6 +112,9 @@ const PLACEHOLDER = 'Give me a sec to read through this.'
 // The band's header, and the lead of each line under it.
 const TAGLINE = 'respond to the reply in place'
 const NEST = '⎿  '
+
+// PREVIEW (#31): the classic navigator's smallest height.
+const CLASSIC_MIN_ROWS = 7
 
 // The compiled prompt is proposed in the empty prompt box after every change,
 // as Claude Code proposes its own: → or Tab takes it, the box is where it is
@@ -159,11 +170,45 @@ async function adoptLastReply($: EngineInterface) {
 // Opened unasked (a new reply, a reload) the pane waits undrawn below 144
 // columns; opened from the person's press it is placed at any width. When it
 // waits or is closed, the band offers that press.
+// Rows the classic (inline) navigator asks for: the tallest block's estimated
+// lines plus its six fixed rows (header, previous, menu, comment, next,
+// footer), between a floor and a third of the screen. Decided once per reply,
+// so the pane does not change height while navigating (each change would shift
+// the screen, and the classic renderer redraws by erasing what it printed).
+// The dock ignores it.
+function classicRows(text: string): number {
+  const width = Math.max(20, screen.columns - 8)
+  const tallest = Math.max(
+    1,
+    ...segment(text)
+      .filter(b => b.isBlock)
+      .map(b => drawnRows(b.text, width)),
+  )
+  return Math.max(CLASSIC_MIN_ROWS, Math.min(tallest + 6, Math.floor(screen.rows / 3)))
+}
+
+// Rows a block takes when Claude Code draws it `width` wide, estimated: a table
+// as drawn (a border line around and between its rows), a code block without its
+// fence lines, prose wrapped by length.
+function drawnRows(text: string, width: number): number {
+  const lines = text.split('\n')
+  if (lines.every(l => l.trim().startsWith('|'))) {
+    const rows = lines.filter(l => !/^\s*\|[\s:|-]+\|\s*$/.test(l)).length
+    return 2 * rows + 1
+  }
+  const body = /^\s*(```|~~~)/.test(lines[0] ?? '') ? lines.slice(1, -1) : lines
+  return body.reduce((n, l) => n + Math.max(1, Math.ceil(l.length / width)), 0)
+}
+
 async function openPane($: EngineInterface) {
-  const opened = await $.ui.open({ id: PANE, title: 'Synaptik', columns: PANE_COLUMNS })
+  const rows = classicRows(await read($, lastText))
+  askedRows = rows
+  const opened = await $.ui.open({ id: PANE, title: 'Synaptik', columns: PANE_COLUMNS, rows })
   await update($, isPaneShown, () => opened.isPlaced)
   const pinned = await $.ui.scroll({ in: PANE, to: { key: PANE_ANCHOR }, block: 'start' })
-  observe(`pane open ${JSON.stringify(opened)} · pin ${JSON.stringify(pinned)}`)
+  observe(
+    `pane open ${JSON.stringify(opened)} · asked rows=${rows} (screen ${screen.columns}×${screen.rows}) · pin ${JSON.stringify(pinned)}`,
+  )
 }
 
 // Moves the selection and brings the block into view in the transcript. The
@@ -174,6 +219,7 @@ async function moveSelection($: EngineInterface, by: number) {
   await finishComment($)
   const count = segment(await read($, lastText)).filter(s => s.isBlock).length
   const before = await read($, selected)
+  blockOffset = 0
   await update($, selected, s => Math.max(0, Math.min(count - 1, s + by)))
   // The transcript can be scrolled to a whole row only, never to a block in a
   // reply, and a reply taller than the window always lands on its top. So:
@@ -383,6 +429,7 @@ export const register: Register = on => {
     if (text.trim() === '' || !target.includes(text.trim())) return next(e)
 
     replyRequestId = e.requestId
+    if (e.viewport) screen = { columns: e.viewport.columns, rows: e.viewport.rows }
     const { Box, Text, Button, Markdown } = $.ui.resolve(e)
     const segments = segment(text)
     // Where this piece's blocks start in the whole reply, so numbering runs
@@ -491,6 +538,13 @@ export const register: Register = on => {
   on('ui.scroll', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     observe(`scroll by=${e.by} offset=${e.offset} rows=${e.contentRows}/${e.bodyRows} ${e.origin.kind}`)
     if (e.origin.kind !== 'person' || e.by === 0) return next(e)
+    // A page key scrolls by more than a row: read further into the selected
+    // block instead of moving to another (classic preview, #31).
+    if (Math.abs(e.by) > 1) {
+      blockOffset = Math.max(0, blockOffset + Math.sign(e.by) * Math.max(1, blockTextRows - 1))
+      $.ui.invalidate('ui.render')
+      return next({ ...e, offset: 1 })
+    }
     await moveSelection($, e.by < 0 ? -1 : 1)
     return next({ ...e, offset: 1 })
   }).catch(($, e, next) => next(e))
@@ -528,7 +582,7 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     if (e.surface !== 'terminal' && e.surface !== 'desktop') return next(e)
-    const { Box, Text, Button, Input } = $.ui.resolve(e)
+    const { Box, Text, Button, Input, Markdown } = $.ui.resolve(e)
     const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
     const sel = await read($, selected)
     const marked = await read($, marks)
@@ -579,6 +633,129 @@ export const register: Register = on => {
           Math.ceil((fieldText.length * 1.25) / fieldWidth) + 1,
         )
       : 0
+    // The comment field — visible: only the field knows where its cursor is (its
+    // events carry the text, never the cursor, and ←/→ raise none).
+    const field = (
+        <Input
+          key={commentKey(seq)}
+          placeholder="comment"
+          submitLabel="ok"
+          value={seed}
+          onInput={async value => {
+            const before = (await read($, comments))[sel] ?? ''
+            observe(`comment input ${JSON.stringify(value)} (was ${JSON.stringify(before)})`)
+            // Backspace on an already empty line, if the surface reports it.
+            if (value === '' && before === '') return cancelComment($, sel)
+            await update($, comments, c => ({ ...c, [sel]: value }))
+          }}
+          onSubmit={async value => {
+            await update($, comments, c => ({ ...c, [sel]: value }))
+            // Moving focus off the field finishes the comment (ui.focus):
+            // staged with text, dropped when empty.
+            await leaveComment($)
+          }}
+        />
+    )
+
+    // PREVIEW (#31): the classic renderer places the pane inline, above the
+    // prompt — the one surface that stays current there. Show the selected
+    // block itself, in full, with its neighbours, menu and comment.
+    if (e.props.placement === 'inline' && !working) {
+      const all = segment(await read($, lastText))
+      let crumb = ''
+      let k = -1
+      for (const seg of all) {
+        if (!seg.isBlock) crumb = seg.text.replace(/^#+\s*/, '')
+        else if (++k === sel) break
+      }
+      const width = Math.max(10, e.props.bodyColumns - 2)
+      const textRows = Math.max(1, rows - 6)
+      observe(
+        `classic pane ${e.props.bodyColumns}×${rows} (asked ${askedRows}, screen ${screen.columns}×${screen.rows}) · text rows ${textRows}`,
+      )
+      blockTextRows = textRows
+      const current = blocks[sel]
+      const estimated = drawnRows(current?.text ?? '', width)
+      blockOffset = Math.min(blockOffset, Math.max(0, estimated - textRows))
+      // The block takes the rows it needs; spare rows are split between after
+      // the header and before the footer, so the menu sits right under it.
+      const blockRows = Math.max(1, Math.min(estimated, textRows))
+      const hasMore = estimated > textRows + blockOffset
+      const prev = blocks[sel - 1]
+      const nextBlock = blocks[sel + 1]
+      const mark = marked[sel]
+      const barHeights = minimap(blocks.map(b => b.text.length), Math.max(blocks.length, rows - 2))
+      return (
+        <Box flexDirection="column" height={rows + 2} overflow="hidden">
+          <Text> </Text>
+          <Box flexDirection="column" height={rows} overflow="hidden">
+            <Box flexDirection="row">
+              <Button key={PANE_ANCHOR} plain dimColor label="▲" onPress={() => moveSelection($, -1)} />
+              <Text dimColor wrap="truncate">
+                {' '}
+                {heading}
+                {crumb ? `  § ${crumb}` : ''}
+              </Text>
+            </Box>
+            {/* Between header and footer: the bars, no accent colour, beside
+                the selected block, its neighbours, menu and comment. */}
+            <Box flexDirection="row" height={rows - 2} overflow="hidden">
+            <Box flexDirection="column" width={2} flexShrink={0} overflow="hidden">
+              {blocks.map((_, i) =>
+                // A block viewer, not a navigator: a quiet left edge.
+                Array.from({ length: barHeights[i] ?? 1 }, () => <Text dimColor>│</Text>),
+              )}
+            </Box>
+            <Box flexDirection="column" flexGrow={1}>
+              <Box flexGrow={1} />
+              <Text dimColor wrap="truncate">
+                {prev ? `↑ ${quote(prev.text, 10_000)}` : ' '}
+              </Text>
+              <Box flexDirection="row" height={blockRows} overflow="hidden">
+                <Text>{mark ? GLYPH[mark] : ' '} </Text>
+                <Box flexDirection="column" flexGrow={1} overflow="hidden">
+                  <Box flexDirection="column" marginTop={-blockOffset}>
+                    <Markdown text={current?.text ?? ''} />
+                  </Box>
+                </Box>
+              </Box>
+              <Box flexDirection="row">
+                {VERBS.map((v, n) => (
+                  <Button
+                    key={v.key}
+                    label={v.label}
+                    hotkey={v.hotkey}
+                    autoFocus={n === 0 ? true : undefined}
+                    onPress={() => runVerb($, v.key)}
+                  />
+                ))}
+                <Box display="none">
+                  <Button key="send" plain hotkey="s" label="send" onPress={() => sendTray($)} />
+                </Box>
+              </Box>
+              {isTyping ? (
+                field
+              ) : (
+                <Text dimColor wrap="truncate">
+                  {commented[sel] && mark === 'comment' ? `→ ${commented[sel]}` : '→'}
+                </Text>
+              )}
+              <Text dimColor wrap="truncate">
+                {nextBlock ? `↓ ${quote(nextBlock.text, 10_000)}` : ' '}
+              </Text>
+              <Box flexGrow={1} />
+            </Box>
+            </Box>
+            <Text dimColor wrap="truncate">
+              ▼ Block {sel + 1} of {blocks.length}
+              {hasMore || blockOffset > 0 ? ' · PgUp/PgDn to read on' : ''}
+            </Text>
+          </Box>
+          <Text> </Text>
+        </Box>
+      )
+    }
+
     const mapRows = Math.max(blocks.length, rows - 2 - commentRows - fieldRows)
     const heights = minimap(
       blocks.map(b => b.text.length),
@@ -652,32 +829,7 @@ export const register: Register = on => {
             ))}
             <Button key="send" plain hotkey="s" label="send" onPress={() => sendTray($)} />
           </Box>
-          {isTyping && (
-            // Visible: only the field knows where its cursor is (its events carry
-            // the text, never the cursor, and ←/→ raise none), so it is shown
-            // here; the reply mirrors the full text under the block.
-            <Box>
-              <Input
-                key={commentKey(seq)}
-                placeholder="comment"
-                submitLabel="ok"
-                value={seed}
-                onInput={async value => {
-                  const before = (await read($, comments))[sel] ?? ''
-                  observe(`comment input ${JSON.stringify(value)} (was ${JSON.stringify(before)})`)
-                  // Backspace on an already empty line, if the surface reports it.
-                  if (value === '' && before === '') return cancelComment($, sel)
-                  await update($, comments, c => ({ ...c, [sel]: value }))
-                }}
-                onSubmit={async value => {
-                  await update($, comments, c => ({ ...c, [sel]: value }))
-                  // Moving focus off the field finishes the comment (ui.focus):
-                  // staged with text, dropped when empty.
-                  await leaveComment($)
-                }}
-              />
-            </Box>
-          )}
+          {isTyping && <Box>{field}</Box>}
         </Box>
         <Text> </Text>
       </Box>
