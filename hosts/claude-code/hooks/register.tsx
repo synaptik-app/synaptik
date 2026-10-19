@@ -266,7 +266,10 @@ async function runVerb($: EngineInterface, verb: string) {
   await update($, commentSeed, () => existing)
   await update($, commentSeq, n => n + 1)
   await update($, isCommenting, () => true)
-  const moved = await $.ui.focus({ requestId: PANE, key: commentKey(await read($, commentSeq)) })
+  // A focus move that fails costs only the focus, never the comment around it.
+  const moved = await $.ui
+    .focus({ requestId: PANE, key: commentKey(await read($, commentSeq)) })
+    .catch((err: unknown) => ({ deny: String(err) }))
   observe(`focus comment-input: ${JSON.stringify(moved)}`)
 }
 
@@ -290,7 +293,9 @@ async function cancelComment($: EngineInterface, i: number, refocus = true) {
 // Hands focus from the comment field back to ✎ in the menu before the field
 // goes, so the ring keeps a stop and ←→ keep working.
 async function leaveComment($: EngineInterface) {
-  const moved = await $.ui.focus({ requestId: PANE, key: 'verb-comment' })
+  const moved = await $.ui
+    .focus({ requestId: PANE, key: 'verb-comment' })
+    .catch((err: unknown) => ({ deny: String(err) }))
   observe(`leave comment → verb-comment: ${JSON.stringify(moved)}`)
   await finishComment($)
 }

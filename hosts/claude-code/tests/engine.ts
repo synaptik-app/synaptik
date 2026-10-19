@@ -18,7 +18,7 @@ export const PANE = 'synaptik-map'
 type Dollar = any
 
 // A transcript row as `$.session.messages()` answers it.
-type Row = { role: 'user' | 'assistant'; text: string; toolUses: unknown[]; toolResults?: unknown[] }
+export type Row = { role: 'user' | 'assistant'; text: string; toolUses: unknown[]; toolResults?: unknown[] }
 
 // A fixture as the transcript a real run leaves: the prompt, then each piece
 // of the reply, with a tool call and its result where a `<<sleep N>>` stood.
@@ -54,9 +54,30 @@ export function suggested(): string {
   return (suggestions[suggestions.length - 1] ?? '').replace(/^ /, '')
 }
 
-// Answers every engine call Synaptik makes, with `rows` as the transcript.
+// What the prompt box holds, as `$.prompt.read()` answers it; a test sets it to
+// stand for what the person typed or took. Reset by `engine`.
+export const promptBox = { text: '' }
+
+// Every move of the focus ring that Synaptik's ui.focus hook passed on to the
+// engine, as it passed it, in order. Reset by `engine`.
+export const focusMoves: { element?: string }[] = []
+
+// Whether Claude Code places the navigator when it is opened; a test clears it
+// to stand for a terminal too narrow (an unasked open waits undrawn). Reset by
+// `engine`.
+export const placement = { isPlaced: true }
+
+// Every prompt Synaptik submitted (`s` in the navigator). Reset by `engine`.
+export const submitted: string[] = []
+
+// Answers every engine call Synaptik makes, with `rows` as the transcript —
+// read live, so a test can change it, as a turn does.
 export function engine(on: On, rows: Row[]) {
   suggestions.length = 0
+  focusMoves.length = 0
+  submitted.length = 0
+  promptBox.text = ''
+  placement.isPlaced = true
   const event = (name: string, fn: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => fn(e)) as never)
   const call = (name: string, value: (e: never) => unknown) =>
@@ -64,17 +85,29 @@ export function engine(on: On, rows: Row[]) {
 
   call('session.messages', () => rows)
   call('command.register', (e: { name: string }) => ({ command: e.name }))
-  call('ui.open', () => ({ isPlaced: true }))
+  call('ui.open', () => ({ isPlaced: placement.isPlaced }))
   call('ui.invalidate', () => undefined)
-  call('prompt.read', () => ({ text: '', cursor: 0 }))
+  call('prompt.read', () => ({ text: promptBox.text, cursor: promptBox.text.length }))
   event('session.start', (e: { cwd: string }) => ({ cwd: e.cwd }))
   event('ui.scroll', () => ({}))
-  event('ui.focus', () => ({}))
+  // A move of the focus ring, raised by a test (`focus`): passed on by
+  // Synaptik's ui.focus hook, recorded here. Synaptik's own $.ui.focus calls
+  // cannot be answered by a test; it guards them, and logs where it sent focus
+  // (`log`).
+  event('ui.focus', (e: { element?: string }) => {
+    focusMoves.push({ element: e.element })
+    return {}
+  })
+  event('prompt.submit', (e: { text: string }) => {
+    submitted.push(e.text)
+    return { text: e.text }
+  })
   event('prompt.suggest', (e: { text: string }) => {
     suggestions.push(e.text)
     return { isShown: true }
   })
   event('turn.start', (e: { turnId: string }) => ({ turnId: e.turnId }))
+  event('turn.complete', (e: { answer: string }) => ({ text: e.answer }))
   // Claude Code's own drawing, when a hook passes a component through: a
   // marker, so a test can tell "Synaptik drew it" from "passed it on".
   event('ui.render', () => ({ type: 'Text', props: {}, children: [ENGINE_DRAWING] }))
@@ -84,10 +117,44 @@ export function engine(on: On, rows: Row[]) {
 export const ENGINE_DRAWING = '<claude code drew this>'
 
 // Loads a fixture as the session's transcript and starts the session, so
-// Synaptik adopts its reply through its real code path.
-export async function start($: Dollar, on: On, name: string) {
-  engine(on, transcriptOf(name))
+// Synaptik adopts its reply through its real code path. Returns the transcript,
+// for a test to add a turn to.
+export async function start($: Dollar, on: On, name: string, rows = transcriptOf(name)) {
+  engine(on, rows)
   await $.session.start({ cwd: '/tmp/synaptik-test', surface: 'terminal', isInteractive: true })
+  return rows
+}
+
+// A turn as Claude Code runs it: started, the new rows written, then complete.
+export async function turn($: Dollar, rows: Row[], added: Row[], reason: 'answer' | 'aborted' = 'answer') {
+  await $.turn.start({ text: String(added[0]?.text ?? ''), turnId: 'turn-test' })
+  rows.push(...added)
+  const answer = added.filter(r => r.role === 'assistant').map(r => r.text).join('\n\n')
+  await $.turn.complete({
+    turnId: 'turn-test',
+    answer,
+    durationMs: 1,
+    isAborted: reason === 'aborted',
+    reason,
+  })
+}
+
+// The focus ring moving in the navigator: to `element` (a key), or to Claude
+// Code's own stop on the pane when absent. By the person, or by the navigator's
+// autoFocus as it takes the keyboard ('plugin').
+export function focus($: Dollar, element: string | undefined, kind: 'person' | 'plugin' = 'person') {
+  const origin = kind === 'person' ? { kind } : { kind, name: PLUGIN }
+  return $.ui.focus({ component: 'Pane', requestId: PANE, element, origin })
+}
+
+// The band as Claude Code draws it above the prompt.
+export function band($: Dollar) {
+  return $.ui.mount({
+    plugin: PLUGIN,
+    surface: 'terminal',
+    component: 'AbovePrompt',
+    props: { hasSurvey: false, isWorking: false, maxRows: 8, bodyColumns: 100, scroll: { offset: 0, bodyRows: 8 }, view: {} },
+  })
 }
 
 // Mounts the navigator: docked (fullscreen) or inline (classic).
@@ -163,4 +230,15 @@ export async function walk($: Dollar, ui: Dollar): Promise<string[]> {
     await arrow($, -1)
   }
   return seen
+}
+
+// `/synaptik`: switches the whole mod off, or on again.
+export function toggle($: Dollar) {
+  return $.command.run({ command: 'synaptik', args: '' })
+}
+
+// What Synaptik observed (`/synaptik log`): where it sent focus, among others.
+export async function log($: Dollar): Promise<string> {
+  const result = await $.command.run({ command: 'synaptik', args: 'log' })
+  return String(result?.text ?? '')
 }
