@@ -17,6 +17,8 @@ import type { SpikeMark } from '../types'
 import { quote, segment } from '../src/spike-blocks'
 import { lastTurnText } from '../src/spike-turn'
 import { compile as compileTray, GLYPH } from '../src/spike-compile'
+import { DEFAULT_KEYS, keysFrom, parseKeyFile } from '../src/keys'
+import type { Keys } from '../src/keys'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
 const isWorking = atom({ plugin: 'synaptik', key: 'isWorking' } as const, false)
@@ -30,7 +32,6 @@ const isPaneShown = atom({ plugin: 'synaptik', key: 'isPaneShown' } as const, fa
 // What the comment field is drawn with when it opens. The field is never redrawn
 // from the live comment: a redraw replaces what the person typed (InputProps).
 const commentSeed = atom({ plugin: 'synaptik', key: 'commentSeed' } as const, '')
-const entryKey = atom({ plugin: 'synaptik', key: 'entryKey' } as const, 'ctrl+x tab')
 const commentSeq = atom({ plugin: 'synaptik', key: 'commentSeq' } as const, 0)
 
 // Module variable, not $.state: a render hook may not write state. Lost on reload.
@@ -321,22 +322,22 @@ async function sendTray($: EngineInterface) {
   await update($, comments, () => ({}))
 }
 
-// The key that focuses the band and panes: the person's own binding for
-// abovePrompt:focus if they made one, else Claude Code's default. A plain read
-// of their file; the mod never writes it.
-async function readEntryKey($: EngineInterface) {
+// The keys the band names (src/keys.ts), from the person's own
+// ~/.claude/keybindings.json — a plain read; the mod never writes it. Claude Code
+// applies an edited file at once, so the band reads it again whenever its mtime
+// changes. Module variable, not $.state: the band's render hook reads it.
+let keyFile: { mtimeMs: number; keys: Keys } | undefined
+
+async function currentKeys($: EngineInterface): Promise<Keys> {
   try {
-    const home = await $.env.get('HOME')
-    const file = JSON.parse(await $.fs.read(`${home}/.claude/keybindings.json`)) as {
-      bindings?: { context?: string; bindings?: Record<string, string | null> }[]
-    }
-    const chat = (file.bindings ?? []).filter(b => b.context === 'Chat')
-    const key = chat
-      .flatMap(b => Object.entries(b.bindings ?? {}))
-      .find(([, action]) => action === 'abovePrompt:focus')?.[0]
-    if (key) await update($, entryKey, () => key)
+    const path = `${await $.env.get('HOME')}/.claude/keybindings.json`
+    const { mtimeMs } = await $.fs.stat(path)
+    if (keyFile?.mtimeMs !== mtimeMs) keyFile = { mtimeMs, keys: keysFrom(parseKeyFile(await $.fs.read(path))) }
+    return keyFile.keys
   } catch {
-    // No file, or not JSON: keep the default.
+    // No file: Claude Code's defaults.
+    keyFile = undefined
+    return DEFAULT_KEYS
   }
 }
 
@@ -384,7 +385,6 @@ export const register: Register = on => {
       name: 'synaptik',
       description: 'Synaptik spike: toggle, or `log` for observations',
     })
-    await readEntryKey($)
     // A resumed session (and every reload of this mod) already has a reply.
     await adoptLastReply($)
     return next(e)
@@ -859,7 +859,8 @@ export const register: Register = on => {
     const sel = await read($, selected)
     const isShown = await read($, isPaneShown)
     const reviewing = isNavigatorFocused
-    const key = await read($, entryKey)
+    const keys = await currentKeys($)
+    const key = keys.entry
     const staged = await summary($)
     const compiled = await compile($)
     const box = await $.prompt.read()
@@ -868,7 +869,7 @@ export const register: Register = on => {
     // output, so with several mods in the band it is clear which lines are ours.
     // The last line, just above the prompt: what the keys do right now.
     const action = reviewing
-      ? `Block ${sel + 1} of ${blocks.length} · ↑↓ move · ←→ choose · ⏎ apply · esc done`
+      ? `Block ${sel + 1} of ${blocks.length} · ↑↓ move · ${keys.choose} choose · ⏎ apply · esc done`
       : staged && isSuggested && box.text.trim() === ''
         ? `tab to take it into the prompt · ${key} to continue responding`
         : `${key} to ${staged ? 'continue responding' : 'respond in place'}`

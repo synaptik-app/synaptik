@@ -21,7 +21,8 @@ marked ⚠️ is unverified. Open design questions are listed in `DECISIONS.md` 
 
 ```
 Claude replies
-  → ctrl+s, then ↑↓ to a block, ←→ and ⏎ to accept / reject / comment / discuss
+  → ctrl+x tab, then ↑↓ to a block, tab and ⏎ to accept / reject / comment / discuss
+    (ctrl+s and ←→ with the recommended bindings, §10)
   → marks accumulate in a tray
   → the prompt box shows the prompt they compile into, as a dim suggestion
   → tab takes it, ⏎ sends it
@@ -274,10 +275,13 @@ The action line:
 
 | State | Text |
 |---|---|
-| Not in the navigator, nothing staged | `⎿  ctrl+s to respond in place` |
-| Not in the navigator, something staged | `⎿  ctrl+s to continue responding` |
-| Suggestion showing in the prompt box | `⎿  tab to take it into the prompt · ctrl+s to continue responding` |
-| In the navigator | `⎿  Block 3 of 12 · ↑↓ move · ←→ choose · ⏎ apply · esc done` |
+| Not in the navigator, nothing staged | `⎿  ctrl+x tab to respond in place` |
+| Not in the navigator, something staged | `⎿  ctrl+x tab to continue responding` |
+| Suggestion showing in the prompt box | `⎿  tab to take it into the prompt · ctrl+x tab to continue responding` |
+| In the navigator | `⎿  Block 3 of 12 · ↑↓ move · tab/⇧tab choose · ⏎ apply · esc done` |
+
+The keys shown are Claude Code's defaults. With the recommended bindings (§10)
+the lines read `ctrl+s to respond in place` and `↑↓ move · ←→ choose`.
 
 **The band is shared with every mod.** A hook that answers without `next(e)`
 hides every mod beneath it. Outside review, Synaptik draws what `next(e)` returns
@@ -287,9 +291,20 @@ band stands alone as the key legend for that mode. Claude Code's own drawing
 `Box` with `width` is refused** — the whole band falls back to Claude Code's own —
 so `width` is set only on the box around Synaptik's own lines.
 
-The key named is the person's own binding for `abovePrompt:focus` in the `Chat`
-context, read from `~/.claude/keybindings.json` (a plain read; the mod never
-writes it), or `ctrl+x tab` when there is none.
+The keys named are the person's own, read from `~/.claude/keybindings.json` (a
+plain read; the mod never writes it):
+
+- **Entering:** the binding for `abovePrompt:focus` in the `Chat` context, or
+  `ctrl+x tab` when there is none.
+- **Choosing a verb:** the bindings for `abovePrompt:previous` / `abovePrompt:next`
+  in the `Pane` context — `←→` for the arrows, otherwise `previous/next` as bound
+  (`h/l`), or `tab/⇧tab` when neither is bound. One direction bound alone keeps
+  the other's default (`⇧tab/→`).
+
+Bindings apply in file order: a later binding of a key replaces an earlier one,
+`null` unbinds it, and of several keys for one action the last counts. Claude
+Code applies an edited file at once, so the band reads it again whenever its
+modification time changes.
 
 ### Sending: a live suggestion
 
