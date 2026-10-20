@@ -54,10 +54,10 @@ Download `synaptik-<version>.zip` from
 
 ```bash
 # every session: unzip it into your skills directory
-unzip synaptik-0.1.0-alpha.1.zip -d ~/.claude/skills/
+unzip synaptik-0.1.0-alpha.2.zip -d ~/.claude/skills/
 
 # or one session only, straight from the zip
-claude --plugin-dir ./synaptik-0.1.0-alpha.1.zip
+claude --plugin-dir ./synaptik-0.1.0-alpha.2.zip
 ```
 
 `/plugin` inside a session lists what loaded (`synaptik@skills-dir` for the
