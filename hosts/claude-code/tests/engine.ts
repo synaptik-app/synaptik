@@ -71,6 +71,9 @@ export const placement = { isPlaced: true }
 // Reset by `engine`.
 export const opened: { focus: boolean }[] = []
 
+// Every file Synaptik wrote, in order, path and whole text. Reset by `engine`.
+export const written: { path: string; text: string }[] = []
+
 // Every prompt Synaptik submitted (`s` in the navigator). Reset by `engine`.
 export const submitted: string[] = []
 
@@ -83,6 +86,7 @@ export function engine(on: On, rows: Row[]) {
   promptBox.text = ''
   placement.isPlaced = true
   opened.length = 0
+  written.length = 0
   const event = (name: string, fn: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => fn(e)) as never)
   const call = (name: string, value: (e: never) => unknown) =>
@@ -95,6 +99,12 @@ export function engine(on: On, rows: Row[]) {
     return { isPlaced: placement.isPlaced }
   })
   call('ui.invalidate', () => undefined)
+  call('ui.toast', () => undefined)
+  event('ui.message', () => ({}))
+  call('fs.write', (e: { path: string; text: string }) => {
+    written.push({ path: e.path, text: e.text })
+    return undefined
+  })
   call('prompt.read', () => ({ text: promptBox.text, cursor: promptBox.text.length }))
   event('session.start', (e: { cwd: string }) => ({ cwd: e.cwd }))
   event('ui.scroll', () => ({}))
@@ -279,4 +289,26 @@ export function synaptik($: Dollar, args: string) {
 export async function log($: Dollar): Promise<string> {
   const result = await $.command.run({ command: 'synaptik', args: 'log' })
   return String(result?.text ?? '')
+}
+
+// Each keybindings file gets its own mtime, so the band reads it afresh.
+let keyFileTime = 0
+
+// ~/.claude/keybindings.json as the test stands it: `file` written as JSON, or a
+// string as the raw text. Without it, reading the file fails, as when it is
+// missing.
+export function keybindings(on: On, file: unknown) {
+  const call = (name: string, value: (e: never) => unknown) =>
+    on(name as never, ((_$: unknown, e: never) => ({ value: value(e) })) as never)
+  const text = typeof file === 'string' ? file : JSON.stringify(file)
+  const mtimeMs = (keyFileTime += 1)
+  call('env.get', (e: { name: string }) => (e.name === 'HOME' ? '/home/test' : undefined))
+  call('fs.stat', () => ({ kind: 'file', size: text.length, mtimeMs }))
+  call('fs.read', () => text)
+}
+
+// A key pressed in the key setup's capture line (key-capture.tsx), posted as
+// the capture module posts it, from the navigator pane drawn as `ui`.
+export function press(ui: Dollar, key: string, mods: { ctrl?: boolean; shift?: boolean; meta?: boolean } = {}) {
+  return ui.post({ key, ctrl: false, shift: false, meta: false, ...mods }, { in: 'key-capture' })
 }

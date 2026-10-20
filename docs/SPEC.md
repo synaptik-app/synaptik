@@ -634,22 +634,45 @@ inline layout below 110 columns, where a vertical map does not fit.
 
 ### Key setup: `/synaptik config` (D38)
 
-A mode of the navigator pane (one tab; Esc returns to the navigator). Two
-settings, each a list — ↑/↓ within it, Tab to the next, ⏎ picks:
+A mode of the navigator pane (one tab). It moves as the navigator does: the
+tree is pinned for the scroll trick, so **↑/↓ move a cursor over its rows** —
+the two settings, then Save and Cancel — and **⏎ on a setting opens its
+options**, where ↑/↓ choose and ⏎ takes one and returns to the rows; the first
+option, `‹ back`, returns unchanged. ⏎ on Save writes; on Cancel, or Esc
+anywhere, nothing is written. Esc cannot mean "back": it gives the keyboard to
+the prompt, and a mod cannot take it back (`$.ui.focus` only moves it within a
+site that holds it). For the same reason, after Save or Cancel the navigator
+keeps the keyboard — a mod cannot hand it to the prompt; Esc does. (`Select` lists were
+tried: they keep ↑/↓ for their own options, so moving between settings took
+Tab.)
+
+```
+Synaptik keys
+↑↓ move · ⏎ change · esc: discard changes
+
+▸ Open Synaptik · ctrl+s
+  Move between actions · ← / →
+
+  Save
+  Cancel
+```
 
 | Setting | Writes | Choices |
 |---|---|---|
-| Entering the navigator | `Chat`: `"<key>": "abovePrompt:focus"` | `ctrl+x tab` (default) · `ctrl+s` · custom |
-| Choosing a verb | `Pane`: `"<prev>": "abovePrompt:previous"`, `"<next>": "abovePrompt:next"` | Tab / ⇧Tab (default) · ← / → · custom |
+| Open Synaptik | `Chat`: `"<key>": "abovePrompt:focus"` | `ctrl+x tab` (default) · `ctrl+s` · custom |
+| Move between actions | `Pane`: `"<prev>": "abovePrompt:previous"`, `"<next>": "abovePrompt:next"` | Tab / ⇧Tab (default) · ← / → · custom |
 
 - The current bindings are read from the file and shown first.
-- **Custom:** click the capture line, press the key; one press. Fullscreen only
-  (it needs the mouse). Keys Claude Code handles itself (`ctrl+c`, `ctrl+x`) never
-  arrive.
-- **Before writing**, the exact entries to add or remove, and what they give up:
-  `ctrl+s` is `chat:stash`; `ctrl+r` is history search; ← / → in panes swallow the
-  second key of `ctrl+x ←/→` (pane resize), and ← on an empty prompt opens agent
-  view unless `leftArrowOpensAgents` is off. ⏎ writes; Esc writes nothing.
+- **Custom:** the capture line appears under the setting; click it, press the
+  key (for the actions, previous then next). The click takes the keyboard from
+  the pane, so it is not read as Esc; Esc in the capture line cancels the
+  capture. Once captured, the cursor is on Save. Fullscreen only (it needs the
+  mouse). Keys Claude Code handles itself (`ctrl+c`, `ctrl+x`) never arrive;
+  keys that would break typing or the navigator are refused, with the reason.
+- **Before writing**, the exact entries to add or remove, and one short line for
+  each thing given up — `ctrl+s will no longer stash your prompt`, `← → will
+  also move between buttons in other mods' panes` — plus a dim tip where one
+  helps (← on an empty prompt opens agent view: `leftArrowOpensAgents`).
 - The write merges into the file: other contexts and bindings are left as they
   are. The band picks the new keys up at once (§7).
 

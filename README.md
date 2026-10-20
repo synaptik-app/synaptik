@@ -88,19 +88,25 @@ navigator:
 | Start reviewing | `ctrl+x tab` | `ctrl+s` |
 | Move between blocks | ↑ / ↓ | same |
 | First / last block | Home / End (`Fn+←` / `Fn+→` on a MacBook) | same |
-| Choose a verb | Tab / ⇧Tab | ← / → |
+| Choose an action | Tab / ⇧Tab | ← / → |
 | Apply it | ⏎ | same |
 | Apply directly | `a` accept · `x` reject · `c` comment | same |
 | Done | Esc | same |
 
-A mod cannot ship key bindings, so the better ones are yours to add to
-`~/.claude/keybindings.json`:
+A mod cannot ship key bindings, so the better ones go in your own
+`~/.claude/keybindings.json`. **`/synaptik config` sets them for you:** pick the
+key that opens Synaptik (`ctrl+x tab`, `ctrl+s`, or one you press) and the keys
+that move between actions (Tab / ⇧Tab, ← / →, or your own), see exactly what it will
+add and what it gives up, and save. Pressing your own key works in fullscreen;
+classic offers the presets. Or edit the file by hand:
 
 ```json
-[
-  { "context": "Chat", "bindings": { "ctrl+s": "abovePrompt:focus" } },
-  { "context": "Pane", "bindings": { "left": "abovePrompt:previous", "right": "abovePrompt:next" } }
-]
+{
+  "bindings": [
+    { "context": "Chat", "bindings": { "ctrl+s": "abovePrompt:focus" } },
+    { "context": "Pane", "bindings": { "left": "abovePrompt:previous", "right": "abovePrompt:next" } }
+  ]
+}
 ```
 
 `ctrl+s` is Claude Code's default for stashing the prompt; binding it gives that
