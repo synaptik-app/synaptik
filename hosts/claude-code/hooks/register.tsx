@@ -545,8 +545,14 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('ui.scroll', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
-    observe(`scroll by=${e.by} offset=${e.offset} rows=${e.contentRows}/${e.bodyRows} ${e.origin.kind}`)
+    observe(
+      `scroll by=${e.by} offset=${e.offset} rows=${e.contentRows}/${e.bodyRows} ${e.origin.kind}${e.pointer ? ' wheel' : ''}`,
+    )
     if (e.origin.kind !== 'person' || e.by === 0) return next(e)
+    // The wheel or a trackpad over the pane (only they carry a pointer) moves
+    // nothing: blocks are the keys' to move, and a wheel is reached for to
+    // scroll the reply (#62). The window stays pinned, so ↑/↓ keep working.
+    if (e.pointer) return next({ ...e, offset: 1 })
     // A page key scrolls by more than a row: read further into the selected
     // block instead of moving to another (classic preview, #31).
     if (Math.abs(e.by) > 1) {
