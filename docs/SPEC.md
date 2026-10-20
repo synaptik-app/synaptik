@@ -493,7 +493,9 @@ A pane (id `synaptik-map`), opened when a reply is adopted. Its body:
 
 **The scroll trick.** The tree is always `bodyRows + 2` rows and its window is
 pinned at offset 1, so ↑ and ↓ always have a row to scroll to. Each scroll key
-moves the selection by its sign and the window back to offset 1.
+moves the selection by its sign and the window back to offset 1. The keys are told
+apart by `by`: an arrow scrolls a row, a page key `bodyRows`, Home and End
+`contentRows` — so Home and End jump to the first and last block (#63).
 
 **The wheel moves nothing in the navigator.** A wheel or trackpad over the pane
 raises the same `ui.scroll`, told apart by its `pointer` (absent for the scroll
@@ -519,6 +521,7 @@ dropped. `⏎` or backspace on an empty line cancels it.
 |---|---|---|
 | Enter the navigator | `ctrl+x tab` (`abovePrompt:focus`) | a single chord, e.g. `ctrl+s` |
 | Move between blocks | ↑ / ↓ | same |
+| First / last block | Home / End (`Fn+←` / `Fn+→` on a MacBook) | same |
 | Walk the verbs | Tab / ⇧Tab | ← / → |
 | Apply the verb under the cursor | ⏎ | same |
 | Apply a verb directly | `a` `x` `c` `d` | same |
