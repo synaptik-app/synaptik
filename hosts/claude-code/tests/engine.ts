@@ -199,6 +199,21 @@ export function arrow($: Dollar, by: 1 | -1) {
   })
 }
 
+// A person's wheel or trackpad over the navigator: a tick is `by` ±1, a fast
+// spin more. Unlike a key, it carries the cell the pointer was over.
+export function wheel($: Dollar, by: number) {
+  return $.ui.scroll({
+    component: 'Pane',
+    requestId: PANE,
+    offset: 1 + by,
+    by,
+    bodyRows: 20,
+    contentRows: 22,
+    origin: { kind: 'person' },
+    pointer: { column: 2, row: 5 },
+  })
+}
+
 // "Block N of M" as the navigator draws it.
 export async function position(ui: Dollar) {
   const found = await ui.find({ type: 'Text', text: /Block \d+ of \d+/ })

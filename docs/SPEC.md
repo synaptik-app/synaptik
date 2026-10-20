@@ -492,8 +492,13 @@ A pane (id `synaptik-map`), opened when a reply is adopted. Its body:
   position.
 
 **The scroll trick.** The tree is always `bodyRows + 2` rows and its window is
-pinned at offset 1, so ↑ and ↓ always have a row to scroll to. Each person scroll
+pinned at offset 1, so ↑ and ↓ always have a row to scroll to. Each scroll key
 moves the selection by its sign and the window back to offset 1.
+
+**The wheel moves nothing in the navigator.** A wheel or trackpad over the pane
+raises the same `ui.scroll`, told apart by its `pointer` (absent for the scroll
+keys). It is passed back pinned at offset 1: blocks are moved by the keys, and
+the wheel is for scrolling the reply, over the transcript (#62).
 
 **The verb ring.** The four verbs and `send` are drawn in the pane hidden
 (`display: none`); they still take focus and arm their hotkeys. A `ui.focus` hook
