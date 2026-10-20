@@ -86,6 +86,7 @@ navigator:
 |---|---|---|
 | Start reviewing | `ctrl+x tab` | `ctrl+s` |
 | Move between blocks | ↑ / ↓ | same |
+| First / last block | Home / End (`Fn+←` / `Fn+→` on a MacBook) | same |
 | Choose a verb | Tab / ⇧Tab | ← / → |
 | Apply it | ⏎ | same |
 | Apply directly | `a` accept · `x` reject · `c` comment | same |

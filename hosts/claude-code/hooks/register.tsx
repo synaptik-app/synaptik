@@ -553,6 +553,13 @@ export const register: Register = on => {
     // nothing: blocks are the keys' to move, and a wheel is reached for to
     // scroll the reply (#62). The window stays pinned, so ↑/↓ keep working.
     if (e.pointer) return next({ ...e, offset: 1 })
+    // Home and End scroll by the whole tree (contentRows), a page key by the
+    // window (bodyRows), an arrow by a row: Home/End jump to the first or last
+    // block (#63). On a MacBook keyboard, Fn+← and Fn+→ send them.
+    if (Math.abs(e.by) >= e.contentRows) {
+      await moveSelection($, e.by < 0 ? -Infinity : Infinity)
+      return next({ ...e, offset: 1 })
+    }
     // A page key scrolls by more than a row: read further into the selected
     // block instead of moving to another (classic preview, #31).
     if (Math.abs(e.by) > 1) {
