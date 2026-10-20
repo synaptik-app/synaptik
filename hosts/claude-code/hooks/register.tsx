@@ -17,8 +17,10 @@ import type { SpikeMark } from '../types'
 import { quote, segment } from '../src/spike-blocks'
 import { lastTurnText } from '../src/spike-turn'
 import { compile as compileTray, GLYPH } from '../src/spike-compile'
-import { DEFAULT_KEYS, keysFrom, parseKeyFile } from '../src/keys'
-import type { Keys } from '../src/keys'
+import { DEFAULT_KEYS, keyLabel, keysFrom, parseKeyFile } from '../src/keys'
+import type { KeyFile, Keys } from '../src/keys'
+import { applySetup, bindingName, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS, refusal } from '../src/keysetup'
+import type { Setup } from '../src/keysetup'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
 const isWorking = atom({ plugin: 'synaptik', key: 'isWorking' } as const, false)
@@ -119,6 +121,7 @@ const HELP = [
   '  /synaptik          open the navigator',
   '  /synaptik on       turn Synaptik on for this session',
   '  /synaptik off      turn it off for this session (/plugin disables it for good)',
+  '  /synaptik config   customize Synaptik',
   '  /synaptik log      what Synaptik observed, for bug reports',
   '  /synaptik help     this list',
 ].join('\n')
@@ -366,6 +369,228 @@ async function currentKeys($: EngineInterface): Promise<Keys> {
   }
 }
 
+// The person's ~/.claude/keybindings.json, whole: `undefined` when it is there
+// but not JSON — the key setup then writes nothing.
+async function keyFilePath($: EngineInterface) {
+  return `${await $.env.get('HOME')}/.claude/keybindings.json`
+}
+async function readKeyFile($: EngineInterface): Promise<KeyFile | undefined> {
+  let text: string
+  try {
+    text = String(await $.fs.read(await keyFilePath($)))
+  } catch {
+    return {} // no file yet: the setup creates it
+  }
+  try {
+    const file = JSON.parse(text) as unknown
+    return file !== null && typeof file === 'object' && !Array.isArray(file) ? (file as KeyFile) : undefined
+  } catch {
+    return undefined
+  }
+}
+
+// The key setup (D38, `/synaptik config`): while it is open the navigator pane
+// draws it instead of the map. A module variable, as the pane's own drawing
+// ends it (Esc) and a render hook may not write state. Lost on reload.
+type KeyMenu = {
+  // The file as read when the menu opened, and the choice so far.
+  file: KeyFile
+  choice: Setup
+  // Which key the capture line is waiting for, and the previous-verb key
+  // already pressed while it waits for the next.
+  capturing?: 'entry' | 'previous' | 'next'
+  pressedPrevious?: string
+  // A line for the person: what to press, or why a key was refused.
+  note?: string
+  // Seen holding the keyboard: losing it after that is Esc.
+  hasFocus: boolean
+  // The keyboard is with the capture line, given by a click: losing it then is
+  // the click, not Esc.
+  isWithCapture?: boolean
+  // A captured key handed the keyboard back to the menu; until it lands,
+  // losing it is not Esc either.
+  isReturning?: boolean
+  // Where the person is: the list of rows, or one setting's options; the row
+  // and option under the cursor; the setting whose options are open.
+  view: 'rows' | 'options'
+  row: number
+  option: number
+  editing?: 'entry' | 'verbs'
+  // Fullscreen: a key can be captured (a click is needed).
+  canCapture: boolean
+}
+let keyMenu: KeyMenu | undefined
+
+type MenuRow = 'entry' | 'verbs' | 'save' | 'cancel'
+const MENU_ROWS: readonly MenuRow[] = ['entry', 'verbs', 'save', 'cancel']
+const MENU_LABEL: Record<MenuRow, string> = {
+  entry: 'Open Synaptik',
+  verbs: 'Move between actions',
+  save: 'Save',
+  cancel: 'Cancel',
+}
+
+// One setting's choice as an option's value: the entry key, or the two
+// action keys as `previous next`.
+function currentValue(menu: KeyMenu, setting: 'entry' | 'verbs') {
+  if (setting === 'entry') return menu.choice.entry ?? DEFAULT_ENTRY
+  const verbs = menu.choice.verbs ?? DEFAULT_VERBS
+  return `${verbs.previous} ${verbs.next}`
+}
+
+// One setting's choice as the row shows it.
+function menuValue(menu: KeyMenu, setting: 'entry' | 'verbs') {
+  if (setting === 'entry') return keyLabel(currentValue(menu, 'entry'))
+  const verbs = menu.choice.verbs
+  // The default as its option names it; otherwise previous / next.
+  return verbs ? `${keyLabel(verbs.previous)} / ${keyLabel(verbs.next)}` : 'tab / ⇧tab'
+}
+
+// The options of the setting being edited: back to the rows (Esc cannot be
+// that: it gives the keyboard to the prompt, and a mod cannot take it back),
+// the presets, the person's own key when it is none of them, and custom when a
+// key can be captured.
+function menuOptions(menu: KeyMenu): { value: string; label: string }[] {
+  const setting = menu.editing ?? 'entry'
+  const now = currentValue(menu, setting)
+  const presets =
+    setting === 'entry'
+      ? [
+          { value: DEFAULT_ENTRY, label: `${DEFAULT_ENTRY} (default)` },
+          { value: 'ctrl+s', label: 'ctrl+s' },
+        ]
+      : [
+          { value: `${DEFAULT_VERBS.previous} ${DEFAULT_VERBS.next}`, label: 'tab / ⇧tab (default)' },
+          { value: 'left right', label: '← / →' },
+        ]
+  const own = presets.some(p => p.value === now) ? [] : [{ value: now, label: menuValue(menu, setting) }]
+  return [
+    { value: 'back', label: '‹ back' },
+    ...presets,
+    ...own,
+    ...(menu.canCapture ? [{ value: 'custom', label: 'custom…' }] : []),
+  ]
+}
+
+// ↑/↓ in the menu: the cursor, over the rows or the open setting's options.
+function moveMenu(by: number) {
+  const menu = keyMenu
+  if (!menu) return
+  const count = menu.view === 'rows' ? MENU_ROWS.length : menuOptions(menu).length
+  if (menu.view === 'rows') menu.row = Math.max(0, Math.min(count - 1, menu.row + by))
+  else menu.option = Math.max(0, Math.min(count - 1, menu.option + by))
+}
+
+// ⏎ in the menu: open a setting's options, take an option, save or cancel.
+async function enterMenu($: EngineInterface) {
+  const menu = keyMenu
+  if (!menu) return
+  if (menu.view === 'rows') {
+    const row = MENU_ROWS[menu.row]!
+    if (row === 'save') return saveKeyMenu($)
+    if (row === 'cancel') {
+      keyMenu = undefined
+      return $.ui.invalidate('ui.render')
+    }
+    menu.editing = row
+    menu.view = 'options'
+    menu.option = Math.max(0, menuOptions(menu).findIndex(o => o.value === currentValue(menu, row)))
+    observe(`key menu: options of ${row}`)
+    return $.ui.invalidate('ui.render')
+  }
+  const setting = menu.editing!
+  const picked = menuOptions(menu)[menu.option]!
+  observe(`key menu: ${setting} picked ${picked.value}`)
+  menu.view = 'rows'
+  menu.note = undefined
+  if (picked.value === 'back') {
+    // Nothing chosen: the setting stays as it was.
+  } else if (picked.value === 'custom') {
+    menu.capturing = setting === 'entry' ? 'entry' : 'previous'
+    menu.pressedPrevious = undefined
+  } else if (setting === 'entry') {
+    menu.choice = { ...menu.choice, entry: picked.value === DEFAULT_ENTRY ? undefined : picked.value }
+  } else {
+    const [previous, nextKey] = picked.value.split(' ') as [string, string]
+    const isDefault = previous === DEFAULT_VERBS.previous && nextKey === DEFAULT_VERBS.next
+    menu.choice = { ...menu.choice, verbs: isDefault ? undefined : { previous, next: nextKey } }
+  }
+  $.ui.invalidate('ui.render')
+}
+
+async function openKeyMenu($: EngineInterface): Promise<string | undefined> {
+  const file = await readKeyFile($)
+  if (!file) return `can't read ${await keyFilePath($)}: it isn't JSON. Fix it by hand, then try again.`
+  keyMenu = { file, choice: currentSetup(file), hasFocus: false, view: 'rows', row: 0, option: 0, canCapture: false }
+  await openPane($, true)
+  $.ui.invalidate('ui.render')
+  return undefined
+}
+
+// Writes the choice into the file as it is now, changing only the setup's own
+// entries. Saving is the person's confirmation: the menu showed the changes.
+async function saveKeyMenu($: EngineInterface) {
+  const menu = keyMenu
+  if (!menu) return
+  const file = await readKeyFile($)
+  if (!file) {
+    menu.note = "the file changed and isn't JSON any more: nothing written"
+    return $.ui.invalidate('ui.render')
+  }
+  const after = applySetup(file, menu.choice)
+  const changed = changes(file, after)
+  keyMenu = undefined
+  if (changed.length) {
+    await $.fs.write(await keyFilePath($), `${JSON.stringify(after, null, 2)}\n`)
+    observe(`key setup wrote: ${changed.join(' | ')}`)
+  }
+  await $.ui.toast(changed.length ? 'Synaptik: keys saved' : 'Synaptik: no changes')
+  $.ui.invalidate('ui.render')
+}
+
+// A key the capture line handed over, for the setting it waits for.
+function captureKey(event: { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean }) {
+  const menu = keyMenu
+  if (!menu?.capturing) return
+  const name = bindingName(event)
+  const why = refusal(menu.capturing === 'entry' ? 'entry' : 'verb', name)
+  if (why) {
+    menu.note = `${keyLabel(name)} can't be used: ${why}`
+    return
+  }
+  if (menu.capturing === 'entry') {
+    menu.choice = { ...menu.choice, entry: name }
+    endCapture(menu)
+  } else if (menu.capturing === 'previous') {
+    menu.pressedPrevious = name
+    menu.capturing = 'next'
+    menu.note = `previous: ${keyLabel(name)} · now press the key for next`
+  } else if (name === menu.pressedPrevious) {
+    menu.note = 'previous and next need two different keys: press the key for next'
+  } else {
+    menu.choice = { ...menu.choice, verbs: { previous: menu.pressedPrevious!, next: name } }
+    menu.pressedPrevious = undefined
+    endCapture(menu)
+  }
+}
+
+// A capture done: the line goes, and the keyboard is to come back to the menu
+// (`returnFromCapture`), with the cursor on Save.
+function endCapture(menu: KeyMenu) {
+  menu.row = MENU_ROWS.indexOf('save')
+  menu.capturing = undefined
+  menu.note = undefined
+  menu.isReturning = menu.isWithCapture === true
+  menu.isWithCapture = false
+}
+
+async function returnFromCapture($: EngineInterface) {
+  const moved = await $.ui
+    .focus({ requestId: PANE, key: 'key-enter' })
+    .catch((err: unknown) => ({ deny: String(err) }))
+  observe(`key menu: keyboard back to the menu: ${JSON.stringify(moved)}`)
+}
+
 // "2 accepted · 1 rejected · 1 comment", zero counts left out.
 async function summary($: EngineInterface): Promise<string> {
   const marked = Object.values(await read($, marks))
@@ -409,7 +634,7 @@ export const register: Register = on => {
     await $.command.register({
       name: 'synaptik',
       description: "Mark up the agent's reply in place · help for more",
-      argumentHint: '[help|on|off|log]',
+      argumentHint: '[help|on|off|config|log]',
       // So `off` works while a turn runs, when a drawing gone wrong hurts most.
       immediate: true,
     })
@@ -439,6 +664,11 @@ export const register: Register = on => {
       return { text: wanted ? 'on' : 'off for this session · /synaptik on turns it back on, /plugin disables it for good' }
     }
     if (args === 'log') return { text: observed.join('\n') || '(nothing observed yet)' }
+    if (args === 'config') {
+      if (!(await read($, isOn))) return { text: 'off for this session · /synaptik on turns it back on' }
+      const refused = await openKeyMenu($)
+      return refused ? { text: refused } : {}
+    }
     return { text: `unknown: /synaptik ${args}\n\n${HELP}` }
   }).catch(($, e, next) => next(e))
 
@@ -584,6 +814,15 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('ui.scroll', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
+    // The key setup: ↑/↓ move its cursor, as they move the navigator's
+    // selection; the wheel and the other scroll keys move nothing.
+    if (keyMenu) {
+      if (e.origin.kind === 'person' && !e.pointer && Math.abs(e.by) === 1) {
+        moveMenu(e.by)
+        $.ui.invalidate('ui.render')
+      }
+      return next(e.origin.kind === 'person' ? { ...e, offset: 1 } : e)
+    }
     observe(
       `scroll by=${e.by} offset=${e.offset} rows=${e.contentRows}/${e.bodyRows} ${e.origin.kind}${e.pointer ? ' wheel' : ''}`,
     )
@@ -620,6 +859,8 @@ export const register: Register = on => {
   // and focus sent to ✎ after it.
   on('ui.focus', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     observe(`pane focus → ${e.element ?? '(none)'} by ${e.origin.kind}`)
+    // The key setup's lists and buttons are all stops.
+    if (keyMenu) return next(e)
     const isField = e.element?.startsWith(COMMENT_PREFIX) ?? false
     const isVerb = e.element?.startsWith('verb-') ?? false
     const wasField = (await read($, isCommenting)) && !isField
@@ -650,9 +891,130 @@ export const register: Register = on => {
     return result
   }).catch(($, e, next) => next(e))
 
+  // The key setup's capture line hands over each key pressed while it has the
+  // focus (key-capture.tsx).
+  on('ui.message', async ($, e, next) => {
+    if (e.requestId === PANE && e.element === 'key-capture') {
+      observe(`key menu: captured ${JSON.stringify(e.data)} while waiting for ${keyMenu?.capturing ?? 'nothing'}`)
+      captureKey(e.data as { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean })
+      $.ui.invalidate('ui.render')
+      if (keyMenu?.isReturning) void returnFromCapture($)
+    }
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     if (e.surface !== 'terminal' && e.surface !== 'desktop') return next(e)
-    const { Box, Text, Button, Input, Markdown } = $.ui.resolve(e)
+    const { Box, Text, Button, Input, Markdown, Client } = $.ui.resolve(e)
+
+    // The key setup, drawn instead of the map while it is open. Esc gives the
+    // keyboard back, and closes it unsaved.
+    if (keyMenu) {
+      const menu = keyMenu
+      observe(
+        `key menu drawn focused=${e.props.isFocused} capturing=${menu.capturing ?? '-'} hadFocus=${menu.hasFocus}` +
+          `${menu.isWithCapture ? ' with-capture' : ''}${menu.isReturning ? ' returning' : ''}`,
+      )
+      if (e.props.isFocused) {
+        menu.hasFocus = true
+        menu.isReturning = false
+        // Back from the capture line with no key: Esc there cancels the capture.
+        if (menu.isWithCapture) {
+          observe('key menu: capture cancelled')
+          menu.isWithCapture = false
+          menu.capturing = undefined
+          menu.pressedPrevious = undefined
+          menu.note = undefined
+        }
+      } else if (menu.capturing && menu.hasFocus) {
+        // The click on the capture line took the keyboard.
+        menu.isWithCapture = true
+      } else if (menu.hasFocus && !menu.isReturning) {
+        observe('key menu closed: the pane lost the keyboard (Esc?)')
+        keyMenu = undefined
+        $.ui.invalidate('ui.render')
+      }
+    }
+    if (keyMenu) {
+      const menu = keyMenu
+      isNavigatorFocused = false // the reply is not under review meanwhile
+      // Capturing needs a click, so the mouse: fullscreen (the dock) only.
+      menu.canCapture = e.props.placement === 'dock'
+      const options = menuOptions(menu)
+      const after = applySetup(menu.file, menu.choice)
+      const changed = changes(menu.file, after)
+      const given = costs(menu.choice)
+      // As the navigator's map: the tree one row taller than the window each
+      // way, pinned at offset 1, so ↑/↓ always raise ui.scroll (the scroll trick).
+      const rows = Math.max(6, e.props.scroll.bodyRows)
+      const tone = (isAt: boolean) => ({ color: isAt ? ACCENT : undefined })
+      const prompt =
+        menu.capturing === 'entry'
+          ? '[ click here, then press the key that opens Synaptik ]'
+          : menu.capturing === 'previous'
+            ? '[ click here, then press the key for the previous action ]'
+            : '[ press the key for the next action ]'
+      // The capture line, under the setting it captures for, once.
+      const capture = (row: MenuRow) =>
+        menu.capturing && row === (menu.capturing === 'entry' ? 'entry' : 'verbs') ? (
+          <Box paddingLeft={4}>
+            <Client key="key-capture" module="./key-capture.tsx" props={{ prompt }} height={1} />
+          </Box>
+        ) : null
+      return (
+        <Box flexDirection="column" height={rows + 2} overflow="hidden">
+          <Text> </Text>
+          <Box flexDirection="column" height={rows} overflow="hidden" paddingLeft={1}>
+            <Box flexDirection="row">
+              <Button key={PANE_ANCHOR} plain dimColor label="" onPress={() => undefined} />
+              <Text bold>Synaptik keys</Text>
+            </Box>
+            <Text dimColor>
+              {menu.view === 'rows' ? '↑↓ move · ⏎ change · esc: discard changes' : '↑↓ choose · ⏎ select'}
+            </Text>
+            <Text> </Text>
+            {menu.view === 'rows'
+              ? MENU_ROWS.map((row, i) => (
+                  <Box flexDirection="column">
+                    <Text {...tone(i === menu.row)} wrap="truncate">
+                      {`${i === menu.row ? '▸' : ' '} ${MENU_LABEL[row]}${row === 'entry' || row === 'verbs' ? ` · ${menuValue(menu, row)}` : ''}`}
+                    </Text>
+                    {capture(row)}
+                    {row === 'verbs' && <Text> </Text>}
+                  </Box>
+                ))
+              : [
+                  <Text dimColor>{MENU_LABEL[menu.editing!]}</Text>,
+                  ...options.map((option, i) => (
+                    <Text {...tone(i === menu.option)} wrap="truncate">
+                      {`${i === menu.option ? '▸' : ' '} ${option.label}${option.value === currentValue(menu, menu.editing!) ? '  (now)' : ''}`}
+                    </Text>
+                  )),
+                ]}
+            {menu.note && <Text color="yellow">{menu.note}</Text>}
+            <Text> </Text>
+            {changed.length === 0 ? (
+              <Text dimColor>No changes to ~/.claude/keybindings.json</Text>
+            ) : (
+              <Box flexDirection="column">
+                <Text dimColor>Save changes ~/.claude/keybindings.json:</Text>
+                {changed.map(line => (
+                  <Text>{`  ${line}`}</Text>
+                ))}
+                {given.map(note =>
+                  note.isTip ? <Text dimColor>{`  ${note.line}`}</Text> : <Text color="yellow">{`  ${note.line}`}</Text>,
+                )}
+              </Box>
+            )}
+            {/* ⏎ lands here; ↑/↓ arrive as scrolls. Hidden: the ▸ row shows where. */}
+            <Box display="none">
+              <Button key="key-enter" plain autoFocus label="⏎" onPress={() => enterMenu($)} />
+            </Box>
+          </Box>
+          <Text> </Text>
+        </Box>
+      )
+    }
     const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
     const sel = await read($, selected)
     const marked = await read($, marks)
@@ -934,7 +1296,9 @@ export const register: Register = on => {
     // Under a "Synaptik" header, each line led by ⎿ as Claude Code nests its own
     // output, so with several mods in the band it is clear which lines are ours.
     // The last line, just above the prompt: what the keys do right now.
-    const action = reviewing
+    const action = keyMenu
+      ? 'customizing Synaptik'
+      : reviewing
       ? `Block ${sel + 1} of ${blocks.length} · ↑↓ move · ${keys.choose} choose · ⏎ apply · esc done`
       : staged && isSuggested && box.text.trim() === ''
         ? `tab to take it into the prompt · ${key} to continue responding`

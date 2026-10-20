@@ -2,26 +2,11 @@
 // with the box, the key legend, and its place among other mods' lines.
 
 import { expect, test } from 'claude-code/testing'
-import type { On } from 'claude-code'
 
-import { arrow, band, ENGINE_DRAWING, pane, placement, position, promptBox, start, suggested } from './engine'
+import { arrow, band, ENGINE_DRAWING, keybindings, pane, placement, position, promptBox, start, suggested } from './engine'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Dollar = any
-
-// Each file gets its own mtime, so the band reads it afresh.
-let mtime = 0
-
-// A keybindings file the band can read; without one, its read fails.
-function keybindings(on: On, file: unknown) {
-  const call = (name: string, value: (e: never) => unknown) =>
-    on(name as never, ((_$: unknown, e: never) => ({ value: value(e) })) as never)
-  const text = JSON.stringify(file)
-  const mtimeMs = (mtime += 1)
-  call('env.get', (e: { name: string }) => (e.name === 'HOME' ? '/home/test' : undefined))
-  call('fs.stat', () => ({ kind: 'file', size: text.length, mtimeMs }))
-  call('fs.read', () => text)
-}
 
 async function legend($: Dollar) {
   await pane($, 'dock') // the navigator holds the keyboard

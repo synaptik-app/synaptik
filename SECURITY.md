@@ -17,8 +17,12 @@ sandboxed**. What Synaptik does with them:
 
 - reads the session's transcript and the prompt box, to draw marks and propose
   the compiled prompt;
-- reads `~/.claude/keybindings.json` (found through `$HOME`), to name your key
-  in the band — it never writes it;
+- reads `~/.claude/keybindings.json` (found through `$HOME`), to name your keys
+  in the band;
+- **writes `~/.claude/keybindings.json` only through `/synaptik config`, and only
+  when you press save** — after it has shown the exact entries it adds or removes.
+  It changes only its own two settings (the key that opens Synaptik, the keys
+  that move between its actions) and leaves every other binding as it was;
 - proposes text in the prompt box, and submits it only on your explicit key.
 
 It makes no network requests, runs no commands, and registers no tool hooks: it
