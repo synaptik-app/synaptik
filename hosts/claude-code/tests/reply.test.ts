@@ -3,7 +3,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { ENGINE_DRAWING, PLUGIN, pane, reply, start, toggle } from './engine'
+import { ENGINE_DRAWING, PLUGIN, pane, reply, start, synaptik } from './engine'
 
 const isOwn = async (drawn: Awaited<ReturnType<typeof reply>>) =>
   (await drawn.find({ type: 'Text', text: ENGINE_DRAWING })) !== undefined
@@ -54,10 +54,10 @@ test('a reply other than the adopted one is left alone', async ($, on) => {
   expect(await isOwn(other)).toBe(true)
 })
 
-test('with the mod switched off (/synaptik), even a marked reply is Claude Code’s', async ($, on) => {
+test('with the mod switched off (/synaptik off), even a marked reply is Claude Code’s', async ($, on) => {
   await start($, on, 'rendering')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
-  await toggle($)
+  await synaptik($, 'off')
   expect(await isOwn(await reply($, 'rendering'))).toBe(true)
 })

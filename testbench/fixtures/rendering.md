@@ -32,7 +32,7 @@ A closing paragraph after a horizontal rule.
 
 ### What to check
 
-- Mod on and off look the same apart from marks and the selection — compare with `/synaptik`
+- Mod on and off look the same apart from marks and the selection — compare with `/synaptik off` and `/synaptik on`
 - Numbered list keeps its numbers 1. 2. 3.
 - Nested bullets sit under their parent
 - The table draws as a table
