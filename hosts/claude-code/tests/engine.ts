@@ -67,6 +67,10 @@ export const focusMoves: { element?: string }[] = []
 // `engine`.
 export const placement = { isPlaced: true }
 
+// Every $.ui.open of the navigator, and whether it asked for the keyboard.
+// Reset by `engine`.
+export const opened: { focus: boolean }[] = []
+
 // Every prompt Synaptik submitted (`s` in the navigator). Reset by `engine`.
 export const submitted: string[] = []
 
@@ -78,6 +82,7 @@ export function engine(on: On, rows: Row[]) {
   submitted.length = 0
   promptBox.text = ''
   placement.isPlaced = true
+  opened.length = 0
   const event = (name: string, fn: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => fn(e)) as never)
   const call = (name: string, value: (e: never) => unknown) =>
@@ -85,7 +90,10 @@ export function engine(on: On, rows: Row[]) {
 
   call('session.messages', () => rows)
   call('command.register', (e: { name: string }) => ({ command: e.name }))
-  call('ui.open', () => ({ isPlaced: placement.isPlaced }))
+  call('ui.open', (e: { focus?: boolean }) => {
+    opened.push({ focus: e.focus === true })
+    return { isPlaced: placement.isPlaced }
+  })
   call('ui.invalidate', () => undefined)
   call('prompt.read', () => ({ text: promptBox.text, cursor: promptBox.text.length }))
   event('session.start', (e: { cwd: string }) => ({ cwd: e.cwd }))
@@ -262,9 +270,9 @@ export async function walk($: Dollar, ui: Dollar): Promise<string[]> {
   return seen
 }
 
-// `/synaptik`: switches the whole mod off, or on again.
-export function toggle($: Dollar) {
-  return $.command.run({ command: 'synaptik', args: '' })
+// `/synaptik <args>`, as the person types it; `''` for a bare `/synaptik`.
+export function synaptik($: Dollar, args: string) {
+  return $.command.run({ command: 'synaptik', args })
 }
 
 // What Synaptik observed (`/synaptik log`): where it sent focus, among others.

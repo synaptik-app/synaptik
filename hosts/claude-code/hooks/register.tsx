@@ -110,6 +110,19 @@ let askedRows = 0
 let isSuggested = false
 const PLACEHOLDER = 'Give me a sec to read through this.'
 
+// `/synaptik help` (D39). Claude Code leads a command's output with its name
+// (`synaptik:`), so no line here repeats it.
+const HELP = [
+  "turns the agent's reply into something you mark up in place — accept, reject,",
+  'comment — and sends your marks back as one prompt.',
+  '',
+  '  /synaptik          open the navigator',
+  '  /synaptik on       turn Synaptik on for this session',
+  '  /synaptik off      turn it off for this session (/plugin disables it for good)',
+  '  /synaptik log      what Synaptik observed, for bug reports',
+  '  /synaptik help     this list',
+].join('\n')
+
 // The band's header, and the lead of each line under it.
 const TAGLINE = 'respond to the reply in place'
 const NEST = '⎿  '
@@ -201,10 +214,17 @@ function drawnRows(text: string, width: number): number {
   return body.reduce((n, l) => n + Math.max(1, Math.ceil(l.length / width)), 0)
 }
 
-async function openPane($: EngineInterface) {
+// `focus`: the person asked (`/synaptik`), so the navigator takes the keyboard.
+async function openPane($: EngineInterface, focus = false) {
   const rows = classicRows(await read($, lastText))
   askedRows = rows
-  const opened = await $.ui.open({ id: PANE, title: 'Synaptik', columns: PANE_COLUMNS, rows })
+  const opened = await $.ui.open({
+    id: PANE,
+    title: 'Synaptik',
+    columns: PANE_COLUMNS,
+    rows,
+    ...(focus ? { focus: true as const } : {}),
+  })
   await update($, isPaneShown, () => opened.isPlaced)
   // Pinning can fail (the pane not drawn yet); it must not abort the caller —
   // session.start adopts the reply around this call.
@@ -388,20 +408,39 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'synaptik',
-      description: 'Synaptik spike: toggle, or `log` for observations',
+      description: "Mark up the agent's reply in place · help for more",
+      argumentHint: '[help|on|off|log]',
+      // So `off` works while a turn runs, when a drawing gone wrong hurts most.
+      immediate: true,
     })
     // A resumed session (and every reload of this mod) already has a reply.
     await adoptLastReply($)
     return next(e)
   }).catch(($, e, next) => next(e))
 
-  on('command.run', { command: 'synaptik' }, async ($, e) => {
-    if ((e.args ?? '').trim() === 'log') {
-      return { text: observed.join('\n') || '(nothing observed yet)' }
+  // `/synaptik` and its subcommands (D39, SPEC §10).
+  on('command.run', { command: 'synaptik' }, async ($, e, next) => {
+    const args = (e.args ?? '').trim()
+    if (args === '') {
+      if (!(await read($, isOn))) return { text: 'off for this session · /synaptik on turns it back on' }
+      if (!(await read($, lastText))) return { text: 'nothing to respond to yet — the navigator opens on the next reply' }
+      await openPane($, true)
+      return {}
     }
-    await update($, isOn, v => !v)
-    return { text: `synaptik spike: ${(await read($, isOn)) ? 'on' : 'off'}` }
-  })
+    if (args === 'help') return { text: HELP }
+    if (args === 'on' || args === 'off') {
+      const wanted = args === 'on'
+      const was = await read($, isOn)
+      await update($, isOn, () => wanted)
+      // Redraw at once: the reply, band and navigator read it.
+      $.ui.invalidate('ui.render')
+      const now = wanted ? 'on' : 'off for this session'
+      if (was === wanted) return { text: `already ${now}` }
+      return { text: wanted ? 'on' : 'off for this session · /synaptik on turns it back on, /plugin disables it for good' }
+    }
+    if (args === 'log') return { text: observed.join('\n') || '(nothing observed yet)' }
+    return { text: `unknown: /synaptik ${args}\n\n${HELP}` }
+  }).catch(($, e, next) => next(e))
 
   // While a turn runs, a new reply is on its way and will replace the tray
   // (SPEC §5), so marking is off: the reply and the band draw as vanilla.

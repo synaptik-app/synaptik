@@ -61,7 +61,8 @@ claude --plugin-dir ./synaptik-0.1.0-alpha.1.zip
 ```
 
 `/plugin` inside a session lists what loaded (`synaptik@skills-dir` for the
-unzipped copy); `/synaptik` turns it off and on. To update, remove
+unzipped copy). `/synaptik` opens the navigator, `/synaptik off` and `/synaptik on`
+turn it off and on for the session, and `/synaptik help` lists the rest. To update, remove
 `~/.claude/skills/synaptik` and unzip the newer release. Installing by name from
 a marketplace comes with v0.1.
 
