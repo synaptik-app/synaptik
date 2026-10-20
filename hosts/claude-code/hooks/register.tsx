@@ -560,21 +560,30 @@ export const register: Register = on => {
 
   // The ring stops on the verbs and the comment field only, so ←→ walk them.
   // Inside the comment field ↑/↓ walk the ring too (AbovePromptInput binds
-  // them), so a move off the open field onto anything that is not a verb —
-  // another button, or Claude Code's own stop on the pane (no element) — is
+  // them), so a move off the open field onto anything that is not a verb is
   // sent to ✎ instead of refused: refusing left the ring stranded off the verbs.
+  // Another element is redirected in the move itself. Claude Code's own stop on
+  // the pane (no element) cannot be: the engine refuses a redirect of a move
+  // that named none (#60). That move goes on as it is; the comment is finished
+  // and focus sent to ✎ after it.
   on('ui.focus', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     observe(`pane focus → ${e.element ?? '(none)'} by ${e.origin.kind}`)
     const isField = e.element?.startsWith(COMMENT_PREFIX) ?? false
     const isVerb = e.element?.startsWith('verb-') ?? false
     const wasField = (await read($, isCommenting)) && !isField
-    const target = !isField && !isVerb && wasField ? 'verb-comment' : e.element
+    const isEngineStop = e.element === undefined
+    const target = !isField && !isVerb && wasField && !isEngineStop ? 'verb-comment' : e.element
     const isStop = target === undefined || target.startsWith('verb-') || isField
     if (!isStop) return { deny: 'synaptik: not a stop' }
     const result = await next(target === e.element ? e : { ...e, element: target })
     // Finish the comment only once the ring has left the field: removing the
     // field while it still holds the ring loses the move, and ←→ with it.
-    if (!result.deny && !isField) await finishComment($)
+    if (!result.deny && !isField) {
+      // Not awaited: a focus move from inside this hook would wait on the move
+      // it is part of.
+      if (wasField && isEngineStop) void leaveComment($)
+      else await finishComment($)
+    }
     if (!result.deny) {
       await update($, focusedVerb, () => target ?? '')
     }
