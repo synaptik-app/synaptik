@@ -1045,7 +1045,7 @@ key of `ctrl+x ←/→` (pane resize).
 
 **Candidate:** a `/synaptik configure` that shows the bindings it would add, asks
 for confirmation, and merges them into the file (§11, item 10). Allowed under P1
-as revised.
+as revised. **Settled by D38** (`/synaptik config`).
 
 ---
 
@@ -1188,6 +1188,62 @@ stays that.
 the mod cannot bring into view (it scrolls only to a whole transcript row, top or
 end). Parked on the API (#64), with what would unblock it; no workaround — a band
 preview, folding far blocks, and following the scrolling were set aside.
+
+---
+
+### D38 — `/synaptik config` writes the key bindings, after the person confirms
+**Status:** settled · added 2026-10-20 · settles D32's candidate · spike on #8
+
+The keys that matter most for adapting are the entry key and the verb keys, and
+they live in `~/.claude/keybindings.json` — the only place Claude Code takes them
+from. **`/synaptik config` edits that file**: it reads what is bound, offers
+presets and a custom key, shows exactly what it will add and which of Claude
+Code's own keys a choice gives up, and **writes only when the person confirms**.
+Never silently (D32, P1 as revised).
+
+| Setting | Context → action | Choices |
+|---|---|---|
+| Entering the navigator | `Chat` → `abovePrompt:focus` | `ctrl+x tab` (default) · `ctrl+s` · custom |
+| Choosing a verb | `Pane` → `abovePrompt:previous` / `:next` | Tab / ⇧Tab (default) · ← / → · custom |
+
+- **Custom** is captured by a `Client` region: click it, press the key. That
+  needs the mouse, so **fullscreen only**; classic offers the presets. Keys
+  Claude Code handles itself never reach a plugin (`ctrl+c`, `ctrl+x` — the first
+  half of its chords), so `ctrl+x tab` is a preset, never a capture. One press,
+  not a sequence.
+- **The menu is a mode of the navigator pane** — one tab; Esc returns to the
+  navigator. (A second pane showed as a second tab.)
+- **Keys are not `userConfig` options.** Claude Code obeys only the file; a copy
+  in `userConfig` would have to be written into the file on reload, unseen, and
+  would drift from hand edits. One store: the file.
+
+**`userConfig` holds behaviour options**, as `/config` rows: changing one reloads
+the mod with the new value (`register(on, options)`), which closes its panes —
+so the key menu, which writes the file, does not edit them. Only one now: **marks
+after review**, keep (default) or only while reviewing (D35). Others wait for a
+real need (E10). No colours for now.
+
+**Consequence:** `SECURITY.md` must say the mod can write `keybindings.json`, and
+only after confirmation — updated with the change that builds the menu.
+
+---
+
+### D39 — The `/synaptik` command
+**Status:** settled · added 2026-10-20
+
+One command, its subcommands as arguments:
+
+| Command | Does |
+|---|---|
+| `/synaptik` | opens the navigator — also when Claude Code held it back on a narrow terminal (#20) |
+| `/synaptik help` | lists the commands and what each does |
+| `/synaptik on` / `off` | the kill switch (§12), **this session only**; disabling the mod for good is `/plugin` |
+| `/synaptik config` | the key setup (D38) |
+| `/synaptik log` | what the hooks observed, for debugging |
+
+**Why a bare `/synaptik` opens rather than toggles:** a bare command that switches
+the mod off is easy to hit by accident, and opening the navigator is what a
+person typing the mod's name most likely wants. `on`/`off` are explicit.
 
 ---
 
@@ -1878,7 +1934,7 @@ the numbers are not decision numbers.
    scrolling the turn-duration row after it to the window's bottom); the middle
    is scrolled by hand.
 10. **Key bindings cannot ship with the mod** (D32). Candidate: `/synaptik
-    configure`.
+    configure` — settled by D38.
 11. **Engine-written rows are recognised by text** (`No response requested.`).
 12. **A reply split around tool calls** arrives as several `AssistantMessage`
     pieces, and the transcript holds them as separate messages. Adopting only the

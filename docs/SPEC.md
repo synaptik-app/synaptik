@@ -291,8 +291,9 @@ band stands alone as the key legend for that mode. Claude Code's own drawing
 `Box` with `width` is refused** — the whole band falls back to Claude Code's own —
 so `width` is set only on the box around Synaptik's own lines.
 
-The keys named are the person's own, read from `~/.claude/keybindings.json` (a
-plain read; the mod never writes it):
+The keys named are the person's own, read from `~/.claude/keybindings.json`.
+The mod writes that file only through `/synaptik config`, after the person
+confirms (D38):
 
 - **Entering:** the binding for `abovePrompt:focus` in the `Chat` context, or
   `ctrl+x tab` when there is none.
@@ -529,7 +530,8 @@ dropped. `⏎` or backspace on an empty line cancels it.
 | Resize the docked pane | `ctrl+x ←` / `ctrl+x →` | conflicts with ←/→ above |
 
 **A mod cannot ship key bindings.** Every improvement on the default column is
-the person's own `~/.claude/keybindings.json`:
+the person's own `~/.claude/keybindings.json` — set by hand, or by `/synaptik
+config` (below), which writes it after the person confirms:
 
 ```json
 { "context": "Chat", "bindings": { "ctrl+s": "abovePrompt:focus" } },
@@ -620,6 +622,40 @@ inline layout below 110 columns, where a vertical map does not fit.
 
 ---
 
+### The `/synaptik` command (D39)
+
+| Command | Does |
+|---|---|
+| `/synaptik` | opens the navigator — also when Claude Code held it back (§10, *Opening the navigator*) |
+| `/synaptik help` | lists the commands and what each does |
+| `/synaptik on` / `off` | the kill switch (§12), this session only; `/plugin` disables the mod for good |
+| `/synaptik config` | the key setup, below |
+| `/synaptik log` | what the hooks observed |
+
+### Key setup: `/synaptik config` (D38)
+
+A mode of the navigator pane (one tab; Esc returns to the navigator). Two
+settings, each a list — ↑/↓ within it, Tab to the next, ⏎ picks:
+
+| Setting | Writes | Choices |
+|---|---|---|
+| Entering the navigator | `Chat`: `"<key>": "abovePrompt:focus"` | `ctrl+x tab` (default) · `ctrl+s` · custom |
+| Choosing a verb | `Pane`: `"<prev>": "abovePrompt:previous"`, `"<next>": "abovePrompt:next"` | Tab / ⇧Tab (default) · ← / → · custom |
+
+- The current bindings are read from the file and shown first.
+- **Custom:** click the capture line, press the key; one press. Fullscreen only
+  (it needs the mouse). Keys Claude Code handles itself (`ctrl+c`, `ctrl+x`) never
+  arrive.
+- **Before writing**, the exact entries to add or remove, and what they give up:
+  `ctrl+s` is `chat:stash`; `ctrl+r` is history search; ← / → in panes swallow the
+  second key of `ctrl+x ←/→` (pane resize), and ← on an empty prompt opens agent
+  view unless `leftArrowOpensAgents` is off. ⏎ writes; Esc writes nothing.
+- The write merges into the file: other contexts and bindings are left as they
+  are. The band picks the new keys up at once (§7).
+
+**Behaviour options are `/config` rows** (`userConfig`), not part of this menu:
+for now only *marks after review* — keep, or only while reviewing (D35).
+
 ## 11. Hooks registered
 
 **No tool hooks.** The mod cannot interfere with the agent's operation — it
@@ -627,7 +663,7 @@ draws, and it proposes text for the prompt box.
 
 | Hook | Matcher | Purpose |
 |---|---|---|
-| `session.start` | — | register the kill switch, read the entry key, adopt the last reply |
+| `session.start` | — | register `/synaptik`, adopt the last reply |
 | `turn.start` | — | marking off while a turn runs |
 | `turn.complete` | — | adopt the new reply, marking on |
 | `ui.render` | `{ component: 'AssistantMessage' }` | bar, marks, menu, comments |
@@ -672,8 +708,8 @@ Check every future feature against this.
 **Ship a kill switch.** A key or `/command` that makes the render hooks pass
 through while the session continues. The failure you will actually hit while
 developing is rendering being *wrong*, not throwing — and restarting a session to
-escape it is painful mid-task. The spike's is `/synaptik`; a slash command's
-output row is read by the model, which P1 (as revised) allows.
+escape it is painful mid-task. It is `/synaptik off`, for the session (D39); a
+slash command's output row is read by the model, which P1 (as revised) allows.
 
 **Never interfere with the prompt/response flow.** The mod proposes and draws; it
 never writes the prompt box behind the person's back, never submits on its own,
