@@ -7,6 +7,12 @@ import type { On } from 'claude-code'
 import { focus, focusMoves, log, pane, reply, start, suggested } from './engine'
 
 const F = 'rendering'
+// The plugin's type config has no timers; the test runtime does.
+declare const setTimeout: (run: () => void, ms: number) => unknown
+
+// Lets work a hook started without awaiting it run to the end.
+const settled = () => new Promise<void>(resolve => setTimeout(() => resolve(), 0))
+
 // The comment field's key: a fresh one each time it opens, first `comment-1`.
 const FIELD = 'comment-1'
 
@@ -80,15 +86,24 @@ test('a move off the field onto another element lands on ✎ comment (#17)', asy
   expect(await ui.find({ type: 'Text', text: /Your notes · ✎1/ })).toBeDefined()
 })
 
-// The other half of #17 does not hold: Claude Code refuses a redirect of a move
-// that named no element ("one of the engine's stops"), so the hook's .catch
-// passes the move on unchanged. Recorded as it is, for the refactor to keep.
-test('a move off the field to the pane’s own stop is passed on unchanged', async ($, on) => {
+test('a move off the field to the pane’s own stop finishes the comment and sends focus to ✎ (#60)', async ($, on) => {
   const ui = await open($, on)
   await ui.input({ key: FIELD, text: 'too vague', kind: 'change' })
   await focus($, undefined)
+  // Claude Code refuses a redirect of a move to its own stop: it goes on as it is.
   expect(focusMoves.at(-1)).toEqual({ element: undefined })
-  expect(await ui.find({ type: 'Input', key: FIELD })).toBeDefined()
+  await settled()
+  expect(await log($)).toContain('leave comment → verb-comment')
+  expect(await ui.find({ type: 'Input', key: FIELD })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /Your notes · ✎1/ })).toBeDefined()
+})
+
+test('the same move with nothing typed drops the comment', async ($, on) => {
+  const ui = await open($, on)
+  await focus($, undefined)
+  await settled()
+  expect(await ui.find({ type: 'Input', key: FIELD })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /Nothing marked yet/ })).toBeDefined()
 })
 
 test('leaving the field empty drops the comment', async ($, on) => {
