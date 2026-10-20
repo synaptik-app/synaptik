@@ -562,9 +562,10 @@ taller than the window always lands on its **top**, whatever the alignment. So:
 ⚠️ The newest turn row seen is used; a turn drawn without one would scroll to an
 older turn's row.
 
-The navigator does not follow the terminal's own scrolling. Estimating which
-blocks are on screen from `e.props.onScreen` was tried and dropped: the mod
-cannot measure how the reply wraps, and the estimate was never steady.
+The navigator does not follow the terminal's own scrolling: blocks move by the
+keys only, and the wheel scrolls the reply (D37). In a reply taller than about
+two screens the middle cannot be brought into view by the mod; the person scrolls
+there, and Home/End give the two ends (#64).
 
 ### The classic renderer: the navigator as a block viewer
 
