@@ -662,7 +662,14 @@ Synaptik keys
 | Open Synaptik | `Chat`: `"<key>": "abovePrompt:focus"` | `ctrl+x tab` (default) · `ctrl+s` · custom |
 | Move between actions | `Pane`: `"<prev>": "abovePrompt:previous"`, `"<next>": "abovePrompt:next"` | Tab / ⇧Tab (default) · ← / → · custom |
 
+- **The file** is `keybindings.json` in Claude Code's config folder:
+  `CLAUDE_CONFIG_DIR` when set, else `.claude` in the home folder — `HOME`, or
+  `USERPROFILE` on Windows, where PowerShell and cmd set no `HOME` (#74). With
+  none of them set there is no path, and the setup says so. The menu shows the
+  path it writes, with the home folder as `~`.
 - The current bindings are read from the file and shown first.
+- **A failed write is never silent:** the menu stays open with the choice, and
+  says where it couldn't write and why.
 - **Custom:** the capture line appears under the setting; click it, press the
   key (for the actions, previous then next). The click takes the keyboard from
   the pane, so it is not read as Esc; Esc in the capture line cancels the

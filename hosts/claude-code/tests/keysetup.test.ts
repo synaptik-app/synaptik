@@ -8,7 +8,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { arrow, band, keybindings, log, pane, position, press, start, synaptik, written } from './engine'
+import { arrow, band, failing, keybindings, log, pane, position, press, start, synaptik, written } from './engine'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Dollar = any
@@ -26,9 +26,9 @@ async function menu($: Dollar, placement: 'dock' | 'inline' = 'dock', isFocused 
 }
 
 // Each test starts with no drawing of its own.
-async function begin($: Dollar, on: Dollar, file: unknown = DEFAULTS) {
+async function begin($: Dollar, on: Dollar, file: unknown = DEFAULTS, env?: Record<string, string>) {
   drawn = undefined
-  keybindings(on, file)
+  keybindings(on, file, env)
   await start($, on, 'rendering')
   await synaptik($, 'config')
 }
@@ -246,4 +246,59 @@ test('the setup names its keys at the top, and the band says what is going on', 
   await begin($, on)
   expect(await lines($)).toContain('↑↓ move · ⏎ change · esc: discard changes')
   expect(await (await band($)).find({ type: 'Text', text: /customizing Synaptik/ })).toBeDefined()
+})
+
+// Where the file is (#74): Claude Code's config folder, from CLAUDE_CONFIG_DIR,
+// else HOME, else USERPROFILE (Windows without HOME).
+
+// Open Synaptik → ctrl+s → Save.
+async function saveCtrlS($: Dollar) {
+  await enter($)
+  await down()($)
+  await enter($)
+  await down(2)($)
+  await enter($)
+}
+
+test('Windows without HOME: the file is under USERPROFILE, and the menu shows it as ~', async ($, on) => {
+  await begin($, on, DEFAULTS, { USERPROFILE: 'C:\\Users\\ada' })
+  await enter($)
+  await down()($)
+  await enter($)
+  expect(await lines($)).toContain('Save changes ~\\.claude\\keybindings.json:')
+  await down(2)($)
+  await enter($)
+  // Off Windows the kit reads a `C:\…` path as relative and prefixes the working
+  // folder; on Windows it is absolute. The path the mod built is the tail.
+  expect(written.map(w => w.path.endsWith('C:\\Users\\ada\\.claude\\keybindings.json'))).toEqual([true])
+})
+
+test('CLAUDE_CONFIG_DIR: the file is in that folder', async ($, on) => {
+  await begin($, on, DEFAULTS, { CLAUDE_CONFIG_DIR: '/opt/claude', HOME: '/home/test' })
+  await saveCtrlS($)
+  expect(written.map(w => w.path)).toEqual(['/opt/claude/keybindings.json'])
+})
+
+test('no folder at all: /synaptik config says so and opens nothing', async ($, on) => {
+  drawn = undefined
+  keybindings(on, DEFAULTS, {})
+  await start($, on, 'rendering')
+  expect((await synaptik($, 'config'))?.text).toMatch(/can't find Claude Code's config folder/)
+  expect(await lines($)).not.toContain('Synaptik keys')
+  expect(written).toEqual([])
+})
+
+test('a failed write keeps the menu and the choice, and says why', async ($, on) => {
+  await begin($, on)
+  failing.write = 'EACCES: permission denied'
+  await saveCtrlS($)
+  const shown = await lines($)
+  expect(shown).toContain('Synaptik keys')
+  // The reason is the file system's in a session; the kit skips a test hook that
+  // throws, so here it reads as the call having no answer.
+  expect(shown.some(l => /^couldn't write ~\/\.claude\/keybindings\.json: /.test(l))).toBe(true)
+  expect(shown).toContain('  Open Synaptik · ctrl+s')
+  failing.write = ''
+  await enter($) // the cursor is still on Save: try again
+  expect(written.map(w => w.path)).toEqual(['/home/test/.claude/keybindings.json'])
 })

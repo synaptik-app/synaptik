@@ -21,6 +21,8 @@ import { DEFAULT_KEYS, keyLabel, keysFrom, parseKeyFile } from '../src/keys'
 import type { KeyFile, Keys } from '../src/keys'
 import { applySetup, bindingName, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS, refusal } from '../src/keysetup'
 import type { Setup } from '../src/keysetup'
+import { keybindingsPath, shownPath } from '../src/configpath'
+import type { ConfigEnv } from '../src/configpath'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
 const isWorking = atom({ plugin: 'synaptik', key: 'isWorking' } as const, false)
@@ -350,15 +352,16 @@ async function sendTray($: EngineInterface) {
   await update($, comments, () => ({}))
 }
 
-// The keys the band names (src/keys.ts), from the person's own
-// ~/.claude/keybindings.json — a plain read; the mod never writes it. Claude Code
-// applies an edited file at once, so the band reads it again whenever its mtime
-// changes. Module variable, not $.state: the band's render hook reads it.
+// The keys the band names (src/keys.ts), from the person's own keybindings.json
+// (written only by `/synaptik config`, on Save: D38). Claude Code applies an
+// edited file at once, so the band reads it again whenever its mtime changes.
+// Module variable, not $.state: the band's render hook reads it.
 let keyFile: { mtimeMs: number; keys: Keys } | undefined
 
 async function currentKeys($: EngineInterface): Promise<Keys> {
   try {
-    const path = `${await $.env.get('HOME')}/.claude/keybindings.json`
+    const path = await keyFilePath($)
+    if (!path) throw new Error('no config folder')
     const { mtimeMs } = await $.fs.stat(path)
     if (keyFile?.mtimeMs !== mtimeMs) keyFile = { mtimeMs, keys: keysFrom(parseKeyFile(await $.fs.read(path))) }
     return keyFile.keys
@@ -369,15 +372,27 @@ async function currentKeys($: EngineInterface): Promise<Keys> {
   }
 }
 
-// The person's ~/.claude/keybindings.json, whole: `undefined` when it is there
-// but not JSON — the key setup then writes nothing.
-async function keyFilePath($: EngineInterface) {
-  return `${await $.env.get('HOME')}/.claude/keybindings.json`
+// The variables that place Claude Code's config folder (src/configpath.ts).
+// Names written out: `claude plugin validate` lists what the mod reads.
+async function configEnv($: EngineInterface): Promise<ConfigEnv> {
+  return {
+    CLAUDE_CONFIG_DIR: await $.env.get('CLAUDE_CONFIG_DIR'),
+    HOME: await $.env.get('HOME'),
+    USERPROFILE: await $.env.get('USERPROFILE'),
+  }
 }
-async function readKeyFile($: EngineInterface): Promise<KeyFile | undefined> {
+
+// Where keybindings.json is, or undefined when no variable names a folder.
+async function keyFilePath($: EngineInterface): Promise<string | undefined> {
+  return keybindingsPath(await configEnv($))
+}
+
+// The person's keybindings.json, whole: `{}` when there is none yet,
+// `undefined` when it is there but not JSON — the key setup then writes nothing.
+async function readKeyFile($: EngineInterface, path: string): Promise<KeyFile | undefined> {
   let text: string
   try {
-    text = String(await $.fs.read(await keyFilePath($)))
+    text = String(await $.fs.read(path))
   } catch {
     return {} // no file yet: the setup creates it
   }
@@ -402,6 +417,9 @@ type KeyMenu = {
   pressedPrevious?: string
   // A line for the person: what to press, or why a key was refused.
   note?: string
+  // The file's path, and as the menu shows it (`~/.claude/keybindings.json`).
+  path: string
+  shown: string
   // Seen holding the keyboard: losing it after that is Esc.
   hasFocus: boolean
   // The keyboard is with the capture line, given by a click: losing it then is
@@ -519,9 +537,13 @@ async function enterMenu($: EngineInterface) {
 }
 
 async function openKeyMenu($: EngineInterface): Promise<string | undefined> {
-  const file = await readKeyFile($)
-  if (!file) return `can't read ${await keyFilePath($)}: it isn't JSON. Fix it by hand, then try again.`
-  keyMenu = { file, choice: currentSetup(file), hasFocus: false, view: 'rows', row: 0, option: 0, canCapture: false }
+  const env = await configEnv($)
+  const path = keybindingsPath(env)
+  if (!path) return "can't find Claude Code's config folder: CLAUDE_CONFIG_DIR, HOME and USERPROFILE are all unset. Nothing to edit."
+  const file = await readKeyFile($, path)
+  if (!file) return `can't read ${path}: it isn't JSON. Fix it by hand, then try again.`
+  const shown = shownPath(path, env)
+  keyMenu = { file, path, shown, choice: currentSetup(file), hasFocus: false, view: 'rows', row: 0, option: 0, canCapture: false }
   await openPane($, true)
   $.ui.invalidate('ui.render')
   return undefined
@@ -532,18 +554,25 @@ async function openKeyMenu($: EngineInterface): Promise<string | undefined> {
 async function saveKeyMenu($: EngineInterface) {
   const menu = keyMenu
   if (!menu) return
-  const file = await readKeyFile($)
+  const file = await readKeyFile($, menu.path)
   if (!file) {
     menu.note = "the file changed and isn't JSON any more: nothing written"
     return $.ui.invalidate('ui.render')
   }
   const after = applySetup(file, menu.choice)
   const changed = changes(file, after)
-  keyMenu = undefined
   if (changed.length) {
-    await $.fs.write(await keyFilePath($), `${JSON.stringify(after, null, 2)}\n`)
-    observe(`key setup wrote: ${changed.join(' | ')}`)
+    try {
+      await $.fs.write(menu.path, `${JSON.stringify(after, null, 2)}\n`)
+    } catch (err) {
+      // The menu stays, with the choice, and says why: a failed save is never silent.
+      menu.note = `couldn't write ${menu.shown}: ${String(err)}`
+      observe(`key setup failed to write ${menu.path}: ${String(err)}`)
+      return $.ui.invalidate('ui.render')
+    }
+    observe(`key setup wrote ${menu.path}: ${changed.join(' | ')}`)
   }
+  keyMenu = undefined
   await $.ui.toast(changed.length ? 'Synaptik: keys saved' : 'Synaptik: no changes')
   $.ui.invalidate('ui.render')
 }
@@ -994,10 +1023,10 @@ export const register: Register = on => {
             {menu.note && <Text color="yellow">{menu.note}</Text>}
             <Text> </Text>
             {changed.length === 0 ? (
-              <Text dimColor>No changes to ~/.claude/keybindings.json</Text>
+              <Text dimColor wrap="truncate">{`No changes to ${menu.shown}`}</Text>
             ) : (
               <Box flexDirection="column">
-                <Text dimColor>Save changes ~/.claude/keybindings.json:</Text>
+                <Text dimColor wrap="truncate">{`Save changes ${menu.shown}:`}</Text>
                 {changed.map(line => (
                   <Text>{`  ${line}`}</Text>
                 ))}
