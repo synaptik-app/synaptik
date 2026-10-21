@@ -46,8 +46,13 @@ says so when chosen. Expect rough edges, and changes to keys and layout.
 
 ## Try it
 
-Claude Code **v2.1.287+** in a terminal, or **v2.1.286+** in the Claude desktop
-app's Code tab. Mods are enabled by default; `claude --version` reports yours.
+Claude Code **v2.1.287+** in a terminal — any terminal, including the ones in
+VS Code, Cursor and JetBrains IDEs, and over SSH or tmux. Mods are enabled by
+default; `claude --version` reports yours.
+
+Synaptik stays out of the Claude Desktop app's Code tab and the mobile app: both
+have review features of their own (replies on a passage, side chats, diff
+comments). The VS Code extension's panel is planned next.
 
 Download `synaptik-<version>.zip` from
 [Releases](https://github.com/synaptik-app/synaptik/releases), then either:

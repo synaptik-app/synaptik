@@ -56,6 +56,12 @@ the engine writes itself.
 
 Older messages are inert. Nothing is persisted across sessions.
 
+**Only Claude Code's terminal renderer** (`e.surface === 'terminal'`): any
+terminal, IDE-integrated terminals, the JetBrains plugin, tmux, SSH. On the
+Desktop app's Code tab and the mobile app — which have review features of their
+own — and on every other surface, every hook passes through with `next(e)`
+(D40). The VS Code panel is the next surface (#76).
+
 ---
 
 ## 3. Blocks
@@ -830,9 +836,9 @@ importing from `./src/` stays inside it. Keep it that way — imports *above* th
 plugin root may not resolve, which is the reason `src/` lives under the host
 rather than at the top level.
 
-Requires Claude Code **v2.1.287+** in the terminal, **v2.1.286+** in the Desktop
-Code tab. The mod draws in both; `Raster` and `Image` are terminal-only and
-`Svg` is Desktop-only, so neither is used here.
+Requires Claude Code **v2.1.287+**, in the terminal (D40). `Raster` and `Image`
+are terminal-only and unused; the mod draws with `Box`, `Text`, `Button`,
+`Input` and `Markdown`.
 
 ### Known limits
 

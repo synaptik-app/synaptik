@@ -39,6 +39,9 @@ const isPaneShown = atom({ plugin: 'synaptik', key: 'isPaneShown' } as const, fa
 const commentSeed = atom({ plugin: 'synaptik', key: 'commentSeed' } as const, '')
 const commentSeq = atom({ plugin: 'synaptik', key: 'commentSeq' } as const, 0)
 
+// Synaptik draws only in the terminal renderer (D40): every render hook passes
+// any other surface (the Desktop app, the mobile app, VS Code) to next(e).
+
 // Module variable, not $.state: a render hook may not write state. Lost on reload.
 const observed: string[] = []
 function observe(line: string) {
@@ -679,7 +682,7 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     if (!(await read($, isOn)) || (await read($, isWorking))) return next(e)
-    if (e.surface !== 'terminal' && e.surface !== 'desktop') return next(e)
+    if (e.surface !== 'terminal') return next(e)
 
     const text = e.props.text
     const target = await read($, lastText)
@@ -871,7 +874,7 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
-    if (e.surface !== 'terminal' && e.surface !== 'desktop') return next(e)
+    if (e.surface !== 'terminal') return next(e)
     const { Box, Text, Button, Input, Markdown } = $.ui.resolve(e)
 
     // The key setup, drawn instead of the map while it is open. Esc gives the
@@ -1229,7 +1232,7 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (!(await read($, isOn)) || e.props.hasSurvey || e.props.isWorking) return next(e)
-    if (e.surface !== 'terminal' && e.surface !== 'desktop') return next(e)
+    if (e.surface !== 'terminal') return next(e)
     const target = await read($, lastText)
     if (!target) return next(e)
 
