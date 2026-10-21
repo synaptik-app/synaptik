@@ -8,7 +8,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { arrow, band, failing, keybindings, log, pane, position, press, start, synaptik, written } from './engine'
+import { arrow, band, failing, keybindings, pane, position, start, synaptik, written } from './engine'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Dollar = any
@@ -55,6 +55,13 @@ test('/synaptik config opens the setup in the navigator: its rows, the cursor on
   expect(shown).toContain('No changes to ~/.claude/keybindings.json')
 })
 
+test('a key bound by hand shows as its own option, so opening the menu never loses it', async ($, on) => {
+  await begin($, on, { bindings: [{ context: 'Chat', bindings: { 'ctrl+g': 'abovePrompt:focus' } }] })
+  expect(await lines($)).toContain('▸ Open Synaptik · ctrl+g')
+  await enter($)
+  expect(await lines($)).toContain('▸ ctrl+g  (now)')
+})
+
 test('the setup starts from what the file binds', async ($, on) => {
   await begin($, on, {
     bindings: [
@@ -85,7 +92,7 @@ test('⏎ on a setting opens its options, the cursor on the current one', async 
   expect(shown).toContain('  ‹ back')
   expect(shown).toContain('▸ ctrl+x tab (default)  (now)')
   expect(shown).toContain('  ctrl+s')
-  expect(shown).toContain('  custom…')
+  expect(shown.some(l => /custom/.test(l))).toBe(false) // presets only (#80)
 })
 
 test('⏎ on an option takes it and returns to the rows, listing the change and its cost', async ($, on) => {
@@ -157,68 +164,12 @@ test('Esc — the pane giving the keyboard back — closes the setup unsaved', a
   expect(written).toEqual([])
 })
 
-test('custom: the key pressed in the capture line becomes the setting, and the cursor goes to Save', async ($, on) => {
-  await begin($, on)
-  await enter($)
-  await down(2)($) // custom…
-  await enter($)
-  expect(await (await menu($)).find({ type: 'Client', key: 'key-capture' })).toBeDefined()
-  await menu($, 'dock', false) // the click: the capture line holds the keyboard
-  await press(await menu($, 'dock', false), 'g', { ctrl: true })
-  const shown = await lines($)
-  expect(shown).toContain('  Open Synaptik · ctrl+g')
-  expect(shown).toContain('▸ Save')
-  expect(shown).toContain('  + Chat  ctrl+g → abovePrompt:focus')
-  expect(await (await menu($)).find({ type: 'Client', key: 'key-capture' })).toBeUndefined()
-  expect(await log($)).toContain('key menu: keyboard back to the menu')
-})
-
-test('custom: Esc in the capture line cancels the capture; a second Esc discards the setup', async ($, on) => {
-  await begin($, on)
-  await enter($)
-  await down(2)($)
-  await enter($)
-  await menu($, 'dock', false) // the click
-  expect((await lines($)).includes('Synaptik keys')).toBe(true) // Esc in the capture line: back with the menu
-  expect(await (await menu($)).find({ type: 'Client', key: 'key-capture' })).toBeUndefined()
-  await menu($, 'dock', false) // Esc in the menu
-  expect(await lines($)).not.toContain('Synaptik keys')
-  expect(written).toEqual([])
-})
-
-test('custom: a key that would break typing is refused, and the line keeps waiting', async ($, on) => {
-  await begin($, on)
-  await enter($)
-  await down(2)($)
-  await enter($)
-  await press(await menu($), 'g')
-  expect((await lines($)).some(l => /g can't be used: .*typing/.test(l))).toBe(true)
-  expect(await (await menu($)).find({ type: 'Client', key: 'key-capture' })).toBeDefined()
-})
-
-test('custom actions: two presses, previous then next', async ($, on) => {
-  await begin($, on)
-  await down()($)
-  await enter($)
-  await down(2)($) // custom…
-  await enter($)
-  await press(await menu($), 'h')
-  expect((await lines($)).some(l => /previous: h · now press the key for next/.test(l))).toBe(true)
-  await press(await menu($), 'h')
-  expect((await lines($)).some(l => /two different keys/.test(l))).toBe(true)
-  await press(await menu($), 'l')
-  const shown = await lines($)
-  expect(shown).toContain('  Move between actions · h / l')
-  expect(shown).toContain('  + Pane  h → abovePrompt:previous')
-  expect(shown).toContain('  + Pane  l → abovePrompt:next')
-})
-
-test('classic: the presets only, since capturing needs a click', async ($, on) => {
+test('classic draws the same setup', async ($, on) => {
   await begin($, on)
   await (await menu($, 'inline')).press({ key: 'key-enter' })
   const shown = await lines($, 'inline')
+  expect(shown).toContain('▸ ctrl+x tab (default)  (now)')
   expect(shown).toContain('  ctrl+s')
-  expect(shown).not.toContain('  custom…')
 })
 
 test('a keybindings file that is not JSON is never written', async ($, on) => {

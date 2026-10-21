@@ -659,8 +659,8 @@ Synaptik keys
 
 | Setting | Writes | Choices |
 |---|---|---|
-| Open Synaptik | `Chat`: `"<key>": "abovePrompt:focus"` | `ctrl+x tab` (default) · `ctrl+s` · custom |
-| Move between actions | `Pane`: `"<prev>": "abovePrompt:previous"`, `"<next>": "abovePrompt:next"` | Tab / ⇧Tab (default) · ← / → · custom |
+| Open Synaptik | `Chat`: `"<key>": "abovePrompt:focus"` | `ctrl+x tab` (default) · `ctrl+s` |
+| Move between actions | `Pane`: `"<prev>": "abovePrompt:previous"`, `"<next>": "abovePrompt:next"` | Tab / ⇧Tab (default) · ← / → |
 
 - **The file** is `keybindings.json` in Claude Code's config folder:
   `CLAUDE_CONFIG_DIR` when set, else `.claude` in the home folder — `HOME`, or
@@ -670,12 +670,10 @@ Synaptik keys
 - The current bindings are read from the file and shown first.
 - **A failed write is never silent:** the menu stays open with the choice, and
   says where it couldn't write and why.
-- **Custom:** the capture line appears under the setting; click it, press the
-  key (for the actions, previous then next). The click takes the keyboard from
-  the pane, so it is not read as Esc; Esc in the capture line cancels the
-  capture. Once captured, the cursor is on Save. Fullscreen only (it needs the
-  mouse). Keys Claude Code handles itself (`ctrl+c`, `ctrl+x`) never arrive;
-  keys that would break typing or the navigator are refused, with the reason.
+- **Presets only.** A key bound by hand in the file shows as its own option, so
+  opening the menu never loses it. Choosing any other key is a feature request
+  (#80): capturing one needed a mouse click, which is not good UX for a keyboard
+  tool; what was learned is recorded there.
 - **Before writing**, the exact entries to add or remove, and one short line for
   each thing given up — `ctrl+s will no longer stash your prompt`, `← → will
   also move between buttons in other mods' panes` — plus a dim tip where one

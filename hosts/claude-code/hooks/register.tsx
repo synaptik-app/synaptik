@@ -19,7 +19,7 @@ import { lastTurnText } from '../src/spike-turn'
 import { compile as compileTray, GLYPH } from '../src/spike-compile'
 import { DEFAULT_KEYS, keyLabel, keysFrom, parseKeyFile } from '../src/keys'
 import type { KeyFile, Keys } from '../src/keys'
-import { applySetup, bindingName, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS, refusal } from '../src/keysetup'
+import { applySetup, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS } from '../src/keysetup'
 import type { Setup } from '../src/keysetup'
 import { keybindingsPath, shownPath } from '../src/configpath'
 import { blockCounter } from '../src/counter'
@@ -412,31 +412,19 @@ type KeyMenu = {
   // The file as read when the menu opened, and the choice so far.
   file: KeyFile
   choice: Setup
-  // Which key the capture line is waiting for, and the previous-verb key
-  // already pressed while it waits for the next.
-  capturing?: 'entry' | 'previous' | 'next'
-  pressedPrevious?: string
-  // A line for the person: what to press, or why a key was refused.
+  // A line for the person: why the save failed.
   note?: string
   // The file's path, and as the menu shows it (`~/.claude/keybindings.json`).
   path: string
   shown: string
   // Seen holding the keyboard: losing it after that is Esc.
   hasFocus: boolean
-  // The keyboard is with the capture line, given by a click: losing it then is
-  // the click, not Esc.
-  isWithCapture?: boolean
-  // A captured key handed the keyboard back to the menu; until it lands,
-  // losing it is not Esc either.
-  isReturning?: boolean
   // Where the person is: the list of rows, or one setting's options; the row
   // and option under the cursor; the setting whose options are open.
   view: 'rows' | 'options'
   row: number
   option: number
   editing?: 'entry' | 'verbs'
-  // Fullscreen: a key can be captured (a click is needed).
-  canCapture: boolean
 }
 let keyMenu: KeyMenu | undefined
 
@@ -467,8 +455,9 @@ function menuValue(menu: KeyMenu, setting: 'entry' | 'verbs') {
 
 // The options of the setting being edited: back to the rows (Esc cannot be
 // that: it gives the keyboard to the prompt, and a mod cannot take it back),
-// the presets, the person's own key when it is none of them, and custom when a
-// key can be captured.
+// the presets, and the person's own key when the file binds one that is none
+// of them, so a hand-made binding is never lost by opening the menu. Custom
+// keys are a feature request: the presets only, for now (#80).
 function menuOptions(menu: KeyMenu): { value: string; label: string }[] {
   const setting = menu.editing ?? 'entry'
   const now = currentValue(menu, setting)
@@ -487,7 +476,6 @@ function menuOptions(menu: KeyMenu): { value: string; label: string }[] {
     { value: 'back', label: '‹ back' },
     ...presets,
     ...own,
-    ...(menu.canCapture ? [{ value: 'custom', label: 'custom…' }] : []),
   ]
 }
 
@@ -521,9 +509,6 @@ async function enterMenu($: EngineInterface) {
   menu.note = undefined
   if (picked.value === 'back') {
     // Nothing chosen: the setting stays as it was.
-  } else if (picked.value === 'custom') {
-    menu.capturing = setting === 'entry' ? 'entry' : 'previous'
-    menu.pressedPrevious = undefined
   } else if (setting === 'entry') {
     menu.choice = { ...menu.choice, entry: picked.value === DEFAULT_ENTRY ? undefined : picked.value }
   } else {
@@ -541,7 +526,7 @@ async function openKeyMenu($: EngineInterface): Promise<string | undefined> {
   const file = await readKeyFile($, path)
   if (!file) return `can't read ${path}: it isn't JSON. Fix it by hand, then try again.`
   const shown = shownPath(path, env)
-  keyMenu = { file, path, shown, choice: currentSetup(file), hasFocus: false, view: 'rows', row: 0, option: 0, canCapture: false }
+  keyMenu = { file, path, shown, choice: currentSetup(file), hasFocus: false, view: 'rows', row: 0, option: 0 }
   await openPane($, true)
   $.ui.invalidate('ui.render')
   return undefined
@@ -583,49 +568,6 @@ async function saveKeyMenu($: EngineInterface) {
   }
   await $.ui.toast(changed.length ? 'Synaptik: keys saved' : 'Synaptik: no changes')
   await closeKeyMenu($)
-}
-
-// A key the capture line handed over, for the setting it waits for.
-function captureKey(event: { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean }) {
-  const menu = keyMenu
-  if (!menu?.capturing) return
-  const name = bindingName(event)
-  const why = refusal(menu.capturing === 'entry' ? 'entry' : 'verb', name)
-  if (why) {
-    menu.note = `${keyLabel(name)} can't be used: ${why}`
-    return
-  }
-  if (menu.capturing === 'entry') {
-    menu.choice = { ...menu.choice, entry: name }
-    endCapture(menu)
-  } else if (menu.capturing === 'previous') {
-    menu.pressedPrevious = name
-    menu.capturing = 'next'
-    menu.note = `previous: ${keyLabel(name)} · now press the key for next`
-  } else if (name === menu.pressedPrevious) {
-    menu.note = 'previous and next need two different keys: press the key for next'
-  } else {
-    menu.choice = { ...menu.choice, verbs: { previous: menu.pressedPrevious!, next: name } }
-    menu.pressedPrevious = undefined
-    endCapture(menu)
-  }
-}
-
-// A capture done: the line goes, and the keyboard is to come back to the menu
-// (`returnFromCapture`), with the cursor on Save.
-function endCapture(menu: KeyMenu) {
-  menu.row = MENU_ROWS.indexOf('save')
-  menu.capturing = undefined
-  menu.note = undefined
-  menu.isReturning = menu.isWithCapture === true
-  menu.isWithCapture = false
-}
-
-async function returnFromCapture($: EngineInterface) {
-  const moved = await $.ui
-    .focus({ requestId: PANE, key: 'key-enter' })
-    .catch((err: unknown) => ({ deny: String(err) }))
-  observe(`key menu: keyboard back to the menu: ${JSON.stringify(moved)}`)
 }
 
 // "2 accepted · 1 rejected · 1 comment", zero counts left out.
@@ -928,45 +870,17 @@ export const register: Register = on => {
     return result
   }).catch(($, e, next) => next(e))
 
-  // The key setup's capture line hands over each key pressed while it has the
-  // focus (key-capture.tsx).
-  on('ui.message', async ($, e, next) => {
-    if (e.requestId === PANE && e.element === 'key-capture') {
-      observe(`key menu: captured ${JSON.stringify(e.data)} while waiting for ${keyMenu?.capturing ?? 'nothing'}`)
-      captureKey(e.data as { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean })
-      $.ui.invalidate('ui.render')
-      if (keyMenu?.isReturning) void returnFromCapture($)
-    }
-    return next(e)
-  }).catch(($, e, next) => next(e))
-
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     if (e.surface !== 'terminal' && e.surface !== 'desktop') return next(e)
-    const { Box, Text, Button, Input, Markdown, Client } = $.ui.resolve(e)
+    const { Box, Text, Button, Input, Markdown } = $.ui.resolve(e)
 
     // The key setup, drawn instead of the map while it is open. Esc gives the
     // keyboard back, and closes it unsaved.
     if (keyMenu) {
       const menu = keyMenu
-      observe(
-        `key menu drawn focused=${e.props.isFocused} capturing=${menu.capturing ?? '-'} hadFocus=${menu.hasFocus}` +
-          `${menu.isWithCapture ? ' with-capture' : ''}${menu.isReturning ? ' returning' : ''}`,
-      )
-      if (e.props.isFocused) {
-        menu.hasFocus = true
-        menu.isReturning = false
-        // Back from the capture line with no key: Esc there cancels the capture.
-        if (menu.isWithCapture) {
-          observe('key menu: capture cancelled')
-          menu.isWithCapture = false
-          menu.capturing = undefined
-          menu.pressedPrevious = undefined
-          menu.note = undefined
-        }
-      } else if (menu.capturing && menu.hasFocus) {
-        // The click on the capture line took the keyboard.
-        menu.isWithCapture = true
-      } else if (menu.hasFocus && !menu.isReturning) {
+      observe(`key menu drawn focused=${e.props.isFocused} hadFocus=${menu.hasFocus}`)
+      if (e.props.isFocused) menu.hasFocus = true
+      else if (menu.hasFocus) {
         observe('key menu closed: the pane lost the keyboard (Esc?)')
         // A drawing can't wait on the close; the empty navigator below draws
         // meanwhile.
@@ -976,8 +890,6 @@ export const register: Register = on => {
     if (keyMenu) {
       const menu = keyMenu
       isNavigatorFocused = false // the reply is not under review meanwhile
-      // Capturing needs a click, so the mouse: fullscreen (the dock) only.
-      menu.canCapture = e.props.placement === 'dock'
       const options = menuOptions(menu)
       const after = applySetup(menu.file, menu.choice)
       const changed = changes(menu.file, after)
@@ -986,19 +898,6 @@ export const register: Register = on => {
       // way, pinned at offset 1, so ↑/↓ always raise ui.scroll (the scroll trick).
       const rows = Math.max(6, e.props.scroll.bodyRows)
       const tone = (isAt: boolean) => ({ color: isAt ? ACCENT : undefined })
-      const prompt =
-        menu.capturing === 'entry'
-          ? '[ click here, then press the key that opens Synaptik ]'
-          : menu.capturing === 'previous'
-            ? '[ click here, then press the key for the previous action ]'
-            : '[ press the key for the next action ]'
-      // The capture line, under the setting it captures for, once.
-      const capture = (row: MenuRow) =>
-        menu.capturing && row === (menu.capturing === 'entry' ? 'entry' : 'verbs') ? (
-          <Box paddingLeft={4}>
-            <Client key="key-capture" module="./key-capture.tsx" props={{ prompt }} height={1} />
-          </Box>
-        ) : null
       return (
         <Box flexDirection="column" height={rows + 2} overflow="hidden">
           <Text> </Text>
@@ -1017,7 +916,6 @@ export const register: Register = on => {
                     <Text {...tone(i === menu.row)} wrap="truncate">
                       {`${i === menu.row ? '▸' : ' '} ${MENU_LABEL[row]}${row === 'entry' || row === 'verbs' ? ` · ${menuValue(menu, row)}` : ''}`}
                     </Text>
-                    {capture(row)}
                     {row === 'verbs' && <Text> </Text>}
                   </Box>
                 ))

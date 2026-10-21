@@ -95,10 +95,10 @@ navigator:
 
 A mod cannot ship key bindings, so the better ones go in your own
 `~/.claude/keybindings.json`. **`/synaptik config` sets them for you:** pick the
-key that opens Synaptik (`ctrl+x tab`, `ctrl+s`, or one you press) and the keys
-that move between actions (Tab / ⇧Tab, ← / →, or your own), see exactly what it will
-add and what it gives up, and save. Pressing your own key works in fullscreen;
-classic offers the presets. Or edit the file by hand:
+key that opens Synaptik (`ctrl+x tab` or `ctrl+s`) and the keys that move
+between actions (Tab / ⇧Tab or ← / →), see exactly what it will add and what it
+gives up, and save. For other keys, edit the file by hand — `/synaptik config`
+shows them as they are:
 
 ```json
 {

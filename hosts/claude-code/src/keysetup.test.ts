@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { applySetup, bindingName, changes, costs, currentSetup, refusal } from './keysetup'
+import { applySetup, changes, costs, currentSetup } from './keysetup'
 import type { KeyFile } from './keys'
 
 const chat = (bindings: Record<string, string | null>) => ({ context: 'Chat', bindings })
@@ -66,21 +66,4 @@ test('what a choice gives up', async () => {
     { line: 'Tip: ← on an empty prompt opens agent view (/config → leftArrowOpensAgents)', isTip: true },
   ])
   expect(costs({ entry: 'ctrl+g' })).toEqual([])
-})
-
-test('a pressed key in keybindings syntax', async () => {
-  expect(bindingName({ key: 's', ctrl: true })).toBe('ctrl+s')
-  expect(bindingName({ key: 'tab', shift: true })).toBe('shift+tab')
-  expect(bindingName({ key: 'return' })).toBe('enter')
-  expect(bindingName({ key: 'n', meta: true })).toBe('meta+n')
-})
-
-test('keys that cannot be used, and why', async () => {
-  expect(refusal('entry', 'g')).toMatch(/typing/)
-  expect(refusal('entry', 'left')).toMatch(/typing and moving/)
-  expect(refusal('entry', 'ctrl+g')).toBeUndefined()
-  expect(refusal('verb', 'up')).toMatch(/moves between blocks/)
-  expect(refusal('verb', 'a')).toMatch(/verb's own key/)
-  expect(refusal('verb', 'h')).toBeUndefined()
-  expect(refusal('entry', 'escape')).toMatch(/leaves/)
 })
