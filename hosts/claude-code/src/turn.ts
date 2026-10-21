@@ -1,4 +1,5 @@
-// SPIKE — throwaway. Which transcript rows make up the last reply.
+// Which transcript rows make up the last reply (SPEC §2): the whole last turn,
+// tool calls and engine-written rows skipped.
 
 export type Row = {
   role: 'user' | 'assistant'

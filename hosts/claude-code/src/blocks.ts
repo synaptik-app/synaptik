@@ -1,5 +1,6 @@
-// SPIKE — throwaway. A naive splitter, good enough to draw a gutter against.
-// Not the real segmenter (SPEC §3); that is phase 1's blocks.ts.
+// A reply split into blocks (SPEC §3): paragraphs, list items with their depth,
+// fenced code, tables, quotes; headings kept as segments that are not blocks.
+// Naive for now — the rewrite from SPEC §3 is #50.
 
 export type Segment = {
   text: string

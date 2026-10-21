@@ -1,9 +1,8 @@
-// SPIKE — throwaway. Answers SPEC §15: does `claude plugin test` run a src/
-// test with no session, and with no mock `$`?
+// No session, no mock `$`: a reply's text in, its blocks out.
 
 import { expect, test } from 'claude-code/testing'
 
-import { quote, segment } from './spike-blocks'
+import { quote, segment } from './blocks'
 
 const REPLY = `Here's what I'd suggest:
 
