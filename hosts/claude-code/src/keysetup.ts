@@ -21,7 +21,7 @@ const NEXT = { context: 'Pane', action: 'abovePrompt:next' } as const
 export const DEFAULT_ENTRY = 'ctrl+x tab'
 export const DEFAULT_VERBS = { previous: 'shift+tab', next: 'tab' } as const
 
-// The presets the menu offers before "custom".
+// The presets the menu offers (custom keys: #80).
 export const ENTRY_PRESETS = [DEFAULT_ENTRY, 'ctrl+s'] as const
 export const VERB_PRESETS = [DEFAULT_VERBS, { previous: 'left', next: 'right' }] as const
 
@@ -116,26 +116,4 @@ export function costs(setup: Setup): { line: string; isTip?: true }[] {
     notes.push({ line: 'Tip: ← on an empty prompt opens agent view (/config → leftArrowOpensAgents)', isTip: true })
   }
   return notes
-}
-
-// A key the person pressed, as a Client hands it over, in keybindings syntax.
-export function bindingName(event: { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean }): string {
-  const key = event.key === 'return' ? 'enter' : event.key === ' ' ? 'space' : event.key
-  return [event.ctrl && 'ctrl', event.shift && 'shift', event.meta && 'meta', key].filter(Boolean).join('+')
-}
-
-// Why a key cannot be used for a setting, or undefined when it can.
-export function refusal(setting: 'entry' | 'verb', key: string): string | undefined {
-  const isPlain = !key.includes('+')
-  if (key === 'escape') return 'Esc leaves the menu'
-  if (setting === 'entry') {
-    if (isPlain && (key.length === 1 || ['space', 'enter', 'backspace', 'delete', 'tab', 'up', 'down', 'left', 'right', 'home', 'end'].includes(key))) {
-      return `${keyLabel(key)} is needed for typing and moving in the prompt — use a key with ctrl or meta`
-    }
-    return undefined
-  }
-  if (['up', 'down', 'home', 'end', 'pageup', 'pagedown'].includes(key)) return `${keyLabel(key)} moves between blocks`
-  if (['enter', 'escape'].includes(key)) return `${keyLabel(key)} applies the verb or leaves`
-  if (['a', 'x', 'c', 'd', 's'].includes(key)) return `${key} is a verb's own key (a x c d, s to send)`
-  return undefined
 }

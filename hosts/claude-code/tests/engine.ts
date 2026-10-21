@@ -319,9 +319,3 @@ export function keybindings(on: On, file: unknown, env: Record<string, string> =
   call('fs.stat', () => ({ kind: 'file', size: text.length, mtimeMs }))
   call('fs.read', () => text)
 }
-
-// A key pressed in the key setup's capture line (key-capture.tsx), posted as
-// the capture module posts it, from the navigator pane drawn as `ui`.
-export function press(ui: Dollar, key: string, mods: { ctrl?: boolean; shift?: boolean; meta?: boolean } = {}) {
-  return ui.post({ key, ctrl: false, shift: false, meta: false, ...mods }, { in: 'key-capture' })
-}

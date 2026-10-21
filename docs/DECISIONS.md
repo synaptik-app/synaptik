@@ -1210,7 +1210,11 @@ Never silently (D32, P1 as revised).
   needs the mouse, so **fullscreen only**; classic offers the presets. Keys
   Claude Code handles itself never reach a plugin (`ctrl+c`, `ctrl+x` — the first
   half of its chords), so `ctrl+x tab` is a preset, never a capture. One press,
-  not a sequence.
+  not a sequence. **Revised 2026-10-21: removed — presets only.** Built in #71,
+  then taken out: a mouse click to capture a key is poor UX for a keyboard tool.
+  A key bound by hand still shows as its own option. Custom keys are a feature
+  request (#80), with the findings and keyboard-only alternatives (a typed key
+  name, a longer preset list).
 - **The menu is a mode of the navigator pane** — one tab; Esc returns to the
   navigator. (A second pane showed as a second tab.)
 - **Keys are not `userConfig` options.** Claude Code obeys only the file; a copy
