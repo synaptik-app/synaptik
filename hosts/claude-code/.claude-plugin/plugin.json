@@ -1,14 +1,22 @@
 {
   "name": "synaptik",
+  "displayName": "Synaptik",
   "version": "0.1.0-alpha.2",
-  "description": "Mark up the agent's response in place — accept, reject, comment — and send the marks as one prompt.",
+  "description": "Accept, reject or comment on any part of the agent's reply — Synaptik turns your marks into one prompt.",
   "types": "./types/index.d.ts",
   "author": {
-    "name": "Mustafa Gündoğan",
-    "email": "mgundogan@synaptik.app",
-    "url": "https://github.com/mgundogan"
+    "name": "Synaptik",
+    "email": "hello@synaptik.app",
+    "url": "https://github.com/synaptik-app"
   },
   "homepage": "https://github.com/synaptik-app/synaptik",
   "repository": "https://github.com/synaptik-app/synaptik",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "keywords": [
+    "review",
+    "feedback",
+    "markup",
+    "mod",
+    "prompt"
+  ]
 }
