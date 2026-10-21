@@ -109,9 +109,11 @@ export function engine(on: On, rows: Row[]) {
   call('ui.invalidate', () => undefined)
   call('ui.toast', () => undefined)
   event('ui.message', () => ({}))
+  // A close answers nothing (void); since 2.1.304 a test hook must still say
+  // so explicitly, as a plain call's empty value.
   event('ui.close', (e: { id?: string }) => {
     closed.push(e.id ?? '')
-    return undefined
+    return { value: undefined }
   })
   call('fs.write', (e: { path: string; text: string }) => {
     if (failing.write) throw new Error(failing.write)

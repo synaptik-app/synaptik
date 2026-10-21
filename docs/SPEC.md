@@ -788,14 +788,23 @@ synaptik/
 │       │   └── plugin.json        manifest
 │       ├── hooks/
 │       │   ├── hooks.json         { "modules": ["./register.tsx"] }
-│       │   └── register.tsx       exports register(on, options); JSX against h
+│       │   ├── register.tsx       every hook; the only file that touches $
+│       │   ├── ui.ts              constants shared with the views
+│       │   └── views/             reply, navigator, band, key menu: data in, elements out
 │       ├── types/
 │       │   └── index.d.ts         $.state contract, named in plugin.json
 │       └── src/
 │           ├── blocks.ts          text → Block[]
-│           ├── tray.ts            state + transitions
+│           ├── tray.ts            state + transitions (#51)
 │           ├── compile.ts         Tray + Block[] → string
+│           ├── turn.ts            transcript rows → the last reply
+│           ├── keys.ts, keysetup.ts, configpath.ts   the key bindings
+│           ├── layout.ts, tally.ts, counter.ts       sizes and counts
 │           └── *.test.ts
+
+**`$` never crosses an import:** the mod loader follows it only into functions
+in the same file, so every hook and every `$` call is in `register.tsx`; views
+take elements, plain data and callbacks (#49).
 └── CLAUDE.md
 ```
 
