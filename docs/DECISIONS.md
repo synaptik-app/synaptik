@@ -1251,6 +1251,54 @@ person typing the mod's name most likely wants. `on`/`off` are explicit.
 
 ---
 
+### D40 — Target surfaces: the terminal only
+**Status:** settled · added 2026-10-21
+
+**Synaptik draws only in Claude Code's terminal renderer** (`e.surface ===
+'terminal'`): standalone terminals, IDE-integrated terminals (VS Code, Cursor,
+JetBrains), the JetBrains plugin (it runs the CLI in the IDE terminal), tmux,
+screen, SSH and WSL. Everywhere else every hook passes through with `next(e)`.
+
+| Surface | Where | Synaptik |
+|---|---|---|
+| `terminal` | every terminal, IDE terminals, JetBrains plugin | **draws** — the target |
+| `vscode` | the Claude Code VS Code extension panel | not yet — **the next surface** (#76) |
+| `desktop` | the Claude app's Code tab | **stays out** |
+| `mobile` | the Claude mobile app (e.g. steering via Remote Control) | **stays out** |
+| — | `claude -p`, the Agent SDK, GitHub Actions, cloud sessions | hooks run, nothing draws: pass through silently |
+
+**Why the Desktop app and the mobile app are out:** they already ship review of
+their own. Tried in the Desktop Code tab on 2026-10-21: a reply on a selected
+passage (several can go as one prompt — Synaptik's comment and batching), a
+side chat that can summarise into the main chat (D3's thread and summary), and
+line comments on the diff that reach Claude anchored to file and line (E15).
+Only accept/reject with one key, and nesting, are missing. A Synaptik pane there
+would duplicate native features and leave people unsure which to use. The
+mobile app offers similar features, and draws no `Input` or `Select` besides.
+
+**Side note — the app's comments are agent-aware:** Claude receives a structured
+anchor (file, line) plus an instruction, the opposite of P1 — evidence that an
+agent-aware approach (E16) works well enough to ship.
+
+**The VS Code panel is next (#76)**, per the docs (unverified on the installed
+2.1.287, whose types already list the `vscode` surface without a `Client`): no
+band, so the preview and send line move to the pane's footer; no hotkeys and no
+`autoFocus`, so the actions are clicked or ⏎'d buttons; `$.prompt.suggest`
+answers `isShown: false`, so sending is an explicit button; it draws only in a
+session that fetches feature flags, which an offline machine may not. Whether
+Cursor and Windsurf draw mods through the same extension is on #76.
+
+**Offline:** the Desktop app can run against a self-hosted gateway ("Claude
+Desktop on 3P"); whether its review features exist there is unverified. If they
+don't, offline review in the terminal stays a clear Synaptik case.
+
+**Testing:** the terminal varies by keys (IDE terminals grab shortcuts), mouse
+support, glyph widths, renderer (fullscreen, classic) and width — the matrix on
+#13. The glyphs are plain Unicode (`✓ ✗ ✎ 💬 ⏺ ▲ ▼ █ ┃ │ ⎿ ▸ ‹`), no Nerd Font
+needed; emoji width (`💬`) is the one to watch.
+
+---
+
 ## 4. MVP definition
 
 **The whole of it:**
