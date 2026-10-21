@@ -22,6 +22,7 @@ import type { KeyFile, Keys } from '../src/keys'
 import { applySetup, bindingName, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS, refusal } from '../src/keysetup'
 import type { Setup } from '../src/keysetup'
 import { keybindingsPath, shownPath } from '../src/configpath'
+import { blockCounter } from '../src/counter'
 import type { ConfigEnv } from '../src/configpath'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
@@ -506,10 +507,7 @@ async function enterMenu($: EngineInterface) {
   if (menu.view === 'rows') {
     const row = MENU_ROWS[menu.row]!
     if (row === 'save') return saveKeyMenu($)
-    if (row === 'cancel') {
-      keyMenu = undefined
-      return $.ui.invalidate('ui.render')
-    }
+    if (row === 'cancel') return closeKeyMenu($)
     menu.editing = row
     menu.view = 'options'
     menu.option = Math.max(0, menuOptions(menu).findIndex(o => o.value === currentValue(menu, row)))
@@ -549,6 +547,17 @@ async function openKeyMenu($: EngineInterface): Promise<string | undefined> {
   return undefined
 }
 
+// Ends the key setup. With no reply to review (a new session: `/synaptik
+// config` opens the pane all the same), the pane closes too, which hands the
+// keyboard back to the prompt — an empty navigator is nothing to hold it (#73).
+async function closeKeyMenu($: EngineInterface) {
+  keyMenu = undefined
+  if (!(await read($, lastText))) {
+    await $.ui.close({ id: PANE }).catch((err: unknown) => observe(`close empty pane: ${String(err)}`))
+  }
+  $.ui.invalidate('ui.render')
+}
+
 // Writes the choice into the file as it is now, changing only the setup's own
 // entries. Saving is the person's confirmation: the menu showed the changes.
 async function saveKeyMenu($: EngineInterface) {
@@ -572,9 +581,8 @@ async function saveKeyMenu($: EngineInterface) {
     }
     observe(`key setup wrote ${menu.path}: ${changed.join(' | ')}`)
   }
-  keyMenu = undefined
   await $.ui.toast(changed.length ? 'Synaptik: keys saved' : 'Synaptik: no changes')
-  $.ui.invalidate('ui.render')
+  await closeKeyMenu($)
 }
 
 // A key the capture line handed over, for the setting it waits for.
@@ -960,8 +968,9 @@ export const register: Register = on => {
         menu.isWithCapture = true
       } else if (menu.hasFocus && !menu.isReturning) {
         observe('key menu closed: the pane lost the keyboard (Esc?)')
-        keyMenu = undefined
-        $.ui.invalidate('ui.render')
+        // A drawing can't wait on the close; the empty navigator below draws
+        // meanwhile.
+        void closeKeyMenu($)
       }
     }
     if (keyMenu) {
@@ -1052,6 +1061,21 @@ export const register: Register = on => {
     const commented = (await read($, comments)) as Record<number, string>
     const isTyping = await read($, isCommenting)
     const working = await read($, isWorking)
+
+    // No reply yet (a new session; the first reply not finished): one line, no
+    // counter and no keys — never "Block 1 of 0" (#73). A turn under way still
+    // draws "Waiting for the reply" below.
+    if (blocks.length === 0 && !working) {
+      isNavigatorFocused = false
+      return (
+        <Box flexDirection="column" paddingLeft={1}>
+          <Text> </Text>
+          <Text dimColor wrap="truncate">
+            Nothing to respond to yet — Synaptik opens on the next reply.
+          </Text>
+        </Box>
+      )
+    }
 
     observe(`pane drawn ${e.props.placement} ${e.props.bodyColumns}×${e.props.scroll.bodyRows} focused=${e.props.isFocused}`)
     if (e.props.isFocused !== isNavigatorFocused) {
@@ -1208,7 +1232,7 @@ export const register: Register = on => {
             </Box>
             </Box>
             <Text dimColor wrap="truncate">
-              ▼ Block {sel + 1} of {blocks.length}
+              ▼ {blockCounter(sel, blocks.length)}
               {hasMore || blockOffset > 0 ? ' · PgUp/PgDn to read on' : ''}
             </Text>
           </Box>
@@ -1272,7 +1296,7 @@ export const register: Register = on => {
             })
           )}
           <Text dimColor wrap="truncate">
-            ▼ {working ? '' : clip(`Block ${sel + 1} of ${blocks.length}`, words + 2)}
+            ▼ {working ? '' : clip(blockCounter(sel, blocks.length), words + 2)}
           </Text>
           {/* Focus stops for ←→ and the hotkeys, hidden: the reply's menu under
               the selected block is where the cursor shows. Always drawn, so
@@ -1328,7 +1352,7 @@ export const register: Register = on => {
     const action = keyMenu
       ? 'customizing Synaptik'
       : reviewing
-      ? `Block ${sel + 1} of ${blocks.length} · ↑↓ move · ${keys.choose} choose · ⏎ apply · esc done`
+      ? `${blockCounter(sel, blocks.length)} · ↑↓ move · ${keys.choose} choose · ⏎ apply · esc done`
       : staged && isSuggested && box.text.trim() === ''
         ? `tab to take it into the prompt · ${key} to continue responding`
         : `${key} to ${staged ? 'continue responding' : 'respond in place'}`
