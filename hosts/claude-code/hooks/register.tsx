@@ -22,6 +22,26 @@ import { keybindingsPath, shownPath } from '../src/configpath'
 import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { commentCount, glyphCounts, summary } from '../src/tally'
+import {
+  ACCENT,
+  BULLET,
+  COMMENT_PREFIX,
+  commentKey,
+  FIELD_CHROME,
+  MARGIN,
+  PANE,
+  PANE_ANCHOR,
+  PANE_COLUMNS,
+  ROW_CHROME,
+  SELECTED_BACKGROUND,
+  VERBS,
+} from './ui'
+import { KeyMenuView } from './views/keymenu'
+import { ClassicView, EmptyView, MapView } from './views/navigator'
+import type { NavigatorActions } from './views/navigator'
+import { ReplyView } from './views/reply'
+import { BandView } from './views/band'
+import type { KeyMenuModel } from './views/keymenu'
 import type { ConfigEnv } from '../src/configpath'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
@@ -47,46 +67,6 @@ function observe(line: string) {
   observed.push(line)
   observed.splice(0, Math.max(0, observed.length - 60))
 }
-
-const VERBS = [
-  { key: 'verb-accept', glyph: '✓', label: '✓ accept', hotkey: 'a' },
-  { key: 'verb-reject', glyph: '✗', label: '✗ reject', hotkey: 'x' },
-  { key: 'verb-comment', glyph: '✎', label: '✎ comment', hotkey: 'c' },
-  { key: 'verb-discuss', glyph: '💬', label: '💬 discuss', hotkey: 'd' },
-] as const
-// Each opening of the comment field gets a fresh key: a field drawn again
-// under the same key and the same value keeps what was typed last time.
-const COMMENT_PREFIX = 'comment-'
-const commentKey = (seq: number) => `${COMMENT_PREFIX}${seq}`
-
-// The pane's tree is always bodyRows + 2 rows with its window pinned at offset
-// 1, so ↑ and ↓ always have a row to scroll to and each raises ui.scroll with a
-// direction. The band's focus ring cannot tell ↑ from ← (SPEC §10, *Why a pane*).
-const PANE = 'synaptik-map'
-const PANE_ANCHOR = 'pane-anchor'
-const PANE_COLUMNS = 4
-
-
-// A navigator row is bar, space, glyph, space (4 cells), then the block's
-// words and "..." (3 cells), sized to the pane's current width less a 2-cell
-// margin, which keeps clear of the terminal's scrollbar.
-const ROW_CHROME = 9
-
-// Cells of each comment-field line taken by its submit hint (`⏎ ok`) and gaps.
-const FIELD_CHROME = 7
-const ACCENT = 'cyan'
-
-// The selected block's background: Claude Code's own text-selection colour, a
-// theme key, so it follows /config's light or dark theme. Painted on the Box
-// around the block's Markdown, which takes no background itself. The key is
-// found in the binary, not the documented API; an unknown one would make the
-// reply fall back to Claude Code's own drawing.
-const SELECTED_BACKGROUND = 'selectionBg'
-
-// Claude Code's reply frame, redrawn by the mod: a 2-cell left margin and the
-// bullet on the reply's first line.
-const MARGIN = 2
-const BULLET = '⏺'
 
 // The transcript row of the reply being marked, for revealing it when a block
 // key cannot be scrolled to. Set while drawing; lost on reload.
@@ -129,10 +109,6 @@ const HELP = [
   '  /synaptik log      what Synaptik observed, for bug reports',
   '  /synaptik help     this list',
 ].join('\n')
-
-// The band's header, and the lead of each line under it.
-const TAGLINE = 'respond to the reply in place'
-const NEST = '⎿  '
 
 // The compiled prompt is proposed in the empty prompt box after every change,
 // as Claude Code proposes its own: → or Tab takes it, the box is where it is
@@ -537,6 +513,30 @@ async function saveKeyMenu($: EngineInterface) {
   await closeKeyMenu($)
 }
 
+// What the key setup's view draws (views/keymenu.tsx), from its state.
+function keyMenuModel(menu: KeyMenu, bodyRows: number): KeyMenuModel {
+  const after = applySetup(menu.file, menu.choice)
+  return {
+    view: menu.view,
+    rows: MENU_ROWS.map((row, i) => ({
+      text: `${MENU_LABEL[row]}${row === 'entry' || row === 'verbs' ? ` · ${menuValue(menu, row)}` : ''}`,
+      isAt: i === menu.row,
+      hasGapAfter: row === 'verbs',
+    })),
+    editing: menu.editing ? MENU_LABEL[menu.editing] : '',
+    options: menuOptions(menu).map((option, i) => ({
+      text: option.label,
+      isAt: i === menu.option,
+      isNow: option.value === currentValue(menu, menu.editing ?? 'entry'),
+    })),
+    note: menu.note,
+    changed: changes(menu.file, after),
+    costs: costs(menu.choice),
+    shown: menu.shown,
+    bodyRows,
+  }
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -638,76 +638,35 @@ export const register: Register = on => {
     const isTypingHere = isTyping && sel >= offset && sel < offset + pieceBlocks
     if (!isNavigatorFocused && !isMarkedHere && !isTypingHere) return next(e)
 
-    // The mod draws the reply itself, so it redraws Claude Code's frame too: the
-    // top margin, the 2-cell left margin, and the ⏺ bullet on the reply's first
-    // line. A mark's glyph sits in that margin, so marking moves nothing.
-    // Wrapping Claude Code's own drawing per block was tried: next(e) returns an
-    // opaque handle ({ type: 'engine', ref }), its spacing and margin baked in,
-    // so blocks drawn one by one gained gaps and lost the margin.
-    const margin = (glyph: string) => (
-      <Box width={MARGIN} flexShrink={0}>
-        <Text>{glyph}</Text>
-      </Box>
-    )
+    // The mod draws the reply itself (views/reply.tsx); each block's action
+    // buttons run here.
     let index = offset - 1
-    return (
-      <Box flexDirection="column" marginTop={1}>
-        {segments.map((seg, n) => {
-          const bullet = n === 0 && e.props.isFirstOfReply ? BULLET : ''
-          if (!seg.isBlock) {
-            return (
-              <Box flexDirection="row" marginTop={seg.hasGapBefore ? 1 : 0}>
-                {margin(bullet)}
-                <Box flexGrow={1}>
-                  <Markdown text={seg.text} />
-                </Box>
-              </Box>
-            )
-          }
+    return ReplyView(
+      { Box, Text, Button, Markdown },
+      {
+        isFirstOfReply: e.props.isFirstOfReply,
+        segments: segments.map(seg => {
+          if (!seg.isBlock) return { text: seg.text, isBlock: false, depth: seg.depth, hasGapBefore: seg.hasGapBefore }
           index += 1
           const i = index
           const isSelected = i === sel
-          // Background and menu only while the navigator holds the keyboard:
-          // after Esc the reply reads as a plain reply again.
-          const isShownSelected = isSelected && isNavigatorFocused
           const mark = marked[i]
-          const isEditing = isSelected && isTyping
-
-          return (
-            <Box flexDirection="column" marginTop={seg.hasGapBefore ? 1 : 0}>
-              <Box flexDirection="row">
-                {margin(mark ? GLYPH[mark] : bullet)}
-                <Box
-                  flexGrow={1}
-                  paddingLeft={seg.depth * 3}
-                  backgroundColor={isShownSelected ? SELECTED_BACKGROUND : undefined}
-                >
-                  <Markdown text={seg.text} />
-                </Box>
-              </Box>
-              {isShownSelected && (
-                <Box flexDirection="row" paddingLeft={MARGIN + seg.depth * 3}>
-                  <Text dimColor>└ </Text>
-                  {VERBS.map(v => (
-                    <Button
-                      key={v.key}
-                      label={v.label}
-                      variant={cursor === v.key ? 'primary' : undefined}
-                      dimColor={cursor !== v.key}
-                      onPress={() => runVerb($, v.key)}
-                    />
-                  ))}
-                </Box>
-              )}
-              {isEditing || (commented[i] && mark === 'comment') ? (
-                <Box paddingLeft={MARGIN + seg.depth * 3 + 2}>
-                  <Text dimColor>→ {commented[i] ?? ''}</Text>
-                </Box>
-              ) : null}
-            </Box>
-          )
-        })}
-      </Box>
+          return {
+            text: seg.text,
+            isBlock: true,
+            depth: seg.depth,
+            hasGapBefore: seg.hasGapBefore,
+            glyph: mark ? GLYPH[mark] : undefined,
+            // Background and menu only while the navigator holds the keyboard:
+            // after Esc the reply reads as a plain reply again.
+            isSelected: isSelected && isNavigatorFocused,
+            // The comment line: live while it is typed, else once staged.
+            comment: (isSelected && isTyping) || (commented[i] && mark === 'comment') ? (commented[i] ?? '') : undefined,
+          }
+        }),
+        cursor,
+      },
+      key => runVerb($, key),
     )
   }).catch(($, e, next) => next(e))
 
@@ -817,68 +776,8 @@ export const register: Register = on => {
       }
     }
     if (keyMenu) {
-      const menu = keyMenu
       isNavigatorFocused = false // the reply is not under review meanwhile
-      const options = menuOptions(menu)
-      const after = applySetup(menu.file, menu.choice)
-      const changed = changes(menu.file, after)
-      const given = costs(menu.choice)
-      // As the navigator's map: the tree one row taller than the window each
-      // way, pinned at offset 1, so ↑/↓ always raise ui.scroll (the scroll trick).
-      const rows = Math.max(6, e.props.scroll.bodyRows)
-      const tone = (isAt: boolean) => ({ color: isAt ? ACCENT : undefined })
-      return (
-        <Box flexDirection="column" height={rows + 2} overflow="hidden">
-          <Text> </Text>
-          <Box flexDirection="column" height={rows} overflow="hidden" paddingLeft={1}>
-            <Box flexDirection="row">
-              <Button key={PANE_ANCHOR} plain dimColor label="" onPress={() => undefined} />
-              <Text bold>Synaptik keys</Text>
-            </Box>
-            <Text dimColor>
-              {menu.view === 'rows' ? '↑↓ move · ⏎ change · esc: discard changes' : '↑↓ choose · ⏎ select'}
-            </Text>
-            <Text> </Text>
-            {menu.view === 'rows'
-              ? MENU_ROWS.map((row, i) => (
-                  <Box flexDirection="column">
-                    <Text {...tone(i === menu.row)} wrap="truncate">
-                      {`${i === menu.row ? '▸' : ' '} ${MENU_LABEL[row]}${row === 'entry' || row === 'verbs' ? ` · ${menuValue(menu, row)}` : ''}`}
-                    </Text>
-                    {row === 'verbs' && <Text> </Text>}
-                  </Box>
-                ))
-              : [
-                  <Text dimColor>{MENU_LABEL[menu.editing!]}</Text>,
-                  ...options.map((option, i) => (
-                    <Text {...tone(i === menu.option)} wrap="truncate">
-                      {`${i === menu.option ? '▸' : ' '} ${option.label}${option.value === currentValue(menu, menu.editing!) ? '  (now)' : ''}`}
-                    </Text>
-                  )),
-                ]}
-            {menu.note && <Text color="yellow">{menu.note}</Text>}
-            <Text> </Text>
-            {changed.length === 0 ? (
-              <Text dimColor wrap="truncate">{`No changes to ${menu.shown}`}</Text>
-            ) : (
-              <Box flexDirection="column">
-                <Text dimColor wrap="truncate">{`Save changes ${menu.shown}:`}</Text>
-                {changed.map(line => (
-                  <Text>{`  ${line}`}</Text>
-                ))}
-                {given.map(note =>
-                  note.isTip ? <Text dimColor>{`  ${note.line}`}</Text> : <Text color="yellow">{`  ${note.line}`}</Text>,
-                )}
-              </Box>
-            )}
-            {/* ⏎ lands here; ↑/↓ arrive as scrolls. Hidden: the ▸ row shows where. */}
-            <Box display="none">
-              <Button key="key-enter" plain autoFocus label="⏎" onPress={() => enterMenu($)} />
-            </Box>
-          </Box>
-          <Text> </Text>
-        </Box>
-      )
+      return KeyMenuView({ Box, Text, Button }, keyMenuModel(keyMenu, e.props.scroll.bodyRows), () => enterMenu($))
     }
     const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
     const sel = await read($, selected)
@@ -894,14 +793,7 @@ export const register: Register = on => {
     // draws "Waiting for the reply" below.
     if (blocks.length === 0 && !working) {
       isNavigatorFocused = false
-      return (
-        <Box flexDirection="column" paddingLeft={1}>
-          <Text> </Text>
-          <Text dimColor wrap="truncate">
-            Nothing to respond to yet — Synaptik opens on the next reply.
-          </Text>
-        </Box>
-      )
+      return EmptyView({ Box, Text })
     }
 
     observe(`pane drawn ${e.props.placement} ${e.props.bodyColumns}×${e.props.scroll.bodyRows} focused=${e.props.isFocused}`)
@@ -921,46 +813,34 @@ export const register: Register = on => {
       : counts
         ? `Your notes · ${counts}`
         : 'Nothing marked yet'
-    // Everything but the heading and position rows, less one row for each
-    // comment, which may need a row of its own under a one-row block.
-    const commentRows = commentCount(marked, commented)
-    // Rows for the comment field while it is open: as many as its text wraps
-    // to, so the whole comment — and the cursor, wherever it is — stays in view.
-    // The field reports no cursor position, so a window around the cursor is not
-    // possible; showing all of it is. Capped at half the pane.
-    // The field shares each line with its submit hint (`⏎ ok`, drawn beside
-    // it while focused) and wraps at word boundaries, so a line holds well under
-    // the pane's width: estimate generously, plus a row of margin.
-    const fieldText = commented[sel] ?? seed
-    const fieldWidth = Math.max(4, e.props.bodyColumns - FIELD_CHROME)
-    const fieldRows = isTyping
-      ? Math.min(
-          Math.max(1, Math.floor(rows / 2)),
-          Math.ceil((fieldText.length * 1.25) / fieldWidth) + 1,
-        )
-      : 0
+    // The navigator's actions, for the views (views/navigator.tsx).
+    const actions: NavigatorActions = {
+      up: () => moveSelection($, -1),
+      verb: key => runVerb($, key),
+      send: () => sendTray($),
+    }
     // The comment field — visible: only the field knows where its cursor is (its
     // events carry the text, never the cursor, and ←/→ raise none).
     const field = (
-        <Input
-          key={commentKey(seq)}
-          placeholder="comment"
-          submitLabel="ok"
-          value={seed}
-          onInput={async value => {
-            const before = (await read($, comments))[sel] ?? ''
-            observe(`comment input ${JSON.stringify(value)} (was ${JSON.stringify(before)})`)
-            // Backspace on an already empty line, if the surface reports it.
-            if (value === '' && before === '') return cancelComment($, sel)
-            await update($, comments, c => ({ ...c, [sel]: value }))
-          }}
-          onSubmit={async value => {
-            await update($, comments, c => ({ ...c, [sel]: value }))
-            // Moving focus off the field finishes the comment (ui.focus):
-            // staged with text, dropped when empty.
-            await leaveComment($)
-          }}
-        />
+      <Input
+        key={commentKey(seq)}
+        placeholder="comment"
+        submitLabel="ok"
+        value={seed}
+        onInput={async value => {
+          const before = (await read($, comments))[sel] ?? ''
+          observe(`comment input ${JSON.stringify(value)} (was ${JSON.stringify(before)})`)
+          // Backspace on an already empty line, if the surface reports it.
+          if (value === '' && before === '') return cancelComment($, sel)
+          await update($, comments, c => ({ ...c, [sel]: value }))
+        }}
+        onSubmit={async value => {
+          await update($, comments, c => ({ ...c, [sel]: value }))
+          // Moving focus off the field finishes the comment (ui.focus):
+          // staged with text, dropped when empty.
+          await leaveComment($)
+        }}
+      />
     )
 
     // PREVIEW (#31): the classic renderer places the pane inline, above the
@@ -983,162 +863,76 @@ export const register: Register = on => {
       const current = blocks[sel]
       const estimated = drawnRows(current?.text ?? '', width)
       blockOffset = Math.min(blockOffset, Math.max(0, estimated - textRows))
-      // The block takes the rows it needs; spare rows are split between after
-      // the header and before the footer, so the menu sits right under it.
-      const blockRows = Math.max(1, Math.min(estimated, textRows))
-      const hasMore = estimated > textRows + blockOffset
       const prev = blocks[sel - 1]
       const nextBlock = blocks[sel + 1]
       const mark = marked[sel]
-      const barHeights = minimap(blocks.map(b => b.text.length), Math.max(blocks.length, rows - 2))
-      return (
-        <Box flexDirection="column" height={rows + 2} overflow="hidden">
-          <Text> </Text>
-          <Box flexDirection="column" height={rows} overflow="hidden">
-            <Box flexDirection="row">
-              <Button key={PANE_ANCHOR} plain dimColor label="▲" onPress={() => moveSelection($, -1)} />
-              <Text dimColor wrap="truncate">
-                {' '}
-                {heading}
-                {crumb ? `  § ${crumb}` : ''}
-              </Text>
-            </Box>
-            {/* Between header and footer: the bars, no accent colour, beside
-                the selected block, its neighbours, menu and comment. */}
-            <Box flexDirection="row" height={rows - 2} overflow="hidden">
-            <Box flexDirection="column" width={2} flexShrink={0} overflow="hidden">
-              {blocks.map((_, i) =>
-                // A block viewer, not a navigator: a quiet left edge.
-                Array.from({ length: barHeights[i] ?? 1 }, () => <Text dimColor>│</Text>),
-              )}
-            </Box>
-            <Box flexDirection="column" flexGrow={1}>
-              <Box flexGrow={1} />
-              <Text dimColor wrap="truncate">
-                {prev ? `↑ ${quote(prev.text, 10_000)}` : ' '}
-              </Text>
-              <Box flexDirection="row" height={blockRows} overflow="hidden">
-                <Text>{mark ? GLYPH[mark] : ' '} </Text>
-                <Box flexDirection="column" flexGrow={1} overflow="hidden">
-                  <Box flexDirection="column" marginTop={-blockOffset}>
-                    <Markdown text={current?.text ?? ''} />
-                  </Box>
-                </Box>
-              </Box>
-              <Box flexDirection="row">
-                {VERBS.map((v, n) => (
-                  <Button
-                    key={v.key}
-                    label={v.label}
-                    hotkey={v.hotkey}
-                    autoFocus={n === 0 ? true : undefined}
-                    onPress={() => runVerb($, v.key)}
-                  />
-                ))}
-                <Box display="none">
-                  <Button key="send" plain hotkey="s" label="send" onPress={() => sendTray($)} />
-                </Box>
-              </Box>
-              {isTyping ? (
-                field
-              ) : (
-                <Text dimColor wrap="truncate">
-                  {commented[sel] && mark === 'comment' ? `→ ${commented[sel]}` : '→'}
-                </Text>
-              )}
-              <Text dimColor wrap="truncate">
-                {nextBlock ? `↓ ${quote(nextBlock.text, 10_000)}` : ' '}
-              </Text>
-              <Box flexGrow={1} />
-            </Box>
-            </Box>
-            <Text dimColor wrap="truncate">
-              ▼ {blockCounter(sel, blocks.length)}
-              {hasMore || blockOffset > 0 ? ' · PgUp/PgDn to read on' : ''}
-            </Text>
-          </Box>
-          <Text> </Text>
-        </Box>
+      return ClassicView(
+        { Box, Text, Button, Markdown },
+        {
+          rows,
+          heading,
+          crumb,
+          barHeights: minimap(blocks.map(b => b.text.length), Math.max(blocks.length, rows - 2)),
+          previous: prev ? quote(prev.text, 10_000) : undefined,
+          next: nextBlock ? quote(nextBlock.text, 10_000) : undefined,
+          text: current?.text ?? '',
+          glyph: mark ? GLYPH[mark] : undefined,
+          // The block takes the rows it needs; spare rows are split between
+          // after the header and before the footer, so the menu sits right
+          // under it.
+          blockRows: Math.max(1, Math.min(estimated, textRows)),
+          blockOffset,
+          comment: commented[sel] && mark === 'comment' ? commented[sel] : undefined,
+          counter: blockCounter(sel, blocks.length),
+          canReadOn: estimated > textRows + blockOffset || blockOffset > 0,
+        },
+        actions,
+        isTyping ? field : undefined,
       )
     }
 
-    const mapRows = Math.max(blocks.length, rows - 2 - commentRows - fieldRows)
+    // Everything but the heading and position rows, less one row for each
+    // comment, which may need a row of its own under a one-row block.
+    const commentRows = commentCount(marked, commented)
+    // Rows for the comment field while it is open: as many as its text wraps
+    // to, so the whole comment — and the cursor, wherever it is — stays in view.
+    // The field reports no cursor position, so a window around the cursor is not
+    // possible; showing all of it is. Capped at half the pane.
+    // The field shares each line with its submit hint (`⏎ ok`, drawn beside
+    // it while focused) and wraps at word boundaries, so a line holds well under
+    // the pane's width: estimate generously, plus a row of margin.
+    const fieldText = commented[sel] ?? seed
+    const fieldWidth = Math.max(4, e.props.bodyColumns - FIELD_CHROME)
+    const fieldRows = isTyping
+      ? Math.min(Math.max(1, Math.floor(rows / 2)), Math.ceil((fieldText.length * 1.25) / fieldWidth) + 1)
+      : 0
     const heights = minimap(
       blocks.map(b => b.text.length),
-      mapRows,
+      Math.max(blocks.length, rows - 2 - commentRows - fieldRows),
     )
-
-    return (
-      <Box flexDirection="column" height={rows + 2} overflow="hidden">
-        <Text> </Text>
-        <Box flexDirection="column" height={rows} overflow="hidden">
-          <Box flexDirection="row">
-            <Button key={PANE_ANCHOR} plain dimColor label="▲" onPress={() => moveSelection($, -1)} />
-            <Text dimColor wrap="truncate">
-              {' '}
-              {clip(heading, words + 2)}
-            </Text>
-          </Box>
-          {working ? (
-            <Text dimColor>...</Text>
-          ) : (
-            blocks.map((_, i) => {
-              const mark = marked[i]
-              const isSelected = i === sel
-              // Selected: a solid accent bar. Staged: a thick bar. The rest: thin
-              // and dim. (Tracking which blocks the terminal shows was tried and
-              // dropped: estimating rows from text was never steady enough.)
-              const bar = isSelected ? '█' : mark ? '┃' : '│'
-              // Only staged blocks carry words: one row with the mark and the
-              // opening of the block, and the comment beneath. Each row is one
-              // Text of fixed length; pieces side by side broke the layout.
-              const span = heights[i] ?? 1
-              // One row of words per staged block. Mirroring the reply line for
-              // line was tried: the mod cannot see how the reply wraps, so the
-              // lines never quite aligned.
-              const opening = mark ? clip(quote(blocks[i]!.text, 10_000), words) : ''
-              const comment = mark === 'comment' ? clip(commented[i]?.trim() ?? '', words - 2) : ''
-              const tone = { color: isSelected ? ACCENT : undefined, dimColor: !isSelected && !mark }
-              return (
-                <Box flexDirection="column">
-                  {/* The comment sits right under its block's first row: in the
-                      block's own second row, or one more row when it has none. */}
-                  {Array.from({ length: Math.max(span, comment ? 2 : 1) }, (_, row) => (
-                    <Text {...tone} wrap="truncate">
-                      {mark && row === 0
-                        ? `${bar} ${GLYPH[mark]} ${opening}`
-                        : comment && row === 1
-                          ? `${bar}   → ${comment}`
-                          : bar}
-                    </Text>
-                  ))}
-                </Box>
-              )
-            })
-          )}
-          <Text dimColor wrap="truncate">
-            ▼ {working ? '' : clip(blockCounter(sel, blocks.length), words + 2)}
-          </Text>
-          {/* Focus stops for ←→ and the hotkeys, hidden: the reply's menu under
-              the selected block is where the cursor shows. Always drawn, so
-              focus has somewhere to land when the comment field closes. */}
-          <Box display="none">
-            {VERBS.map((v, n) => (
-              <Button
-                key={v.key}
-                plain
-                hotkey={v.hotkey}
-                autoFocus={n === 0 ? true : undefined}
-                label={v.glyph}
-                onPress={() => runVerb($, v.key)}
-              />
-            ))}
-            <Button key="send" plain hotkey="s" label="send" onPress={() => sendTray($)} />
-          </Box>
-          {isTyping && <Box>{field}</Box>}
-        </Box>
-        <Text> </Text>
-      </Box>
+    return MapView(
+      { Box, Text, Button },
+      {
+        rows,
+        heading: clip(heading, words + 2),
+        isWorking: working,
+        bars: blocks.map((block, i) => {
+          const mark = marked[i]
+          return {
+            isSelected: i === sel,
+            glyph: mark ? GLYPH[mark] : undefined,
+            // One row of words per staged block. Mirroring the reply line for
+            // line was tried: the mod cannot see how the reply wraps, so the
+            // lines never quite aligned.
+            opening: mark ? clip(quote(block.text, 10_000), words) : '',
+            comment: mark === 'comment' ? clip(commented[i]?.trim() ?? '', words - 2) : '',
+            span: heights[i] ?? 1,
+          }
+        }),
+        counter: working ? '' : clip(blockCounter(sel, blocks.length), words + 2),
+      },
+      actions,
+      isTyping ? field : undefined,
     )
   }).catch(($, e, next) => next(e))
 
@@ -1187,52 +981,20 @@ export const register: Register = on => {
         `lines=${compiled ? compiled.split('\n').length : 0} maxRows=${e.props.maxRows} cols=${e.props.bodyColumns}`,
     )
     const beneath = reviewing ? null : await next(e)
-
-    // The tree beneath may hold Claude Code's own drawing (an engine node), and
-    // an engine node under a Box with `width` is refused — the whole band then
-    // falls back to Claude Code's own. So `width` sits only on Synaptik's lines.
-    return (
-      <Box flexDirection="column">
-        {beneath}
-        <Box flexDirection="column" width={e.props.bodyColumns}>
-          <Text wrap="truncate">
-            Synaptik<Text dimColor> · {TAGLINE}</Text>
-          </Text>
-          {staged &&
-            (isTyping ? (
-              <Text color="yellow" wrap="truncate">
-                {NEST}
-                {staged} staged · ⏎ sends only what you typed and drops them
-              </Text>
-            ) : isTaken ? (
-              <Text wrap="truncate">
-                {NEST}
-                {staged} · ⏎ sends your feedback
-              </Text>
-            ) : (
-              <Text wrap="truncate">
-                {NEST}
-                {staged}
-              </Text>
-            ))}
-          {isShown || reviewing ? (
-            <Text dimColor wrap="truncate">
-              {NEST}
-              {action}
-            </Text>
-          ) : (
-            // Edge case, design deferred: the navigator is not on screen (narrow
-            // terminal, or closed), so the band offers the press that opens it.
-            <Box flexDirection="row">
-              <Text dimColor>
-                {NEST}
-                {key}, then{' '}
-              </Text>
-              <Button key="open-pane" plain autoFocus label="⏎ to respond in place" onPress={() => openPane($)} />
-            </Box>
-          )}
-        </Box>
-      </Box>
+    return BandView(
+      { Box, Text, Button },
+      {
+        beneath,
+        columns: e.props.bodyColumns,
+        staged,
+        stagedAs: isTyping ? 'dropped' : isTaken ? 'taken' : 'plain',
+        action,
+        // The navigator not on screen (narrow terminal, or closed): the band
+        // offers the press that opens it instead of the action line.
+        isNavigatorShown: isShown || reviewing,
+        entryKey: key,
+      },
+      () => openPane($),
     )
   }).catch(($, e, next) => next(e))
 }

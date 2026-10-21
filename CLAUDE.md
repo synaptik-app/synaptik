@@ -21,10 +21,18 @@ the spike answered; `docs/DECISIONS.md` §11 lists what is still open.
 
 ```
 hosts/claude-code/
-├── hooks/register.tsx   the only file that touches $.
+├── hooks/register.tsx   every hook, and the only file that touches $.
+├── hooks/views/         the drawings: elements, plain data, callbacks — no $
+├── hooks/ui.ts          constants the hooks and views share — no $
 ├── types/index.d.ts     the $.state contract
-└── src/                 pure logic: blocks, tray, compile
+└── src/                 pure logic: blocks, compile, keys, layout, tally…
 ```
+
+**`$` stays in `register.tsx`.** Claude Code's mod loader follows `$` only into
+functions declared in the same file, never across an import — a module that
+passes `$` to an imported function does not load. So the hooks can't be split
+by surface; the drawings can: a view takes the elements (`$.ui.resolve(e)`),
+plain data, and callbacks that `register.tsx` builds (#49).
 
 ## Rules
 
