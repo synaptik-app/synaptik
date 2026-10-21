@@ -67,6 +67,9 @@ export const focusMoves: { element?: string }[] = []
 // `engine`.
 export const placement = { isPlaced: true }
 
+// Every $.ui.close of the navigator. Reset by `engine`.
+export const closed: string[] = []
+
 // Every $.ui.open of the navigator, and whether it asked for the keyboard.
 // Reset by `engine`.
 export const opened: { focus: boolean }[] = []
@@ -89,6 +92,7 @@ export function engine(on: On, rows: Row[]) {
   promptBox.text = ''
   placement.isPlaced = true
   opened.length = 0
+  closed.length = 0
   written.length = 0
   failing.write = ''
   const event = (name: string, fn: (e: never) => unknown) =>
@@ -105,6 +109,10 @@ export function engine(on: On, rows: Row[]) {
   call('ui.invalidate', () => undefined)
   call('ui.toast', () => undefined)
   event('ui.message', () => ({}))
+  event('ui.close', (e: { id?: string }) => {
+    closed.push(e.id ?? '')
+    return undefined
+  })
   call('fs.write', (e: { path: string; text: string }) => {
     if (failing.write) throw new Error(failing.write)
     written.push({ path: e.path, text: e.text })
