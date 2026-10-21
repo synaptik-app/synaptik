@@ -1,12 +1,16 @@
 # Synaptik
 
-Mark up an agent's response in place, then send one prompt.
+Synaptik is a mod for Claude Code. Pick any part of the agent's reply — a
+paragraph, a step in its plan, an item in a list — and accept it, reject it, or
+comment on it. Synaptik turns your marks into a single prompt, written as if
+you'd typed it yourself.
 
-Claude Code renders a linear transcript. Replying to part of it means scrolling
-up and hand-writing prose that points back at it — *"you said in step 3…"*, or a
-numbered list reconstructing which suggestions you accepted and which you
-didn't. Synaptik lets you mark the response itself and compiles the prompt for
-you.
+*Coming next: discussing a part on the side, and marking up the agent's changes
+line by line.*
+
+Without it, answering part of a reply means scrolling up and writing prose that
+points back at it — *"you said in step 3…"*, or a list rebuilding which
+suggestions you took and which you didn't.
 
 ```
   ✓ Use Redis for the session cache
