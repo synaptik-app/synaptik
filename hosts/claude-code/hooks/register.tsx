@@ -61,6 +61,9 @@ const commentSeq = atom({ plugin: 'synaptik', key: 'commentSeq' } as const, 0)
 // Synaptik draws only in the terminal renderer (D40): every render hook passes
 // any other surface (the Desktop app, the mobile app, VS Code) to next(e).
 
+// What happened, for `/synaptik log` and bug reports: events and failures —
+// adopting, suggesting, scrolling and focus moves, comments, the key setup —
+// not every redraw or keystroke, which would push them out of its 60 lines.
 // Module variable, not $.state: a render hook may not write state. Lost on reload.
 const observed: string[] = []
 function observe(line: string) {
@@ -83,13 +86,12 @@ let turnRowId = ''
 // a drawing may not write state, so it lands here and asks for a redraw.
 let isNavigatorFocused = false
 
-// PREVIEW (classic layout, #31): the terminal's size, as last seen by a drawing;
-// how far the selected block is scrolled inside the classic navigator (PgUp/
-// PgDn); and how many rows its text area had at the last draw.
+// The classic navigator (#31): the terminal's size, as last seen by a drawing;
+// how far the selected block is scrolled inside it (PgUp/PgDn); and how many
+// rows its text area had at the last draw.
 let screen = { columns: 120, rows: 40 }
 let blockOffset = 0
 let blockTextRows = 1
-let askedRows = 0
 
 // Whether the compiled prompt is the prompt box's dim suggestion right now
 // (Tab takes it). Set from prompt.suggest's answer; the band words itself by it.
@@ -166,7 +168,6 @@ async function adoptLastReply($: EngineInterface) {
 // waits or is closed, the band offers that press.
 async function openPane($: EngineInterface, focus = false) {
   const rows = classicRows(await read($, lastText), screen)
-  askedRows = rows
   const opened = await $.ui.open({
     id: PANE,
     title: 'Synaptik',
@@ -706,7 +707,7 @@ export const register: Register = on => {
       return next({ ...e, offset: 1 })
     }
     // A page key scrolls by more than a row: read further into the selected
-    // block instead of moving to another (classic preview, #31).
+    // block instead of moving to another (classic, #31).
     if (Math.abs(e.by) > 1) {
       blockOffset = Math.max(0, blockOffset + Math.sign(e.by) * Math.max(1, blockTextRows - 1))
       $.ui.invalidate('ui.render')
@@ -766,7 +767,6 @@ export const register: Register = on => {
     // keyboard back, and closes it unsaved.
     if (keyMenu) {
       const menu = keyMenu
-      observe(`key menu drawn focused=${e.props.isFocused} hadFocus=${menu.hasFocus}`)
       if (e.props.isFocused) menu.hasFocus = true
       else if (menu.hasFocus) {
         observe('key menu closed: the pane lost the keyboard (Esc?)')
@@ -796,7 +796,6 @@ export const register: Register = on => {
       return EmptyView({ Box, Text })
     }
 
-    observe(`pane drawn ${e.props.placement} ${e.props.bodyColumns}×${e.props.scroll.bodyRows} focused=${e.props.isFocused}`)
     if (e.props.isFocused !== isNavigatorFocused) {
       isNavigatorFocused = e.props.isFocused
       // Re-propose on leaving. Entering is handled by ui.focus: a pane hidden
@@ -829,7 +828,6 @@ export const register: Register = on => {
         value={seed}
         onInput={async value => {
           const before = (await read($, comments))[sel] ?? ''
-          observe(`comment input ${JSON.stringify(value)} (was ${JSON.stringify(before)})`)
           // Backspace on an already empty line, if the surface reports it.
           if (value === '' && before === '') return cancelComment($, sel)
           await update($, comments, c => ({ ...c, [sel]: value }))
@@ -843,7 +841,7 @@ export const register: Register = on => {
       />
     )
 
-    // PREVIEW (#31): the classic renderer places the pane inline, above the
+    // Classic (#31): the classic renderer places the pane inline, above the
     // prompt — the one surface that stays current there. Show the selected
     // block itself, in full, with its neighbours, menu and comment.
     if (e.props.placement === 'inline' && !working) {
@@ -856,9 +854,6 @@ export const register: Register = on => {
       }
       const width = Math.max(10, e.props.bodyColumns - 2)
       const textRows = Math.max(1, rows - 6)
-      observe(
-        `classic pane ${e.props.bodyColumns}×${rows} (asked ${askedRows}, screen ${screen.columns}×${screen.rows}) · text rows ${textRows}`,
-      )
       blockTextRows = textRows
       const current = blocks[sel]
       const estimated = drawnRows(current?.text ?? '', width)
@@ -976,10 +971,6 @@ export const register: Register = on => {
     // else (what to say then is an open decision; for now, the warning).
     const isTaken = boxText !== '' && boxText === compiled.trim()
     const isTyping = boxText !== '' && !isTaken
-    observe(
-      `band shown=${isShown} reviewing=${reviewing} staged=${JSON.stringify(staged)} ` +
-        `lines=${compiled ? compiled.split('\n').length : 0} maxRows=${e.props.maxRows} cols=${e.props.bodyColumns}`,
-    )
     const beneath = reviewing ? null : await next(e)
     return BandView(
       { Box, Text, Button },
