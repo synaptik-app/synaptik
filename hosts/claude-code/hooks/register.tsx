@@ -583,13 +583,18 @@ export const register: Register = on => {
 
   // While a turn runs, a new reply is on its way and will replace the tray
   // (SPEC §5), so marking is off: the reply and the band draw as vanilla.
+  // Since Claude Code 2.1.300 these also hear subagents' and teammates' turns,
+  // told apart by `e.agentId`: only the main loop's turn brings a new reply, so
+  // only it switches marking off and on.
   on('turn.start', async ($, e, next) => {
+    if (e.agentId) return next(e)
     isSuggested = false
     await update($, isWorking, () => true)
     return next(e)
   }).catch(($, e, next) => next(e))
 
   on('turn.complete', async ($, e, next) => {
+    if (e.agentId) return next(e)
     await adoptLastReply($)
     await update($, isWorking, () => false)
     return next(e)

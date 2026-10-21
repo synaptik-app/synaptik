@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 env:
-  CLAUDE_CODE_VERSION: 2.1.287
+  CLAUDE_CODE_VERSION: 2.1.304
   DISABLE_AUTOUPDATER: '1'
 
 jobs:
