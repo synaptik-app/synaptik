@@ -1,9 +1,9 @@
-// SPIKE — throwaway. The nesting fixture's cases, as plain data.
+// No session, no mock `$`: the nesting fixture's cases, as plain data.
 
 import { expect, test } from 'claude-code/testing'
 
-import { segment } from './spike-blocks'
-import { compile } from './spike-compile'
+import { segment } from './blocks'
+import { compile } from './compile'
 
 const NESTING = `1. Top level, numbered
    - Second level, bullet

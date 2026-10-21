@@ -1,9 +1,9 @@
-// SPIKE — throwaway. No session, no mock `$`: plain rows in, text out.
+// No session, no mock `$`: plain rows in, text out.
 
 import { expect, test } from 'claude-code/testing'
 
-import { lastTurnText } from './spike-turn'
-import type { Row } from './spike-turn'
+import { lastTurnText } from './turn'
+import type { Row } from './turn'
 
 const prompt = (text: string): Row => ({ role: 'user', text })
 const reply = (text: string): Row => ({ role: 'assistant', text })

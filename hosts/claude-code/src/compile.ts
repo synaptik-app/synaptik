@@ -1,6 +1,7 @@
-// SPIKE — throwaway. The tray compiled into the prompt (SPEC §9).
+// The tray compiled into the prompt (SPEC §9): each marked block quoted, nested
+// under its parent, in reading order.
 
-import { quote } from './spike-blocks'
+import { quote } from './blocks'
 
 export type Mark = 'accept' | 'reject' | 'comment'
 

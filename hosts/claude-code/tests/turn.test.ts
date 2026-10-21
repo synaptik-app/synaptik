@@ -7,7 +7,7 @@ import { expect, test } from 'claude-code/testing'
 import { band, ENGINE_DRAWING, pane, position, reply, start, transcriptOf, turn } from './engine'
 import type { Row } from './engine'
 import { FIXTURES } from './fixtures.generated'
-import { segment } from '../src/spike-blocks'
+import { segment } from '../src/blocks'
 
 const F = 'rendering'
 const ask = (text: string): Row => ({ role: 'user', text, toolUses: [] })

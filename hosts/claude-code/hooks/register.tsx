@@ -1,22 +1,19 @@
-// SPIKE — throwaway code. Answers the questions in docs/SPEC.md §15, then is
-// deleted. Not phase 1: no real segmentation, no real tray, no compile step.
-//
-// Layout under test (happy path: fullscreen, wide terminal):
-//   reply   the selected block carries ▎, its mark, and the verb menu
-//   pane    a narrow docked strip: ▲, a minimap of the blocks, ▼, the verbs.
-//           Focused (ctrl+s): ↑↓ move blocks, ←→ walk verbs, ⏎ applies.
-//   band    read-only: position, compiled preview, discard warning
-//
-//   /synaptik         toggle the whole mod (the kill switch, SPEC §12)
-//   /synaptik log     show what the hooks observed
+// Synaptik's hooks: the only file that touches `$` (CLAUDE.md). The logic is in
+// src/; this draws it and wires it to Claude Code. What it draws (SPEC):
+//   reply      the selected block on the selection background, its mark in
+//              the margin, the actions under it (§6)
+//   navigator  a pane: a map of the blocks docked in fullscreen, the selected
+//              block itself in classic; ↑/↓ blocks, Tab or ←/→ actions (§10)
+//   band       above the prompt: what is staged, and the keys (§7)
+//   /synaptik  open the navigator; help, on/off, config, log (§10, D39)
 
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { SpikeMark } from '../types'
-import { quote, segment } from '../src/spike-blocks'
-import { lastTurnText } from '../src/spike-turn'
-import { compile as compileTray, GLYPH } from '../src/spike-compile'
+import type { Mark } from '../types'
+import { quote, segment } from '../src/blocks'
+import { lastTurnText } from '../src/turn'
+import { compile as compileTray, GLYPH } from '../src/compile'
 import { DEFAULT_KEYS, keyLabel, keysFrom, parseKeyFile } from '../src/keys'
 import type { KeyFile, Keys } from '../src/keys'
 import { applySetup, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS } from '../src/keysetup'
@@ -62,7 +59,7 @@ const commentKey = (seq: number) => `${COMMENT_PREFIX}${seq}`
 
 // The pane's tree is always bodyRows + 2 rows with its window pinned at offset
 // 1, so ↑ and ↓ always have a row to scroll to and each raises ui.scroll with a
-// direction. The band's focus ring cannot tell ↑ from ← (SPIKE: Q3).
+// direction. The band's focus ring cannot tell ↑ from ← (SPEC §10, *Why a pane*).
 const PANE = 'synaptik-map'
 const PANE_ANCHOR = 'pane-anchor'
 const PANE_COLUMNS = 4
@@ -141,7 +138,7 @@ const CLASSIC_MIN_ROWS = 7
 
 // The compiled prompt is proposed in the empty prompt box after every change,
 // as Claude Code proposes its own: → or Tab takes it, the box is where it is
-// edited and sent, ctrl+c clears it (SPIKE: send flow B).
+// edited and sent, ctrl+c clears it (SPEC §7, *Sending*).
 async function suggestTray($: EngineInterface) {
   try {
     const text = await compile($)
@@ -275,7 +272,7 @@ async function moveSelection($: EngineInterface, by: number) {
   }
 }
 
-async function toggle($: EngineInterface, i: number, mark: SpikeMark) {
+async function toggle($: EngineInterface, i: number, mark: Mark) {
   await update($, marks, m => {
     const copy = { ...m }
     if (copy[i] === mark) delete copy[i]
@@ -342,7 +339,7 @@ async function finishComment($: EngineInterface) {
   await suggestTray($)
 }
 
-// The compiled prompt: src/spike-compile.ts, over the adopted reply's blocks.
+// The compiled prompt: src/compile.ts, over the adopted reply's blocks.
 async function compile($: EngineInterface): Promise<string> {
   const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
   return compileTray(blocks, await read($, marks), (await read($, comments)) as Record<number, string>)
@@ -577,7 +574,7 @@ async function saveKeyMenu($: EngineInterface) {
 async function summary($: EngineInterface): Promise<string> {
   const marked = Object.values(await read($, marks))
   const commented = (await read($, comments)) as Record<number, string>
-  const count = (m: SpikeMark) => marked.filter(x => x === m).length
+  const count = (m: Mark) => marked.filter(x => x === m).length
   const notes = Object.entries(await read($, marks)).filter(
     ([i, m]) => m === 'comment' && commented[Number(i)]?.trim(),
   ).length
