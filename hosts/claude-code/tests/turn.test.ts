@@ -85,3 +85,25 @@ test('the same reply adopted again (a reload) keeps the tray', async ($, on) => 
   await $.session.start({ cwd: '/tmp/synaptik-test', surface: 'terminal', isInteractive: true })
   expect(await ui.find({ type: 'Text', text: /Your notes · ✓1/ })).toBeDefined()
 })
+
+// Since Claude Code 2.1.300 the turn hooks also hear subagents' and teammates'
+// turns (e.agentId); only the main loop's turn brings a new reply.
+test('a subagent’s turn starting does not stop marking', async ($, on) => {
+  await start($, on, F)
+  await $.turn.start({ text: 'look this up', turnId: 'sub-turn', agentId: 'agent-1' } as never)
+  const ui = await pane($, 'inline')
+  await ui.press({ key: 'verb-accept' })
+  expect(await ui.find({ type: 'Text', text: /Your notes · ✓1/ })).toBeDefined()
+})
+
+test('a subagent’s turn completing does not adopt anything, nor end the main turn', async ($, on) => {
+  const rows = await start($, on, F)
+  await $.turn.start({ text: 'and then?', turnId: 'main-turn' })
+  rows.push(ask('and then?'), answer(NEW_REPLY))
+  await $.turn.complete({
+    turnId: 'sub-turn', agentId: 'agent-1', answer: 'found it', durationMs: 1, isAborted: false, reason: 'answer',
+  } as never)
+  const ui = await pane($, 'inline')
+  // Still the main turn's: waiting, nothing adopted yet.
+  expect(await ui.find({ type: 'Text', text: /Waiting for the reply/ })).toBeDefined()
+})

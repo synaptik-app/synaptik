@@ -12,12 +12,18 @@ concurrency:
 
 jobs:
   check:
-    name: validate and test
+    name: validate and test (${{ matrix.claude-code }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # Pinned: a new Claude Code release cannot break CI without a deliberate
+        # bump. The oldest version Synaptik supports (README, SPEC §14), and the
+        # newest it is tested on.
+        claude-code: ['2.1.287', '2.1.304']
     env:
-      # Pinned: a new Claude Code release cannot break CI without a deliberate bump.
-      CLAUDE_CODE_VERSION: 2.1.287
+      CLAUDE_CODE_VERSION: ${{ matrix.claude-code }}
       DISABLE_AUTOUPDATER: '1'
     steps:
       - uses: actions/checkout@v7
