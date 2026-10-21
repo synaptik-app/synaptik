@@ -74,6 +74,9 @@ export const opened: { focus: boolean }[] = []
 // Every file Synaptik wrote, in order, path and whole text. Reset by `engine`.
 export const written: { path: string; text: string }[] = []
 
+// Set to a reason to make every file write fail with it. Reset by `engine`.
+export const failing = { write: '' }
+
 // Every prompt Synaptik submitted (`s` in the navigator). Reset by `engine`.
 export const submitted: string[] = []
 
@@ -87,6 +90,7 @@ export function engine(on: On, rows: Row[]) {
   placement.isPlaced = true
   opened.length = 0
   written.length = 0
+  failing.write = ''
   const event = (name: string, fn: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => fn(e)) as never)
   const call = (name: string, value: (e: never) => unknown) =>
@@ -102,6 +106,7 @@ export function engine(on: On, rows: Row[]) {
   call('ui.toast', () => undefined)
   event('ui.message', () => ({}))
   call('fs.write', (e: { path: string; text: string }) => {
+    if (failing.write) throw new Error(failing.write)
     written.push({ path: e.path, text: e.text })
     return undefined
   })
@@ -296,13 +301,13 @@ let keyFileTime = 0
 
 // ~/.claude/keybindings.json as the test stands it: `file` written as JSON, or a
 // string as the raw text. Without it, reading the file fails, as when it is
-// missing.
-export function keybindings(on: On, file: unknown) {
+// missing. `env`: the variables that place the config folder (HOME by default).
+export function keybindings(on: On, file: unknown, env: Record<string, string> = { HOME: '/home/test' }) {
   const call = (name: string, value: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => ({ value: value(e) })) as never)
   const text = typeof file === 'string' ? file : JSON.stringify(file)
   const mtimeMs = (keyFileTime += 1)
-  call('env.get', (e: { name: string }) => (e.name === 'HOME' ? '/home/test' : undefined))
+  call('env.get', (e: { name: string }) => env[e.name])
   call('fs.stat', () => ({ kind: 'file', size: text.length, mtimeMs }))
   call('fs.read', () => text)
 }
