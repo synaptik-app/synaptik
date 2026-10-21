@@ -20,6 +20,8 @@ import { applySetup, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS 
 import type { Setup } from '../src/keysetup'
 import { keybindingsPath, shownPath } from '../src/configpath'
 import { blockCounter } from '../src/counter'
+import { classicRows, clip, drawnRows, minimap } from '../src/layout'
+import { commentCount, glyphCounts, summary } from '../src/tally'
 import type { ConfigEnv } from '../src/configpath'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
@@ -72,7 +74,6 @@ const ROW_CHROME = 9
 
 // Cells of each comment-field line taken by its submit hint (`⏎ ok`) and gaps.
 const FIELD_CHROME = 7
-const clip = (text: string, n: number) => (text.length > n ? `${text.slice(0, n)}...` : text)
 const ACCENT = 'cyan'
 
 // The selected block's background: Claude Code's own text-selection colour, a
@@ -133,9 +134,6 @@ const HELP = [
 const TAGLINE = 'respond to the reply in place'
 const NEST = '⎿  '
 
-// PREVIEW (#31): the classic navigator's smallest height.
-const CLASSIC_MIN_ROWS = 7
-
 // The compiled prompt is proposed in the empty prompt box after every change,
 // as Claude Code proposes its own: → or Tab takes it, the box is where it is
 // edited and sent, ctrl+c clears it (SPEC §7, *Sending*).
@@ -190,39 +188,8 @@ async function adoptLastReply($: EngineInterface) {
 // Opened unasked (a new reply, a reload) the pane waits undrawn below 144
 // columns; opened from the person's press it is placed at any width. When it
 // waits or is closed, the band offers that press.
-// Rows the classic (inline) navigator asks for: the tallest block's estimated
-// lines plus its six fixed rows (header, previous, menu, comment, next,
-// footer), between a floor and a third of the screen. Decided once per reply,
-// so the pane does not change height while navigating (each change would shift
-// the screen, and the classic renderer redraws by erasing what it printed).
-// The dock ignores it.
-function classicRows(text: string): number {
-  const width = Math.max(20, screen.columns - 8)
-  const tallest = Math.max(
-    1,
-    ...segment(text)
-      .filter(b => b.isBlock)
-      .map(b => drawnRows(b.text, width)),
-  )
-  return Math.max(CLASSIC_MIN_ROWS, Math.min(tallest + 6, Math.floor(screen.rows / 3)))
-}
-
-// Rows a block takes when Claude Code draws it `width` wide, estimated: a table
-// as drawn (a border line around and between its rows), a code block without its
-// fence lines, prose wrapped by length.
-function drawnRows(text: string, width: number): number {
-  const lines = text.split('\n')
-  if (lines.every(l => l.trim().startsWith('|'))) {
-    const rows = lines.filter(l => !/^\s*\|[\s:|-]+\|\s*$/.test(l)).length
-    return 2 * rows + 1
-  }
-  const body = /^\s*(```|~~~)/.test(lines[0] ?? '') ? lines.slice(1, -1) : lines
-  return body.reduce((n, l) => n + Math.max(1, Math.ceil(l.length / width)), 0)
-}
-
-// `focus`: the person asked (`/synaptik`), so the navigator takes the keyboard.
 async function openPane($: EngineInterface, focus = false) {
-  const rows = classicRows(await read($, lastText))
+  const rows = classicRows(await read($, lastText), screen)
   askedRows = rows
   const opened = await $.ui.open({
     id: PANE,
@@ -568,44 +535,6 @@ async function saveKeyMenu($: EngineInterface) {
   }
   await $.ui.toast(changed.length ? 'Synaptik: keys saved' : 'Synaptik: no changes')
   await closeKeyMenu($)
-}
-
-// "2 accepted · 1 rejected · 1 comment", zero counts left out.
-async function summary($: EngineInterface): Promise<string> {
-  const marked = Object.values(await read($, marks))
-  const commented = (await read($, comments)) as Record<number, string>
-  const count = (m: Mark) => marked.filter(x => x === m).length
-  const notes = Object.entries(await read($, marks)).filter(
-    ([i, m]) => m === 'comment' && commented[Number(i)]?.trim(),
-  ).length
-  return [
-    count('accept') && `${count('accept')} accepted`,
-    count('reject') && `${count('reject')} rejected`,
-    notes && `${notes} comment${notes === 1 ? '' : 's'}`,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-}
-
-// Rows per block in the minimap, proportional to each block's length and at
-// least one, scaled into `rows`. Happy path: assumes blocks <= rows.
-function minimap(lengths: number[], rows: number): number[] {
-  const total = lengths.reduce((a, b) => a + b, 0) || 1
-  const spare = Math.max(0, rows - lengths.length)
-  const shares = lengths.map(len => (len / total) * spare)
-  const heights = shares.map(share => 1 + Math.floor(share))
-  // Hand the rows lost to rounding down to the largest remainders, so the
-  // column fills `rows` exactly instead of leaving space at the bottom.
-  let left = rows - heights.reduce((a, b) => a + b, 0)
-  const byRemainder = shares
-    .map((share, i) => [share - Math.floor(share), i] as const)
-    .sort((a, b) => b[0] - a[0])
-  for (const [, i] of byRemainder) {
-    if (left <= 0) break
-    heights[i]! += 1
-    left -= 1
-  }
-  return heights
 }
 
 export const register: Register = on => {
@@ -986,11 +915,7 @@ export const register: Register = on => {
     }
     const rows = Math.max(6, e.props.scroll.bodyRows)
     const words = Math.max(4, e.props.bodyColumns - ROW_CHROME)
-    const counts = (['accept', 'reject', 'comment'] as const)
-      .map(m => [m, Object.values(marked).filter(x => x === m).length] as const)
-      .filter(([, n]) => n > 0)
-      .map(([m, n]) => `${GLYPH[m]}${n}`)
-      .join(' ')
+    const counts = glyphCounts(marked)
     const heading = working
       ? 'Waiting for the reply...'
       : counts
@@ -998,9 +923,7 @@ export const register: Register = on => {
         : 'Nothing marked yet'
     // Everything but the heading and position rows, less one row for each
     // comment, which may need a row of its own under a one-row block.
-    const commentRows = Object.entries(marked).filter(
-      ([i, m]) => m === 'comment' && commented[Number(i)]?.trim(),
-    ).length
+    const commentRows = commentCount(marked, commented)
     // Rows for the comment field while it is open: as many as its text wraps
     // to, so the whole comment — and the cursor, wherever it is — stays in view.
     // The field reports no cursor position, so a window around the cursor is not
@@ -1240,7 +1163,7 @@ export const register: Register = on => {
     const reviewing = isNavigatorFocused
     const keys = await currentKeys($)
     const key = keys.entry
-    const staged = await summary($)
+    const staged = summary(await read($, marks), (await read($, comments)) as Record<number, string>)
     const compiled = await compile($)
     const box = await $.prompt.read()
 
