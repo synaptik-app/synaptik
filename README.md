@@ -161,8 +161,9 @@ which resizes it.
   unless they carry marks.
 - **Code blocks and tables** are one block each, marked as a whole (#5, #6).
 
-Found something else? A [field note](https://github.com/synaptik-app/synaptik/issues/new/choose)
-is the most useful thing you can send.
+Found something else? [An issue](https://github.com/synaptik-app/synaptik/issues/new/choose)
+— a bug, or what felt wrong or missing on a real reply — is the most useful
+thing you can send.
 
 ## Layout
 
@@ -179,7 +180,7 @@ behaviour in its own language rather than sharing a runtime.
 
 ## Contributing
 
-Field notes, bugs and design discussion are welcome; see
+Bug reports, ideas and design discussion are welcome; see
 [CONTRIBUTING.md](CONTRIBUTING.md). `docs/DECISIONS.md` records what was decided
 and what was deliberately left out, so a proposal is easier to argue for against
 that than from scratch. Security issues: [SECURITY.md](SECURITY.md).
