@@ -1,3 +1,4 @@
-# Every path; reviews are requested from the owner. Approvals are not required
-# while the repository is private (see #41).
+# Every path; reviews are requested from the owner. The ruleset on main requires
+# a pull request and green CI, not an approval: a sole maintainer can't approve
+# their own (see #41).
 * @mgundogan
