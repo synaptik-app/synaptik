@@ -10,6 +10,8 @@ paragraph, a step in its plan, an item in a list — and accept it, reject it, o
 comment on it. Synaptik turns your marks into a single prompt, written as if
 you'd typed it yourself.
 
+![Synaptik: marking up a reply, then sending the marks as one prompt](.github/assets/demo.gif)
+
 *Coming next: discussing a part on the side, and marking up the agent's changes
 line by line.*
 
@@ -17,27 +19,8 @@ Without it, answering part of a reply means scrolling up and writing prose that
 points back at it — *"you said in step 3…"*, or a list rebuilding which
 suggestions you took and which you didn't.
 
-```
-  ✓ Use Redis for the session cache
-        per-user key prefix
-▌ ✗     5 minute TTL
- └ [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
-  ✎ Add a rate limiter
-    → make it 5 req/sec
-    Run the migration before deploying.
-```
-
-Marks accumulate, and what they compile into appears in the prompt box as a dim
-suggestion. `Tab` takes it, `⏎` sends it:
-
-```
-✓ "Use Redis for the session cache"
-    ✓ "per-user key prefix"
-    ✗ "5 minute TTL"
-✎ "Add a rate limiter" → make it 5 req/sec
-```
-
-Nothing reaches the agent until you send, and what it receives is an ordinary
+Your marks appear in the prompt box as a dim suggestion: `Tab` takes it, `⏎`
+sends it. Nothing reaches the agent until you send, and what it receives is an ordinary
 prompt you saw first — Synaptik adds no markers or identifiers, and never
 interferes with the prompt/response flow.
 
