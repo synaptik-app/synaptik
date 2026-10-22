@@ -8,7 +8,7 @@ not in a public issue. If you cannot use GitHub, write to
 [security@synaptik.app](mailto:security@synaptik.app). You'll get an answer
 within a week.
 
-Synaptik has no releases yet, so only the `main` branch is supported.
+Only the latest release and the `main` branch are supported.
 
 ## What Synaptik can do
 
