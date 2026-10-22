@@ -37,8 +37,11 @@ Before opening one:
   claude plugin test ./hosts/claude-code     # unit and UI tests, no session needed
   ```
 
-- **For a change you can see**, try it on the test bench:
-  `cd testbench && claude --plugin-dir ../hosts/claude-code`, then ask it to run
+- **For a change you can see**, try it from a clone on the test bench —
+  `git clone https://github.com/synaptik-app/synaptik`, then
+  `cd synaptik/testbench && claude --plugin-dir ../hosts/claude-code` (one
+  session, reloading when files change; it replaces an installed copy for that
+  session), and ask it to run
   `rendering`, `split`, `nesting`, `long` or `all`.
 - **Keep the docs true** — `docs/SPEC.md` when behaviour changes,
   `docs/DECISIONS.md` when a decision does.

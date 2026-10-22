@@ -1,6 +1,11 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme-banner-dark.png">
+  <img alt="Synaptik — accept, reject or comment on any part of the agent's reply" src=".github/assets/readme-banner-light.png">
+</picture>
+
 # Synaptik
 
-Synaptik is a mod for Claude Code. Pick any part of the agent's reply — a
+**Synaptik** (with a **k**) is a mod for Claude Code. Pick any part of the agent's reply — a
 paragraph, a step in its plan, an item in a list — and accept it, reject it, or
 comment on it. Synaptik turns your marks into a single prompt, written as if
 you'd typed it yourself.
@@ -38,17 +43,17 @@ interferes with the prompt/response flow.
 
 ## Status
 
-**Early.** The core loop works and is used daily by its author: accept, reject
-and comment on blocks of the last reply, in the fullscreen and the classic
-renderer. Phase 1 — refactoring the prototype, a proper Markdown segmenter, and
-a release you can install — is in progress; see the
+**Early, pre-release.** The core loop works and is used daily by its author:
+accept, reject and comment on blocks of the last reply, in the fullscreen and
+the classic renderer. Phase 1 continues — a proper Markdown segmenter, the tray
+as a module, then v0.1.0; see the
 [Phase 1 milestone](https://github.com/synaptik-app/synaptik/milestone/1) and the
 [roadmap](https://github.com/orgs/synaptik-app/projects/2).
 
 Not yet there: **💬 discuss** (a side thread about one block) is phase 2 and only
 says so when chosen. Expect rough edges, and changes to keys and layout.
 
-## Try it
+## Install
 
 Claude Code **v2.1.287+** in a terminal — any terminal, including the ones in
 VS Code, Cursor and JetBrains IDEs, and over SSH or tmux. Mods are enabled by
@@ -58,30 +63,50 @@ Synaptik stays out of the Claude Desktop app's Code tab and the mobile app: both
 have review features of their own (replies on a passage, side chats, diff
 comments). The VS Code extension's panel is planned next.
 
+### From the marketplace
+
+This repository is its own plugin marketplace, `synaptik-app`:
+
+```bash
+claude plugin marketplace add synaptik-app/synaptik
+claude plugin install synaptik@synaptik-app
+```
+
+Or, inside a session (Claude Code v2.1.275+):
+
+```
+/plugin install synaptik --marketplace synaptik-app/synaptik
+```
+
+It loads in every session from then on. `claude plugin update synaptik@synaptik-app`
+fetches a newer version. On a machine without a GitHub SSH key, set
+`CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`: installs and updates from inside a session
+don't fall back to HTTPS by themselves.
+
+### Offline or air-gapped
+
 Download `synaptik-<version>.zip` from
-[Releases](https://github.com/synaptik-app/synaptik/releases), then either:
+[Releases](https://github.com/synaptik-app/synaptik/releases) on a connected
+machine and carry it over. Then either:
 
 ```bash
-# every session: unzip it into your skills directory
-unzip synaptik-0.1.0-alpha.2.zip -d ~/.claude/skills/
+# one session only, straight from the zip
+claude --plugin-dir ./synaptik-<version>.zip
 
-# or one session only, straight from the zip
-claude --plugin-dir ./synaptik-0.1.0-alpha.2.zip
+# every session: unzip it into your skills folder
+unzip synaptik-<version>.zip -d ~/.claude/skills/
 ```
 
-`/plugin` inside a session lists what loaded (`synaptik@skills-dir` for the
-unzipped copy). `/synaptik` opens the navigator, `/synaptik off` and `/synaptik on`
-turn it off and on for the session, and `/synaptik help` lists the rest. To update, remove
-`~/.claude/skills/synaptik` and unzip the newer release. Installing by name from
-a marketplace comes with v0.1.
+On Windows the skills folder is `%USERPROFILE%\.claude\skills\`. To update,
+replace the `synaptik` folder there with the newer zip's. Use one install or the
+other: with both, the marketplace copy loads and the unzipped one doesn't.
 
-To work on it, run it from a clone — for one session, reloading when files
-change. It replaces an unzipped copy for that session:
+### Once it's in
 
-```bash
-git clone https://github.com/synaptik-app/synaptik
-claude --plugin-dir ./synaptik/hosts/claude-code
-```
+`/plugin` lists it (`synaptik@synaptik-app`, or `synaptik@skills-dir` for the
+unzipped copy). `/synaptik` opens the navigator, `/synaptik off` and
+`/synaptik on` turn it off and on for the session, and `/synaptik help` lists
+the rest.
 
 A mod runs inside Claude Code with your own permissions and is not sandboxed.
 `claude plugin validate` on the plugin folder prints every event it handles and
@@ -162,3 +187,8 @@ that than from scratch. Security issues: [SECURITY.md](SECURITY.md).
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).
+
+---
+
+Synaptik is an independent open-source project, not affiliated with or endorsed
+by Anthropic. Claude and Claude Code are trademarks of Anthropic.

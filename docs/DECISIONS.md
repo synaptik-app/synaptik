@@ -1145,7 +1145,10 @@ to `--plugin-dir` (one session). A file is easier to hand over than a clone,
 works while the repository is private, and works on machines with no network.
 Releases are cut when something visible lands, not after every PR.
 
-**At v0.1 (#52): the repository becomes its own marketplace** —
+**Revised 2026-10-22: the marketplace comes with going public (#47), not v0.1** —
+once the repository is public anyone can add it, so the README leads with it
+and the zip stays for offline machines. Originally: **At v0.1 (#52): the
+repository becomes its own marketplace** —
 `.claude-plugin/marketplace.json` listing `./hosts/claude-code`, installed with
 `claude plugin marketplace add synaptik-app/synaptik`. Tried and working in #54,
 then held back: by-name install and `claude plugin update` are worth offering
