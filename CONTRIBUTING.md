@@ -7,16 +7,18 @@ is **what you saw using it**.
 
 [New issue](https://github.com/synaptik-app/synaptik/issues/new/choose) offers:
 
-- **Field note** — something that felt wrong or missing while marking up a real
-  reply. Say what you were doing and what you expected; a screenshot helps.
-- **Bug** — with your Claude Code version, terminal, and renderer (fullscreen or
-  classic).
-- **Design** — a proposal. Read [`docs/DECISIONS.md`](docs/DECISIONS.md) first:
-  most obvious ideas were already considered, and many were cut for a reason. A
-  proposal that answers that reason is easy to take up.
+- **Bug report** — with your Claude Code version, how Synaptik is installed, the
+  renderer (fullscreen or classic), and your terminal.
+- **Feature or idea** — a proposal, or a field note: something that felt wrong
+  or missing while marking up a real reply. Say what you were doing and what you
+  expected; a screenshot helps. For a design, read
+  [`docs/DECISIONS.md`](docs/DECISIONS.md) first: most obvious ideas were already
+  considered, and many were cut for a reason. A proposal that answers that reason
+  is easy to take up.
 
-Open-ended questions go to
-[Discussions](https://github.com/synaptik-app/synaptik/discussions).
+Questions and open-ended design talk go to
+[Discussions](https://github.com/synaptik-app/synaptik/discussions);
+vulnerabilities to private reporting ([SECURITY.md](SECURITY.md)).
 
 ## Pull requests
 

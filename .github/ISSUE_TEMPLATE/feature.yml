@@ -1,0 +1,27 @@
+name: Feature or idea
+description: Something Synaptik could do, or something that felt wrong while using it
+type: Feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas and field notes both belong here: "I wanted to do X while marking up a reply, and couldn't" is as useful as a proposal.
+        Before proposing a design, [`docs/DECISIONS.md`](https://github.com/synaptik-app/synaptik/blob/main/docs/DECISIONS.md) records what was decided and what was deliberately left out.
+  - type: textarea
+    id: what
+    attributes:
+      label: What you'd like
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What it's for
+      description: The situation you were in — a real reply you were marking up, if there was one.
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How it might look
+      description: Optional — keys, a sketch of the screen, what the prompt would say.
