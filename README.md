@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme-banner-dark.png">
+  <img alt="Synaptik — accept, reject or comment on any part of the agent's reply" src=".github/assets/readme-banner-light.png">
+</picture>
+
 # Synaptik
 
 **Synaptik** (with a **k**) is a mod for Claude Code. Pick any part of the agent's reply — a

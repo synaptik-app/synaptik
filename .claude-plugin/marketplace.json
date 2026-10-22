@@ -1,6 +1,6 @@
 {
   "name": "synaptik-app",
-  "description": "Synaptik (with a k): mark up the agent's reply in place, and send your marks as one prompt.",
+  "description": "The Synaptik plugin: accept, reject or comment on any part of the agent's reply — Synaptik turns your marks into one prompt.",
   "owner": {
     "name": "Synaptik",
     "email": "hello@synaptik.app",
@@ -12,7 +12,12 @@
       "source": "./hosts/claude-code",
       "description": "Accept, reject or comment on any part of the agent's reply — Synaptik turns your marks into one prompt.",
       "category": "productivity",
-      "tags": ["review", "feedback", "markup", "mod"]
+      "tags": [
+        "review",
+        "feedback",
+        "markup",
+        "mod"
+      ]
     }
   ]
 }
