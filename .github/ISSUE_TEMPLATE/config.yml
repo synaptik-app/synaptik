@@ -5,6 +5,3 @@ contact_links:
   - name: Question or discussion
     url: https://github.com/synaptik-app/synaptik/discussions
     about: How something works, or a design to talk through.
-  - name: Security vulnerability
-    url: https://github.com/synaptik-app/synaptik/security/advisories/new
-    about: Report privately — see SECURITY.md.
