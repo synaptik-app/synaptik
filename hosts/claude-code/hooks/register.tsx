@@ -864,8 +864,10 @@ export const register: Register = on => {
           heading,
           crumb,
           barHeights: minimap(blocks.map(b => b.text.length), Math.max(blocks.length, rows - 2)),
-          previous: prev ? quote(prev.text, 10_000) : undefined,
-          next: nextBlock ? quote(nextBlock.text, 10_000) : undefined,
+          // One truncated line each; clipped, since a Text over 10,000
+          // characters is refused before Claude Code 2.1.304.
+          previous: prev ? clip(quote(prev.text, 10_000), 500) : undefined,
+          next: nextBlock ? clip(quote(nextBlock.text, 10_000), 500) : undefined,
           text: current?.text ?? '',
           glyph: mark ? GLYPH[mark] : undefined,
           // The block takes the rows it needs; spare rows are split between

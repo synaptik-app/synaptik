@@ -4,6 +4,7 @@
 
 import type { Elements, RenderElement } from 'claude-code'
 
+import { chunk } from '../../src/blocks'
 import { ACCENT, PANE_ANCHOR, VERBS } from '../ui'
 
 // What the navigator's buttons do; register.tsx owns them.
@@ -81,7 +82,9 @@ export function ClassicView(
               <Text>{m.glyph ?? ' '} </Text>
               <Box flexDirection="column" flexGrow={1} overflow="hidden">
                 <Box flexDirection="column" marginTop={-m.blockOffset}>
-                  <Markdown text={m.text} />
+                  {chunk(m.text).map(piece => (
+                    <Markdown text={piece} />
+                  ))}
                 </Box>
               </Box>
             </Box>

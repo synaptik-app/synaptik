@@ -869,7 +869,7 @@ are terminal-only and unused; the mod draws with `Box`, `Text`, `Button`,
 | | |
 |---|---|
 | Hook execution | 10 s (time inside a mods API call does not count) |
-| `Markdown` / `Code` text | any length; one drawing holds 100,000 characters in all. A reply piece over 90,000 is left to Claude Code to draw and is reviewed from the navigator (`MAX_DRAWN`). The test kit doesn't enforce the bound, so the terminal's behaviour past it is unverified ⚠️ |
+| `Markdown` / `Text` text | 10,000 characters per element before Claude Code 2.1.304 (a longer one fails the whole render) — so a block is drawn in pieces (`chunk()`, each code piece fenced again). From 2.1.304, any length. One drawing holds 100,000 characters in all: a reply piece over 90,000 is left to Claude Code and reviewed from the navigator (`MAX_DRAWN`). The test kit doesn't enforce that bound, so the terminal's behaviour past it is unverified ⚠️ |
 | `$.store` | 4 MiB of JSON, shared machine-wide |
 | `ui.render` redraws | throttled to ~10–30/s, coalesced |
 | Render hooks | may not write `$.state`; may call `$.ui.invalidate` |

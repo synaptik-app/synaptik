@@ -13,9 +13,13 @@ test(check(F, 'With the navigator open, the reply draws whole'), async ($, on) =
   await pane($, 'dock')
   const ui = await reply($, F)
   const texts = (await ui.findAll({ type: 'Markdown' })).map(m => String(m.props.text ?? m.text))
-  const code = texts.find(t => t.startsWith('```ts'))
-  expect(code!.length).toBeGreaterThan(10_000)
-  expect(code).toContain("resource/120'")
+  // Drawn in pieces of at most 10,000 characters, each fenced: Claude Code
+  // before 2.1.304 refuses a longer Markdown element.
+  const pieces = texts.filter(t => t.startsWith('```ts'))
+  expect(pieces.length).toBeGreaterThan(1)
+  expect(pieces.every(p => p.length <= 10_000)).toBe(true)
+  expect(pieces[0]).toContain("resource/001'")
+  expect(pieces[pieces.length - 1]).toContain("resource/120'")
   expect(texts.some(t => t.startsWith('Paragraph 12 of the long tail'))).toBe(true)
 })
 
