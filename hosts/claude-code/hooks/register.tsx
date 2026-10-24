@@ -14,6 +14,8 @@ import type { Mark } from '../types'
 import { quote, segment } from '../src/blocks'
 import { lastTurnText } from '../src/turn'
 import { compile as compileTray, GLYPH } from '../src/compile'
+import { draftComment, dropComment, EMPTY, finishComment as finishTrayComment, toggle as toggleMark } from '../src/tray'
+import type { Tray } from '../src/tray'
 import { DEFAULT_KEYS, keyLabel, keysFrom, parseKeyFile } from '../src/keys'
 import type { KeyFile, Keys } from '../src/keys'
 import { applySetup, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS } from '../src/keysetup'
@@ -156,8 +158,7 @@ async function adoptLastReply($: EngineInterface) {
     // that is the block already on screen. Review runs upwards from there.
     const count = segment(text).filter(s => s.isBlock).length
     await update($, selected, () => Math.max(0, count - 1))
-    await update($, marks, () => ({}))
-    await update($, comments, () => ({}))
+    await writeTray($, () => EMPTY)
     await update($, isCommenting, () => false)
   }
   if (text) await openPane($)
@@ -216,13 +217,19 @@ async function moveSelection($: EngineInterface, by: number) {
   }
 }
 
+// The tray (src/tray.ts) as $.state holds it: two atoms, marks and comments.
+async function readTray($: EngineInterface): Promise<Tray> {
+  return { marks: await read($, marks), comments: (await read($, comments)) as Record<number, string> }
+}
+
+async function writeTray($: EngineInterface, change: (tray: Tray) => Tray) {
+  const next = change(await readTray($))
+  await update($, marks, () => ({ ...next.marks }))
+  await update($, comments, () => ({ ...next.comments }))
+}
+
 async function toggle($: EngineInterface, i: number, mark: Mark) {
-  await update($, marks, m => {
-    const copy = { ...m }
-    if (copy[i] === mark) delete copy[i]
-    else copy[i] = mark
-    return copy
-  })
+  await writeTray($, tray => toggleMark(tray, i, mark))
   await suggestTray($)
 }
 
@@ -245,16 +252,7 @@ async function runVerb($: EngineInterface, verb: string) {
 
 // Drops the block's comment and its mark and returns to the menu.
 async function cancelComment($: EngineInterface, i: number, refocus = true) {
-  await update($, comments, c => {
-    const copy = { ...c }
-    delete copy[i]
-    return copy
-  })
-  await update($, marks, m => {
-    const copy = { ...m }
-    if (copy[i] === 'comment') delete copy[i]
-    return copy
-  })
+  await writeTray($, tray => dropComment(tray, i))
   if (refocus) return leaveComment($)
   await update($, isCommenting, () => false)
   await suggestTray($)
@@ -277,8 +275,7 @@ async function finishComment($: EngineInterface) {
   const i = await read($, selected)
   const text = (await read($, comments))[i] ?? ''
   observe(`finish comment on ${i}: ${JSON.stringify(text)}`)
-  if (text.trim() === '') return cancelComment($, i, false)
-  await update($, marks, m => ({ ...m, [i]: 'comment' as const }))
+  await writeTray($, tray => finishTrayComment(tray, i))
   await update($, isCommenting, () => false)
   await suggestTray($)
 }
@@ -286,15 +283,15 @@ async function finishComment($: EngineInterface) {
 // The compiled prompt: src/compile.ts, over the adopted reply's blocks.
 async function compile($: EngineInterface): Promise<string> {
   const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
-  return compileTray(blocks, await read($, marks), (await read($, comments)) as Record<number, string>)
+  const tray = await readTray($)
+  return compileTray(blocks, tray.marks, tray.comments)
 }
 
 async function sendTray($: EngineInterface) {
   const text = await compile($)
   if (!text) return
   await $.prompt.submit({ text, asUser: true })
-  await update($, marks, () => ({}))
-  await update($, comments, () => ({}))
+  await writeTray($, () => EMPTY)
 }
 
 // The keys the band names (src/keys.ts), from the person's own keybindings.json
@@ -835,10 +832,10 @@ export const register: Register = on => {
           const before = (await read($, comments))[sel] ?? ''
           // Backspace on an already empty line, if the surface reports it.
           if (value === '' && before === '') return cancelComment($, sel)
-          await update($, comments, c => ({ ...c, [sel]: value }))
+          await writeTray($, tray => draftComment(tray, sel, value))
         }}
         onSubmit={async value => {
-          await update($, comments, c => ({ ...c, [sel]: value }))
+          await writeTray($, tray => draftComment(tray, sel, value))
           // Moving focus off the field finishes the comment (ui.focus):
           // staged with text, dropped when empty.
           await leaveComment($)
