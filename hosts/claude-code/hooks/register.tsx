@@ -31,6 +31,7 @@ import {
   commentKey,
   FIELD_CHROME,
   MARGIN,
+  MAX_DRAWN,
   PANE,
   PANE_ANCHOR,
   PANE_COLUMNS,
@@ -285,13 +286,6 @@ async function compile($: EngineInterface): Promise<string> {
   const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
   const tray = await readTray($)
   return compileTray(blocks, tray.marks, tray.comments)
-}
-
-async function sendTray($: EngineInterface) {
-  const text = await compile($)
-  if (!text) return
-  await $.prompt.submit({ text, asUser: true })
-  await writeTray($, () => EMPTY)
 }
 
 // The keys the band names (src/keys.ts), from the person's own keybindings.json
@@ -616,6 +610,7 @@ export const register: Register = on => {
     const text = e.props.text
     const target = await read($, lastText)
     if (text.trim() === '' || !target.includes(text.trim())) return next(e)
+    if (text.length > MAX_DRAWN) return next(e)
 
     replyRequestId = e.requestId
     if (e.viewport) screen = { columns: e.viewport.columns, rows: e.viewport.rows }
@@ -818,7 +813,6 @@ export const register: Register = on => {
     const actions: NavigatorActions = {
       up: () => moveSelection($, -1),
       verb: key => runVerb($, key),
-      send: () => sendTray($),
     }
     // The comment field — visible: only the field knows where its cursor is (its
     // events carry the text, never the cursor, and ←/→ raise none).

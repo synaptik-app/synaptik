@@ -41,3 +41,8 @@ export const SELECTED_BACKGROUND = 'selectionBg'
 // bullet on the reply's first line.
 export const MARGIN = 2
 export const BULLET = '⏺'
+
+// The longest reply piece Synaptik draws itself. One drawing holds 100,000
+// characters in all, its markup included; a longer piece is left to Claude
+// Code, which draws any length, and is reviewed from the navigator alone.
+export const MAX_DRAWN = 90_000

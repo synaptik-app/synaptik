@@ -80,19 +80,16 @@ test('leaving the navigator proposes it again', async ($, on) => {
   expect(suggestions.length).toBe(before + 1)
 })
 
-test('s sends the compiled prompt as the person’s message and clears the tray', async ($, on) => {
+test('nothing in the navigator sends: the person takes the suggestion and sends it (D30)', async ($, on) => {
   await start($, on, F)
-  const ui = await pane($, 'inline')
-  await ui.press({ key: 'verb-accept' })
-  const compiled = suggested()
-  await ui.press({ key: 'send' })
-  expect(submitted).toEqual([compiled])
-  expect(await ui.find({ type: 'Text', text: /Nothing marked yet/ })).toBeDefined()
-})
-
-test('s with nothing marked sends nothing', async ($, on) => {
-  await start($, on, F)
-  const ui = await pane($, 'inline')
-  await ui.press({ key: 'send' })
+  for (const placement of ['inline', 'dock'] as const) {
+    const ui = await pane($, placement)
+    await ui.press({ key: 'verb-accept' })
+    const buttons = await ui.findAll({ type: 'Button' })
+    expect(buttons.some(b => b.props.hotkey === 'a')).toBe(true) // the hidden verbs are found
+    expect(buttons.some(b => b.props.hotkey === 's' || b.key === 'send')).toBe(false)
+    await ui.unmount()
+  }
+  expect(suggested()).not.toBe('')
   expect(submitted).toEqual([])
 })

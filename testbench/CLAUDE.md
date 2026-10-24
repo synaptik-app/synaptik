@@ -31,6 +31,7 @@ When the person asks to run a test — "run the rendering test", "run split",
 | long | `fixtures/long.md` |
 | all, everything, whole test | every fixture above, in that order |
 | neighbour | `fixtures/neighbour.md` — only with `neighbour-mod` loaded; not part of "all" |
+| huge | `fixtures/huge.md` — a reply over 14,000 characters; not part of "all" |
 
 **Rules — the replies must be identical every run, or results are not comparable:**
 

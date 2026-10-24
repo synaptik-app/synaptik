@@ -10,7 +10,6 @@ import { ACCENT, PANE_ANCHOR, VERBS } from '../ui'
 export type NavigatorActions = {
   up: () => unknown
   verb: (key: string) => unknown
-  send: () => unknown
 }
 
 // No reply yet: one line, no counter, no keys (#73).
@@ -96,9 +95,6 @@ export function ClassicView(
                   onPress={() => actions.verb(v.key)}
                 />
               ))}
-              <Box display="none">
-                <Button key="send" plain hotkey="s" label="send" onPress={actions.send} />
-              </Box>
             </Box>
             {field ?? (
               <Text dimColor wrap="truncate">
@@ -200,7 +196,6 @@ export function MapView(
               onPress={() => actions.verb(v.key)}
             />
           ))}
-          <Button key="send" plain hotkey="s" label="send" onPress={actions.send} />
         </Box>
         {field && <Box>{field}</Box>}
       </Box>

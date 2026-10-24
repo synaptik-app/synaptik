@@ -48,8 +48,7 @@ the person did not see and choose; the mod never writes the prompt box behind
 their back, submits on its own, or holds a turn. No markers or identifiers in
 what is sent — they are noise. The agent knowing the mod exists is fine
 (`DECISIONS.md` P1, revised). Sending is a suggestion the person takes
-(`$.prompt.suggest`), or `$.prompt.submit({ text, asUser: true })` on an explicit
-key.
+(`$.prompt.suggest`) and sends with `⏎`; the mod never submits (D30).
 
 **The mod relays; it does not analyse.** It captures what the user meant and
 hands it over verbatim. It does not reconcile contradictory marks, decide what is
