@@ -26,15 +26,16 @@ interferes with the prompt/response flow.
 
 ## Status
 
-**Early, pre-release.** The core loop works and is used daily by its author:
+**v0.1.0, early.** The core loop works and is used daily by its author:
 accept, reject and comment on blocks of the last reply, in the fullscreen and
-the classic renderer. Phase 1 continues — a proper Markdown segmenter, the tray
-as a module, then v0.1.0; see the
-[Phase 1 milestone](https://github.com/synaptik-app/synaptik/milestone/1) and the
+the classic renderer. What comes next is on the
 [roadmap](https://github.com/orgs/synaptik-app/projects/2).
 
 Not yet there: **💬 discuss** (a side thread about one block) is phase 2 and only
-says so when chosen. Expect rough edges, and changes to keys and layout.
+says so when chosen. Synaptik is built on Claude Code's mods API, which is still
+young: a Claude Code update can break it — [an issue](https://github.com/synaptik-app/synaptik/issues/new/choose)
+with your `claude --version` helps. Expect rough edges, and changes to keys and
+layout before 1.0.
 
 ## Install
 
@@ -143,6 +144,8 @@ which resizes it.
   may be bypassed while you review; outside review Synaptik leaves replies alone
   unless they carry marks.
 - **Code blocks and tables** are one block each, marked as a whole (#5, #6).
+- **No key clears a mark yet.** Pressing the same verb again unmarks ✓ and ✗; a
+  ✎ goes when its text is deleted or another verb replaces it (#100).
 
 Found something else? [An issue](https://github.com/synaptik-app/synaptik/issues/new/choose)
 — a bug, or what felt wrong or missing on a real reply — is the most useful

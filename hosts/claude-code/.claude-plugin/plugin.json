@@ -1,7 +1,7 @@
 {
   "name": "synaptik",
   "displayName": "Synaptik",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0",
   "description": "Accept, reject or comment on any part of the agent's reply — Synaptik turns your marks into one prompt.",
   "types": "./types/index.d.ts",
   "author": {
