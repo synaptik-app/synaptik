@@ -652,7 +652,7 @@ export const register: Register = on => {
       {
         isFirstOfReply: e.props.isFirstOfReply,
         segments: segments.map(seg => {
-          if (!seg.isBlock) return { text: seg.text, isBlock: false, depth: seg.depth, hasGapBefore: seg.hasGapBefore }
+          if (!seg.isBlock) return { text: seg.text, isBlock: false, indent: seg.indent, hasGapBefore: seg.hasGapBefore }
           index += 1
           const i = index
           const isSelected = i === sel
@@ -660,7 +660,7 @@ export const register: Register = on => {
           return {
             text: seg.text,
             isBlock: true,
-            depth: seg.depth,
+            indent: seg.indent,
             hasGapBefore: seg.hasGapBefore,
             glyph: mark ? GLYPH[mark] : undefined,
             // Background and menu only while the navigator holds the keyboard:

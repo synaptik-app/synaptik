@@ -85,6 +85,18 @@ The message text is split into blocks at render time. Marks are keyed by
 Each block records its **parent index** (or none). Navigation is flat, but the
 compiled prompt uses the parent to show nesting.
 
+What belongs to a list item is what is indented past its marker:
+
+- **Code, a quote or a paragraph inside an item** is part of the item's block,
+  when it follows the item directly.
+- **A paragraph back at an item's indent after its nested items** is a block of
+  its own, with that item as its parent. It can't join the item's block without
+  breaking reading order.
+- **Nesting is by structure, not by spaces:** an item indented by 2, 3 or 4
+  spaces under its parent is one level down. A nested block is drawn as Claude
+  Code draws it, in by the parent marker's width plus a space: 2 under `-`, 3
+  under `1.`.
+
 ### Example
 
 Given this response:

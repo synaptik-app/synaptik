@@ -41,3 +41,10 @@ test('an unmarked parent is sent as context for its marked child', async () => {
 test('a comment with no text is not sent, and brings no context', async () => {
   expect(compile(blocks, { 3: 'comment' }, { 3: '  ' })).toBe('')
 })
+
+test('nests by parent, however deep the source indents', async () => {
+  const deep = segment('- a\n    - b\n        - c\n- d').filter(s => s.isBlock)
+  expect(compile(deep, { 2: 'reject', 3: 'accept' }, {})).toBe(
+    ['"a"', '    "b"', '        ✗ "c"', '✓ "d"'].join('\n'),
+  )
+})
