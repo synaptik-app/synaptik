@@ -175,7 +175,7 @@ type Tray = Map<number, BlockState>
 |---|---|
 | New mark on a marked block | **overwrites.** One slot, last write wins. |
 | Same verb twice | unmarks |
-| `Backspace` on a block | clears it: mark removed, thread set to `included: false` |
+| `Backspace` on a block ⚠️ | clears it: mark removed, thread set to `included: false`. **No key yet:** a mod's hotkey is one letter or digit, so Backspace can't be bound (#23); `clear` exists in `src/tray.ts` for when it can (#100). |
 | Clear-all | empties the tray |
 | Mark **and** included thread on one block | both are sent; the agent reconciles |
 
