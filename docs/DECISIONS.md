@@ -244,6 +244,17 @@ one-keypress ergonomics retained, one code path removed.
 trip, because the agent must re-emit it before executing. Accepted, to avoid
 maintaining a parallel execution path with its own failure mode.
 
+#### Revision 2026-10-24 — naming; `?` removed
+
+The verbs are **accept · reject · comment · discuss**. *Discuss* opens a
+**thread**, which is anchored and private until included, as a GitHub review
+thread is. Inside a thread, **branch** turns it into a session of its own:
+Claude Code's `/branch`, which creates a branch of the conversation at that
+point (`/fork` is a background session or agent; checked on 2.1.308). The table
+above keeps its old label and key: read "💬 Thread" as 💬 discuss, on `d`.
+**`?` is removed.** A thread pre-seeded with "explain this" is not worth a
+second key. Design of the thread pane and of branching: #106.
+
 ---
 
 ### D3 — Deferred vs waiting; threads commit explicitly
@@ -662,6 +673,13 @@ found, not on whether the pane earns its space:
 
 Classic: the pane is a block viewer (#31, SPEC §10). Fullscreen: the docked
 navigator, its design to be finished on #39.
+
+#### Revision 2026-10-24 — a second level, for code and tables
+
+A code block or a table gets a 5th action, **step into**. Inside it, ↑/↓ move
+between lines or rows, and the menu holds the four verbs plus **step back**,
+which returns to the blocks. Prose stays at block level: splitting a paragraph
+into sentences breaks how it wraps. Design and rendering: #105 (for #5, #6).
 
 ---
 
@@ -1365,6 +1383,11 @@ the session another way *(was Q4)*. `session.end` fires on `/branch` with reason
 `resume`, so a branch must not be treated as a real session end.
 **Reconsider only after** living with D15's delegate loop — the remaining
 argument is context isolation, not tool access.
+**Status 2026-10-24:** the case is **stronger**. Context isolation is a real
+need: one session exploring the database, the cloud setup, or the front and
+back ends deserves its own context each. **Not pursued:** a Synaptik-owned
+session tree, and hiding branches from the resume list. Branching goes through
+Claude Code's own `/branch`, from a thread (E2, #106).
 
 ### E2 — Promote a thread to a branched session
 **Mechanism:** `/branch` forks the *main* conversation, which by design does
@@ -1376,6 +1399,12 @@ what crosses over (anchor block + thread) and leave the rest behind.
 thread it carries. Probably a `$.store` key written before branching and claimed
 on start. Untested. Also *(was Q5)*: what a subagent session view exposes to a
 mod, which may provide a ready-made pane for watching a branch.
+**Revision 2026-10-24:** a `branch` button sits next to the thread. The branch
+must carry **both contexts**: the main conversation, which `/branch` gives, and
+the thread, which is passed **in full** (summarized only if long). The thread is
+seeded with `$.prompt.fill` for the person to send, never auto-submitted.
+`/branch` typed without the button carries nothing, which is intended. Design:
+#106.
 
 ### E3 — Worktree isolation (was D19)
 Branches share the working directory by default; the moment one edits files, the
@@ -1387,6 +1416,18 @@ the correct answer. **Hooks:** `$.session.cwd`, `$.session.repo`.
 `{ consumed }` so Claude does not read it immediately → summary surfaces in a
 pane with a Merge button → `$.prompt.fill`. Explicitly lossy for discussion;
 applied file changes need a real git merge, not a conversation merge.
+**Revision 2026-10-24 — merge back as a commit:** as D3 does for a thread, one
+level up. The branch's result lands in the parent's tray as an editable
+include/exclude row, in two parts:
+- **Decisions**, a summary the model writes.
+- **A change manifest**, which is read, not summarized (P3): files from
+  `git diff --stat` against the state recorded when the branch started, and the
+  commands run, with their status, from the branch's own transcript. The
+  branch's mod instance builds it and sends it with `$.session.send`.
+
+Excluding a branch that changed files raises a loud band warning (as D24 does):
+that is exactly the surprise to avoid. With worktrees (E3), the manifest says
+where the changes are, and moving them is a git merge.
 
 ### E5 — Edit and resend a denied command
 **Rebuilt additively 2026-10-13 under P3. The gating design below is abandoned.**
@@ -1540,6 +1581,10 @@ A mod-registered tool letting Claude hand over arbitrary structured items.
 sits in tension with P1.
 
 ### E15 — Review the files a turn touched, in the same review
+*2026-10-24: the git-snapshot approach (a snapshot per `turn.complete`, since
+the last reply or the last review), its concerns, and the first test are on
+#108. To consider in detail later.*
+
 **Added 2026-10-13. Reframed 2026-10-14 and 2026-10-16. Likely the strongest
 extension point — possibly worth more than phase 2's threads, since reviewing
 generated code is where comments batch up most.**
@@ -1756,6 +1801,23 @@ a wishlist is how compliance budget gets spent on things that did not matter.
 
 **If it ships, it ships off by default**, with the switch as an `E10` option, and
 P1 remains the documented norm rather than a legacy mode.
+
+---
+
+### Ideas from pull-request review (2026-10-24)
+
+- **Suggested change**, a comment pre-filled with the block's own text to edit:
+  worth having, low priority. #107.
+- **Model-written comment suggestions** (dim candidates in the field, from
+  `$.model.fork`): low priority, and they pull against "the mod relays; it does
+  not analyse". #107.
+- **Jump to the next unmarked block**, and progress in the band: **not now**.
+  Navigation stays simple. Reconsider if people ask for it.
+- **A verdict for unmarked blocks** ("rest: go ahead"): **no.** Unmarked means
+  nothing was said. The agent decides, or asks when something is unclear, which
+  is better than a blanket "the rest is fine".
+- **Outdated marks:** not applicable while only the last reply can be marked
+  (needs E11 or E13).
 
 ---
 
