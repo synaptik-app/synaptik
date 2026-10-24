@@ -7,17 +7,11 @@ export type Mark = 'accept' | 'reject' | 'comment'
 
 export const GLYPH: Record<Mark, string> = { accept: '✓', reject: '✗', comment: '✎' }
 
-export type Block = { text: string; depth: number }
+// A block as the segmenter gives it: its parent is its enclosing list item's
+// index, or -1.
+export type Block = { text: string; depth: number; parent: number }
 
-// The nearest earlier block at a shallower depth, or -1.
-function parentOf(blocks: readonly Block[], i: number): number {
-  for (let j = i - 1; j >= 0; j -= 1) {
-    if (blocks[j]!.depth < blocks[i]!.depth) return j
-  }
-  return -1
-}
-
-// One line per staged block, in document order, nested by depth. An unmarked
+// One line per staged block, in document order, nested under its parent. An unmarked
 // block whose descendant is staged is sent too, as a plain quote with no glyph,
 // so a marked child arrives under the parent it belongs to. A comment with no
 // text is never sent.
@@ -33,7 +27,7 @@ export function compile(
   const context = new Set<number>()
   blocks.forEach((_, i) => {
     if (!isStaged(i)) return
-    for (let p = parentOf(blocks, i); p >= 0; p = parentOf(blocks, p)) context.add(p)
+    for (let p = blocks[i]!.parent; p >= 0; p = blocks[p]!.parent) context.add(p)
   })
 
   return blocks

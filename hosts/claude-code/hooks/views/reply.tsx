@@ -12,7 +12,8 @@ export type ReplyModel = {
   segments: readonly {
     text: string
     isBlock: boolean
-    depth: number
+    // Columns in from the reply's edge, as Claude Code draws a nested item.
+    indent: number
     hasGapBefore: boolean
     // A block's mark, whether it is selected (and the navigator holds the
     // keyboard), and its comment line when one shows.
@@ -60,14 +61,14 @@ export function ReplyView(
               {margin(seg.glyph ?? bullet)}
               <Box
                 flexGrow={1}
-                paddingLeft={seg.depth * 3}
+                paddingLeft={seg.indent}
                 backgroundColor={seg.isSelected ? SELECTED_BACKGROUND : undefined}
               >
                 <Markdown text={seg.text} />
               </Box>
             </Box>
             {seg.isSelected && (
-              <Box flexDirection="row" paddingLeft={MARGIN + seg.depth * 3}>
+              <Box flexDirection="row" paddingLeft={MARGIN + seg.indent}>
                 <Text dimColor>└ </Text>
                 {VERBS.map(v => (
                   <Button
@@ -81,7 +82,7 @@ export function ReplyView(
               </Box>
             )}
             {seg.comment !== undefined && (
-              <Box paddingLeft={MARGIN + seg.depth * 3 + 2}>
+              <Box paddingLeft={MARGIN + seg.indent + 2}>
                 <Text dimColor>→ {seg.comment}</Text>
               </Box>
             )}

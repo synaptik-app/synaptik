@@ -1,100 +1,158 @@
-// A reply split into blocks (SPEC §3): paragraphs, list items with their depth,
-// fenced code, tables, quotes; headings kept as segments that are not blocks.
-// Naive for now — the rewrite from SPEC §3 is #50.
+// A reply split into blocks (SPEC §3): paragraphs, list items flat with their
+// parent, fenced code, tables, quotes; headings and rules kept as segments that
+// are not blocks.
 
 export type Segment = {
   text: string
   isBlock: boolean
+  // Nesting level: 0 at the top, 1 under a list item, and so on.
   depth: number
+  // The enclosing list item's index among the blocks, or -1.
+  parent: number
+  // Columns the block is drawn in from the reply's edge, as Claude Code draws a
+  // nested item: the parent's indent plus its marker's width and a space — 3
+  // under "1.", 2 under "-".
+  indent: number
   hasGapBefore: boolean
 }
 
-const LIST_ITEM = /^(\s*)([-*+]|\d+[.)])\s+/
-const FENCE = /^\s*(```|~~~)/
-const HEADING = /^\s{0,3}#{1,6}\s/
+const LIST_ITEM = /^(\s*)([-*+]|\d{1,9}[.)])(\s+)/
+const FENCE = /^(\s*)(`{3,}|~{3,})/
+const HEADING = /^\s{0,3}#{1,6}(\s|$)/
 // A horizontal rule: drawn, but no block — nothing to mark (SPEC §3).
 const RULE = /^\s{0,3}([-*_])(\s*\1){2,}\s*$/
+// The underline of a setext heading, under a paragraph line.
+const SETEXT = /^\s{0,3}(=+|-+)\s*$/
+const QUOTE = /^\s*>/
+
+type Kind = 'paragraph' | 'item' | 'quote' | 'code' | 'table'
+
+// A list item still open: later lines indented past its marker belong to it.
+type Item = { segment: Segment; block: number; markerColumn: number; childIndent: number }
 
 export function segment(text: string): Segment[] {
   const out: Segment[] = []
-  const lines = text.split('\n')
-  let current: Segment | null = null
+  let blockCount = 0
+  // The block being written, which a following line without a blank before it
+  // may continue.
+  let current: { segment: Segment; kind: Kind } | null = null
   let hasGap = false
-  let fence: string | null = null
-  // Indent of the last list item's marker, while a list is open: a paragraph
-  // indented past it after a blank line continues that item (SPEC §3: a list
-  // item spanning several paragraphs is one block).
-  let itemIndent: number | null = null
+  // An open fence: its character run, and how many columns its lines drop.
+  let fence: { run: string; drop: number } | null = null
+  const items: Item[] = []
 
-  const flush = () => {
-    if (current) out.push(current)
+  const open = (text: string, kind: Kind, parent: Item | undefined) => {
+    const segment: Segment = {
+      text,
+      isBlock: true,
+      depth: parent ? items.indexOf(parent) + 1 : 0,
+      parent: parent ? parent.block : -1,
+      indent: parent ? parent.childIndent : 0,
+      hasGapBefore: hasGap && out.length > 0,
+    }
+    out.push(segment)
+    blockCount += 1
+    current = { segment, kind }
+    return segment
+  }
+  const notBlock = (text: string) => {
+    out.push({ text, isBlock: false, depth: 0, parent: -1, indent: 0, hasGapBefore: hasGap && out.length > 0 })
     current = null
   }
+  const lines = text.split('\n').map(raw => raw.replace(/^\t+/, tabs => '    '.repeat(tabs.length)))
 
-  for (const line of lines) {
+  for (const [n, line] of lines.entries()) {
+    const column = line.length - line.trimStart().length
+
     if (fence) {
-      current!.text += '\n' + line
-      if (line.trim().startsWith(fence)) {
+      const open: { run: string; drop: number } = fence
+      current!.segment.text += '\n' + line.slice(Math.min(open.drop, column))
+      const close = line.trim().match(/^(`{3,}|~{3,})$/)
+      if (close && close[1]![0] === open.run[0] && close[1]!.length >= open.run.length) {
         fence = null
-        flush()
+        current = null
       }
       continue
     }
 
-    const fenceMatch = line.match(FENCE)
-    if (fenceMatch) {
-      flush()
-      fence = fenceMatch[1]!
-      itemIndent = null
-      current = { text: line, isBlock: true, depth: 0, hasGapBefore: hasGap }
-      hasGap = false
-      continue
-    }
-
     if (line.trim() === '') {
-      flush()
+      current = null
       hasGap = out.length > 0
       continue
     }
 
+    const kind = current?.kind
+    const isFence = FENCE.test(line)
+    const isItem = !RULE.test(line) && LIST_ITEM.test(line)
+    // A table starts at a row with a delimiter row under it.
+    const isTable = line.includes('|') && TABLE_DELIMITER.test(lines[n + 1] ?? '')
+
+    // A setext heading: the paragraph above it was a heading all along.
+    if (kind === 'paragraph' && !hasGap && SETEXT.test(line)) {
+      const heading = current!.segment
+      heading.isBlock = false
+      heading.text = heading.text.trim() + '\n' + line.trim()
+      heading.depth = 0
+      heading.parent = -1
+      heading.indent = 0
+      blockCount -= 1
+      current = null
+      continue
+    }
+
     if (HEADING.test(line) || RULE.test(line)) {
-      flush()
-      out.push({ text: line.trim(), isBlock: false, depth: 0, hasGapBefore: hasGap })
-      itemIndent = null
+      notBlock(line.trim())
+      items.length = 0
       hasGap = false
       continue
     }
+
+    // A line that continues the block above it, with no blank line between.
+    if (current && !hasGap && !isFence && !isItem && !(isTable && kind !== 'table')) {
+      const isQuote = QUOTE.test(line)
+      if (kind === 'quote' || (!isQuote && kind !== 'code')) {
+        current.segment.text += '\n' + (kind === 'quote' ? line.trimStart() : line.trim())
+        continue
+      }
+    }
+
+    // Close the list items this line is not indented past.
+    while (items.length > 0 && column <= items[items.length - 1]!.markerColumn) items.pop()
+    const parent = items[items.length - 1]
 
     const item = line.match(LIST_ITEM)
     if (item) {
-      flush()
-      const depth = Math.floor(item[1]!.length / 2)
-      itemIndent = item[1]!.length
-      current = { text: line.trimStart(), isBlock: true, depth, hasGapBefore: hasGap }
+      const segment = open(line.trimStart(), 'item', parent)
+      items.push({
+        segment,
+        block: blockCount - 1,
+        markerColumn: column,
+        childIndent: segment.indent + item[2]!.length + 1,
+      })
       hasGap = false
       continue
     }
 
-    const indent = line.length - line.trimStart().length
-    const last = out[out.length - 1]
-    if (!current && hasGap && itemIndent !== null && indent > itemIndent && last?.isBlock) {
+    const fenceRun = line.match(FENCE)?.[2]
+    const lineKind: Kind = fenceRun ? 'code' : isTable ? 'table' : QUOTE.test(line) ? 'quote' : 'paragraph'
+
+    // A paragraph indented under an open list item, with nothing between, is
+    // part of it (SPEC §3: a list item spanning paragraphs is one block).
+    if (parent && lineKind === 'paragraph' && out[out.length - 1] === parent.segment) {
       // Keep the indent relative to the item (whose own line is trimmed), so
       // the paragraph stays inside the list item when drawn as Markdown.
-      current = out.pop()!
-      current.text += '\n\n' + line.slice(itemIndent)
+      parent.segment.text += (hasGap ? '\n\n' : '\n') + line.slice(parent.markerColumn)
+      current = { segment: parent.segment, kind: 'item' }
       hasGap = false
       continue
     }
-    if (indent === 0) itemIndent = null
 
-    if (current) {
-      current.text += '\n' + line.trim()
-    } else {
-      current = { text: line, isBlock: true, depth: 0, hasGapBefore: hasGap }
-      hasGap = false
-    }
+    // Anything else is a block of its own: under the open list item, if any.
+    // Code, a table or a quote is one wherever it sits (SPEC §3).
+    open(line.trimStart(), lineKind, parent)
+    if (fenceRun) fence = { run: fenceRun, drop: column }
+    hasGap = false
   }
-  flush()
 
   return out
 }
@@ -103,9 +161,9 @@ export function segment(text: string): Segment[] {
 // numbered item keeps its number ("3. Top level"), so items that open alike
 // stay apart; a bullet's marker is dropped.
 export function quote(text: string, words = 7): string {
-  // A table quotes its header cells: "table: Option · Latency · Cost".
   const lines = text.trim().split('\n')
-  if (lines.length > 1 && lines.every(l => l.trim().startsWith('|'))) {
+  // A table quotes its header cells: "table: Option · Latency · Cost".
+  if (lines.length > 1 && TABLE_DELIMITER.test(lines[1]!)) {
     const cells = lines[0]!.split('|').map(c => c.trim()).filter(Boolean)
     return `table: ${cells.join(' · ')}`
   }
@@ -115,9 +173,17 @@ export function quote(text: string, words = 7): string {
   const unfenced = text.replace(/^\s*(```|~~~)[^\n]*\n?/, '').replace(/\n?\s*(```|~~~)\s*$/, '')
   const plain = unfenced
     .replace(LIST_ITEM, '')
-    .replace(/[`*_>#]/g, '')
+    .replace(/^\s*(>\s?)+/gm, '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/`+/g, '')
+    .replace(/(\*\*|__)(.+?)\1/g, '$2')
+    // Emphasis, but not an underscore inside a word (SESSION_CACHE).
+    .replace(/(^|[^\w*])[*_](?=\S)(.+?)(?<=\S)[*_](?![\w*])/g, '$1$2')
     .replace(/\s+/g, ' ')
     .trim()
   const parts = plain.split(' ')
   return number + (parts.length <= words ? plain : parts.slice(0, words).join(' ') + '...')
 }
+
+// A table's second row: dashes between pipes, the outer pipes optional.
+const TABLE_DELIMITER = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$|^\s*\|\s*:?-+:?\s*\|\s*$/
