@@ -4,13 +4,13 @@
 
 import type { Elements, RenderElement } from 'claude-code'
 
+import { chunk } from '../../src/blocks'
 import { ACCENT, PANE_ANCHOR, VERBS } from '../ui'
 
 // What the navigator's buttons do; register.tsx owns them.
 export type NavigatorActions = {
   up: () => unknown
   verb: (key: string) => unknown
-  send: () => unknown
 }
 
 // No reply yet: one line, no counter, no keys (#73).
@@ -82,7 +82,9 @@ export function ClassicView(
               <Text>{m.glyph ?? ' '} </Text>
               <Box flexDirection="column" flexGrow={1} overflow="hidden">
                 <Box flexDirection="column" marginTop={-m.blockOffset}>
-                  <Markdown text={m.text} />
+                  {chunk(m.text).map(piece => (
+                    <Markdown text={piece} />
+                  ))}
                 </Box>
               </Box>
             </Box>
@@ -96,9 +98,6 @@ export function ClassicView(
                   onPress={() => actions.verb(v.key)}
                 />
               ))}
-              <Box display="none">
-                <Button key="send" plain hotkey="s" label="send" onPress={actions.send} />
-              </Box>
             </Box>
             {field ?? (
               <Text dimColor wrap="truncate">
@@ -200,7 +199,6 @@ export function MapView(
               onPress={() => actions.verb(v.key)}
             />
           ))}
-          <Button key="send" plain hotkey="s" label="send" onPress={actions.send} />
         </Box>
         {field && <Box>{field}</Box>}
       </Box>

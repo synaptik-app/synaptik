@@ -341,12 +341,13 @@ sends it as the person's own message; `ctrl+c` clears it.
   cannot show, and writing to the box does not dismiss it. When the last mark is
   cleared, the mod proposes a harmless placeholder instead — currently `Give me a
   sec to read through this.` (wording provisional).
-- `s` in the navigator sends the compiled prompt directly, via
-  `$.prompt.submit({ text, asUser: true })`. It is not advertised in the legend.
+- **The mod never sends.** Taking the suggestion and pressing `⏎` is the only
+  way the compiled prompt goes (D30). There is no send key.
 
 ⚠️ On at least one surface `$.prompt.suggest` always resolves `isShown: false`,
-keeping the box for Claude's own suggestions (from the published docs; which
-surface is unconfirmed). There the band offers `s` instead.
+keeping the box for Claude's own suggestions (from the published docs; the VS
+Code panel, #76). Synaptik draws only in the terminal (D40); a surface without
+suggestions needs a sending design of its own.
 
 **The tray clears after sending.**
 
@@ -523,7 +524,7 @@ raises the same `ui.scroll`, told apart by its `pointer` (absent for the scroll
 keys). It is passed back pinned at offset 1: blocks are moved by the keys, and
 the wheel is for scrolling the reply, over the transcript (#62).
 
-**The verb ring.** The four verbs and `send` are drawn in the pane hidden
+**The verb ring.** The four verbs are drawn in the pane hidden
 (`display: none`); they still take focus and arm their hotkeys. A `ui.focus` hook
 lets the ring stop on verbs and the comment field only. The menu under the
 selected block in the reply shows which verb holds the ring.
@@ -868,7 +869,7 @@ are terminal-only and unused; the mod draws with `Box`, `Text`, `Button`,
 | | |
 |---|---|
 | Hook execution | 10 s (time inside a mods API call does not count) |
-| `Markdown` / `Code` text | 10,000 characters — chunk per block |
+| `Markdown` / `Text` text | 10,000 characters per element before Claude Code 2.1.304 (a longer one fails the whole render) — so a block is drawn in pieces (`chunk()`, each code piece fenced again). From 2.1.304, any length. One drawing holds 100,000 characters in all: a reply piece over 90,000 is left to Claude Code and reviewed from the navigator (`MAX_DRAWN`). The test kit doesn't enforce that bound, so the terminal's behaviour past it is unverified ⚠️ |
 | `$.store` | 4 MiB of JSON, shared machine-wide |
 | `ui.render` redraws | throttled to ~10–30/s, coalesced |
 | Render hooks | may not write `$.state`; may call `$.ui.invalidate` |

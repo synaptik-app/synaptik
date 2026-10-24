@@ -5,6 +5,7 @@
 
 import type { Elements } from 'claude-code'
 
+import { chunk } from '../../src/blocks'
 import { BULLET, MARGIN, SELECTED_BACKGROUND, VERBS } from '../ui'
 
 export type ReplyModel = {
@@ -49,8 +50,10 @@ export function ReplyView(
           return (
             <Box flexDirection="row" marginTop={seg.hasGapBefore ? 1 : 0}>
               {margin(bullet)}
-              <Box flexGrow={1}>
-                <Markdown text={seg.text} />
+              <Box flexGrow={1} flexDirection="column">
+                {chunk(seg.text).map(piece => (
+                  <Markdown text={piece} />
+                ))}
               </Box>
             </Box>
           )
@@ -61,10 +64,13 @@ export function ReplyView(
               {margin(seg.glyph ?? bullet)}
               <Box
                 flexGrow={1}
+                flexDirection="column"
                 paddingLeft={seg.indent}
                 backgroundColor={seg.isSelected ? SELECTED_BACKGROUND : undefined}
               >
-                <Markdown text={seg.text} />
+                {chunk(seg.text).map(piece => (
+                  <Markdown text={piece} />
+                ))}
               </Box>
             </Box>
             {seg.isSelected && (

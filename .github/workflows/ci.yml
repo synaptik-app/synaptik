@@ -43,6 +43,8 @@ jobs:
 
       - name: Validate the mod
         run: claude plugin validate ./hosts/claude-code
+      - name: Validate the marketplace
+        run: claude plugin validate --strict .
 
       - name: Validate the test bench's neighbour mod
         run: claude plugin validate ./testbench/neighbour-mod

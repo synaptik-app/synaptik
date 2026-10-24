@@ -65,7 +65,8 @@ for anything, and does not teach it any protocol.
 - The user always sees the exact text before it goes — in the band preview
   (D29), whether they submit it directly or copy it to the box first.
 - Submission uses `$.prompt.submit({ asUser: true })`. The plain form prepends
-  a sentence naming the mod as sender.
+  a sentence naming the mod as sender. *(Since D30's revision of 2026-10-24 the
+  mod submits nothing: the person sends the suggestion themselves.)*
 - Killed D6 and D8 outright, and reduced D7 to nothing.
 
 **Open edge:** E9 (nudging Claude toward `AskUserQuestion` via `prompt.compose`)
@@ -969,7 +970,8 @@ what they typed — carries over unchanged.
 ---
 
 ### D30 — Send by live suggestion in the prompt box
-**Status:** provisional · added 2026-10-15
+**Status:** settled · added 2026-10-15 · **settled 2026-10-24: the suggestion is
+the only way to send; the `s` key is removed** (revision below)
 
 The compiled prompt is proposed with `$.prompt.suggest` into the **empty** prompt
 box after every tray change. `→`/`Tab` takes it, the box is where it is edited,
@@ -996,6 +998,16 @@ the other case.
 whether to veto Claude Code's own suggestions while feedback is staged (item 7);
 surfaces where plugin suggestions never show (item 4) — there `s` in the
 navigator sends directly.
+
+#### Revision 2026-10-24 — no send key
+
+`s` in the navigator sent the compiled prompt with `$.prompt.submit({ asUser:
+true })`, unadvertised. It is removed. The suggestion does the job better: the
+person sees the prompt where it goes, takes it with `Tab`, and sends with their
+own `⏎`, so the mod never submits anything itself. A key that sends from a
+pane is easy to hit by accident, and the prompt would leave before it had been
+looked at in the box. The surfaces where suggestions don't show (item 4) are
+outside the terminal (D40); a send button belongs to their design (#76).
 
 ---
 
@@ -1911,7 +1923,7 @@ already considered and cut for a reason.
 | D27 | Spike, then two thin phases | ✅ reviewed, revised |
 | D28 | No intervention in Claude Code's tool runs | ✅ settled |
 | D29 | Band is source of truth, box is scratch | ✅ revised — the box shows it (D30) |
-| D30 | Send by live suggestion | 🟡 provisional |
+| D30 | Send by live suggestion | ✅ settled — no send key (2026-10-24) |
 | D31 | The navigator pane | ✅ settled — both renderers; fullscreen design on #39 |
 | D32 | Key bindings belong to the person | ✅ settled |
 | D33 | Share surfaces with other mods; redraw the reply only when needed | ✅ settled |

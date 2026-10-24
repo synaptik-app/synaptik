@@ -187,3 +187,37 @@ export function quote(text: string, words = 7): string {
 
 // A table's second row: dashes between pipes, the outer pipes optional.
 const TABLE_DELIMITER = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$|^\s*\|\s*:?-+:?\s*\|\s*$/
+
+// The pieces a block is drawn in: Claude Code before 2.1.304 refuses a
+// Markdown or Text element over 10,000 characters (the whole render then falls
+// back to its own drawing). Split at line boundaries; a fenced code block's
+// pieces are each fenced again, so they still draw as code.
+export function chunk(text: string, limit = 10_000): string[] {
+  if (text.length <= limit) return [text]
+  const lines = text.split('\n')
+  const fenceRun = lines[0]!.match(FENCE)?.[2]
+  const isFenced = fenceRun !== undefined && lines.length > 1 && lines[lines.length - 1]!.trim().startsWith(fenceRun)
+  const open = isFenced ? lines[0]! + '\n' : ''
+  const close = isFenced ? '\n' + lines[lines.length - 1]! : ''
+  const body = isFenced ? lines.slice(1, -1) : lines
+  const room = limit - open.length - close.length
+  const pieces: string[] = []
+  let piece: string[] = []
+  let size = 0
+  const flush = () => {
+    if (piece.length > 0) pieces.push(open + piece.join('\n') + close)
+    piece = []
+    size = 0
+  }
+  for (const line of body) {
+    // A single line longer than a piece is cut where it must be.
+    for (let at = 0; at < Math.max(1, line.length); at += room) {
+      const part = line.slice(at, at + room)
+      if (size + part.length + 1 > room) flush()
+      piece.push(part)
+      size += part.length + 1
+    }
+  }
+  flush()
+  return pieces
+}

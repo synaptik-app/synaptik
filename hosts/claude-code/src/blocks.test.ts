@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { quote, segment } from './blocks'
+import { chunk, quote, segment } from './blocks'
 
 const REPLY = `Here's what I'd suggest:
 
@@ -32,4 +32,28 @@ test('keeps headings out of the blocks and fences whole', async () => {
 
   expect(segments.map(s => s.isBlock)).toEqual([false, true])
   expect(segments[1]!.text).toContain('npm run build')
+})
+
+test('chunk: a block under the limit is one piece', async () => {
+  expect(chunk('short')).toEqual(['short'])
+})
+
+test('chunk: a long code block splits at lines, each piece fenced again', async () => {
+  const code = '```ts\n' + Array.from({ length: 300 }, (_, i) => `line ${i} `.padEnd(60, '.')).join('\n') + '\n```'
+  const pieces = chunk(code)
+  expect(pieces.length).toBeGreaterThan(1)
+  for (const p of pieces) {
+    expect(p.length).toBeLessThanOrEqual(10_000)
+    expect(p.startsWith('```ts\n')).toBe(true)
+    expect(p.endsWith('\n```')).toBe(true)
+  }
+  const inner = pieces.map(p => p.slice('```ts\n'.length, -'\n```'.length)).join('\n')
+  expect(inner).toBe(code.slice('```ts\n'.length, -'\n```'.length))
+})
+
+test('chunk: prose splits at lines, and a single line longer than a piece is cut', async () => {
+  const text = 'a'.repeat(25_000) + '\nlast line'
+  const pieces = chunk(text)
+  expect(pieces.every(p => p.length <= 10_000)).toBe(true)
+  expect(pieces.join('\n').replace(/\n/g, '')).toBe(text.replace(/\n/g, ''))
 })
