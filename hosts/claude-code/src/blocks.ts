@@ -25,7 +25,7 @@ const RULE = /^\s{0,3}([-*_])(\s*\1){2,}\s*$/
 const SETEXT = /^\s{0,3}(=+|-+)\s*$/
 const QUOTE = /^\s*>/
 
-type Kind = 'paragraph' | 'item' | 'quote' | 'code'
+type Kind = 'paragraph' | 'item' | 'quote' | 'code' | 'table'
 
 // A list item still open: later lines indented past its marker belong to it.
 type Item = { segment: Segment; block: number; markerColumn: number; childIndent: number }
@@ -38,7 +38,7 @@ export function segment(text: string): Segment[] {
   let current: { segment: Segment; kind: Kind } | null = null
   let hasGap = false
   // An open fence: its character run, and how many columns its lines drop.
-  let fence: { run: string; drop: number; isInItem: boolean } | null = null
+  let fence: { run: string; drop: number } | null = null
   const items: Item[] = []
 
   const open = (text: string, kind: Kind, parent: Item | undefined) => {
@@ -59,21 +59,18 @@ export function segment(text: string): Segment[] {
     out.push({ text, isBlock: false, depth: 0, parent: -1, indent: 0, hasGapBefore: hasGap && out.length > 0 })
     current = null
   }
-  const openFence = (run: string, drop: number, isInItem: boolean) => {
-    fence = { run, drop, isInItem }
-  }
+  const lines = text.split('\n').map(raw => raw.replace(/^\t+/, tabs => '    '.repeat(tabs.length)))
 
-  for (const raw of text.split('\n')) {
-    const line = raw.replace(/^\t+/, tabs => '    '.repeat(tabs.length))
+  for (const [n, line] of lines.entries()) {
     const column = line.length - line.trimStart().length
 
     if (fence) {
-      const open: { run: string; drop: number; isInItem: boolean } = fence
+      const open: { run: string; drop: number } = fence
       current!.segment.text += '\n' + line.slice(Math.min(open.drop, column))
       const close = line.trim().match(/^(`{3,}|~{3,})$/)
       if (close && close[1]![0] === open.run[0] && close[1]!.length >= open.run.length) {
         fence = null
-        if (!open.isInItem) current = null
+        current = null
       }
       continue
     }
@@ -87,6 +84,8 @@ export function segment(text: string): Segment[] {
     const kind = current?.kind
     const isFence = FENCE.test(line)
     const isItem = !RULE.test(line) && LIST_ITEM.test(line)
+    // A table starts at a row with a delimiter row under it.
+    const isTable = line.includes('|') && TABLE_DELIMITER.test(lines[n + 1] ?? '')
 
     // A setext heading: the paragraph above it was a heading all along.
     if (kind === 'paragraph' && !hasGap && SETEXT.test(line)) {
@@ -109,7 +108,7 @@ export function segment(text: string): Segment[] {
     }
 
     // A line that continues the block above it, with no blank line between.
-    if (current && !hasGap && !isFence && !isItem) {
+    if (current && !hasGap && !isFence && !isItem && !(isTable && kind !== 'table')) {
       const isQuote = QUOTE.test(line)
       if (kind === 'quote' || (!isQuote && kind !== 'code')) {
         current.segment.text += '\n' + (kind === 'quote' ? line.trimStart() : line.trim())
@@ -135,30 +134,23 @@ export function segment(text: string): Segment[] {
     }
 
     const fenceRun = line.match(FENCE)?.[2]
-    const lineKind: Kind = fenceRun ? 'code' : QUOTE.test(line) ? 'quote' : 'paragraph'
+    const lineKind: Kind = fenceRun ? 'code' : isTable ? 'table' : QUOTE.test(line) ? 'quote' : 'paragraph'
 
-    // Indented under an open list item: its own content, when nothing came
-    // between (SPEC §3: a list item spanning paragraphs is one block), else a
-    // block of its own under it.
-    if (parent) {
-      const isLast = out[out.length - 1] === parent.segment
-      if (isLast) {
-        // Keep the indent relative to the item (whose own line is trimmed), so
-        // the content stays inside the list item when drawn as Markdown.
-        parent.segment.text += (hasGap ? '\n\n' : '\n') + line.slice(parent.markerColumn)
-        current = { segment: parent.segment, kind: 'item' }
-        if (fenceRun) openFence(fenceRun, parent.markerColumn, true)
-        hasGap = false
-        continue
-      }
-      open(line.trimStart(), lineKind, parent)
-      if (fenceRun) openFence(fenceRun, column, false)
+    // A paragraph indented under an open list item, with nothing between, is
+    // part of it (SPEC §3: a list item spanning paragraphs is one block).
+    if (parent && lineKind === 'paragraph' && out[out.length - 1] === parent.segment) {
+      // Keep the indent relative to the item (whose own line is trimmed), so
+      // the paragraph stays inside the list item when drawn as Markdown.
+      parent.segment.text += (hasGap ? '\n\n' : '\n') + line.slice(parent.markerColumn)
+      current = { segment: parent.segment, kind: 'item' }
       hasGap = false
       continue
     }
 
-    open(line.trimStart(), lineKind, undefined)
-    if (fenceRun) openFence(fenceRun, column, false)
+    // Anything else is a block of its own: under the open list item, if any.
+    // Code, a table or a quote is one wherever it sits (SPEC §3).
+    open(line.trimStart(), lineKind, parent)
+    if (fenceRun) fence = { run: fenceRun, drop: column }
     hasGap = false
   }
 

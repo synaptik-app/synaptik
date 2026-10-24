@@ -79,7 +79,7 @@ x()
 - The selected block shows the selection background, and only while the navigator has focus
 - Marking a block puts its glyph before it, and unmarked blocks do not move
 - Classic renderer: selecting the table shows it whole in the pane, and a neighbouring table reads as "table: Option · Latency · Cost"
-- "Steps:" and the list under it are separate blocks; the code block is part of item 1, not a block of its own
+- "Steps:" and the list under it are separate blocks; the code block is a block of its own, nested under item 1 — marking it alone compiles under "1. Run the tests:"
 - Nested items line up exactly as with `/synaptik off`: under `-`, under `1.` and under `10.` — no extra space
 - "Back at item 2's indent" is its own block, nested under item 2
 - "He wrote:" and the quote are separate blocks; the quote, with its nested quote and list, is one block

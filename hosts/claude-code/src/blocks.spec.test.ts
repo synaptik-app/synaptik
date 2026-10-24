@@ -66,10 +66,24 @@ test('lists: a loose list (blank lines between items) keeps its items apart', as
   expect(outline('- a\n\n- b\n\n- c')).toEqual(['- a', '- b', '- c'])
 })
 
-test('lists: a fenced code block inside an item belongs to the item', async () => {
+test('lists: a fenced code block inside an item is its own block, under the item', async () => {
   const text = '1. Run the tests:\n\n   ```sh\n   npm test\n   ```\n2. Deploy'
-  expect(outline(text)).toEqual(['1. Run the tests:', '2. Deploy'])
-  expect(blocks(text)[0]!.text).toContain('npm test')
+  expect(outline(text)).toEqual(['1. Run the tests:', '  ```sh', '2. Deploy'])
+  expect(blocks(text).map(b => b.parent)).toEqual([-1, 0, -1])
+  expect(blocks(text)[1]!.text).toBe('```sh\nnpm test\n```')
+})
+
+test('lists: a quote or a table inside an item is its own block, with or without a blank line', async () => {
+  expect(outline('- see\n  > the log\n- compare\n\n  | a | b |\n  |---|---|\n  | 1 | 2 |')).toEqual([
+    '- see',
+    '  > the log',
+    '- compare',
+    '  | a | b |',
+  ])
+})
+
+test('lists: a paragraph after an item’s code block is its own block, under the item', async () => {
+  expect(outline('1. Run:\n   ```\n   x\n   ```\n   then check the log')).toEqual(['1. Run:', '  ```', '  then check the log'])
 })
 
 test('lists: a paragraph back at the parent item’s indent, after a nested item, stays in the list', async () => {
@@ -106,6 +120,10 @@ test('headings: a setext heading (underlined with = or -) is not a block', async
 
 test('code: a four-backtick fence holds a three-backtick one', async () => {
   expect(outline('````md\n```js\nx()\n```\n````\n\nAfter')).toEqual(['````md', 'After'])
+})
+
+test('tables: a table right after a paragraph, with no blank line, is its own block', async () => {
+  expect(outline('Compare:\n| a | b |\n|---|---|\n| 1 | 2 |')).toEqual(['Compare:', '| a | b |'])
 })
 
 test('tables: a table without leading pipes is one block, after a paragraph too', async () => {
