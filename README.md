@@ -12,13 +12,6 @@ you'd typed it yourself.
 
 ![Synaptik: marking up a reply, then sending the marks as one prompt](.github/assets/demo.gif)
 
-*Coming next: discussing a part on the side, and marking up the agent's changes
-line by line.*
-
-Without it, answering part of a reply means scrolling up and writing prose that
-points back at it — *"you said in step 3…"*, or a list rebuilding which
-suggestions you took and which you didn't.
-
 Your marks appear in the prompt box as a dim suggestion: `Tab` takes it, `⏎`
 sends it. Nothing reaches the agent until you send, and what it receives is an ordinary
 prompt you saw first — Synaptik adds no markers or identifiers, and never
@@ -31,21 +24,11 @@ accept, reject and comment on blocks of the last reply, in the fullscreen and
 the classic renderer. What comes next is on the
 [roadmap](https://github.com/orgs/synaptik-app/projects/2).
 
-Not yet there: **💬 discuss** (a side thread about one block) is phase 2 and only
-says so when chosen. Synaptik is built on Claude Code's mods API, which is still
-young: a Claude Code update can break it — [an issue](https://github.com/synaptik-app/synaptik/issues/new/choose)
-with your `claude --version` helps. Expect rough edges, and changes to keys and
-layout before 1.0.
-
 ## Install
 
 Claude Code **v2.1.287+** in a terminal — any terminal, including the ones in
 VS Code, Cursor and JetBrains IDEs, and over SSH or tmux. Mods are enabled by
 default; `claude --version` reports yours.
-
-Synaptik stays out of the Claude Desktop app's Code tab and the mobile app: both
-have review features of their own (replies on a passage, side chats, diff
-comments). The VS Code extension's panel is planned next.
 
 ### From the marketplace
 
@@ -56,16 +39,9 @@ claude plugin marketplace add synaptik-app/synaptik
 claude plugin install synaptik@synaptik-app
 ```
 
-Or, inside a session (Claude Code v2.1.275+):
-
-```
-/plugin install synaptik --marketplace synaptik-app/synaptik
-```
-
-It loads in every session from then on. `claude plugin update synaptik@synaptik-app`
-fetches a newer version. On a machine without a GitHub SSH key, set
-`CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`: installs and updates from inside a session
-don't fall back to HTTPS by themselves.
+> [!NOTE]
+> No GitHub SSH key? Set `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1` first.
+> `claude plugin update synaptik@synaptik-app` gets new versions.
 
 ### Offline or air-gapped
 
@@ -87,14 +63,9 @@ other: with both, the marketplace copy loads and the unzipped one doesn't.
 
 ### Once it's in
 
-`/plugin` lists it (`synaptik@synaptik-app`, or `synaptik@skills-dir` for the
-unzipped copy). `/synaptik` opens the navigator, `/synaptik off` and
+`/synaptik` opens the navigator, `/synaptik off` and
 `/synaptik on` turn it off and on for the session, and `/synaptik help` lists
 the rest.
-
-A mod runs inside Claude Code with your own permissions and is not sandboxed.
-`claude plugin validate` on the plugin folder prints every event it handles and
-every API call it makes, without running it.
 
 ### Keys
 
@@ -127,10 +98,6 @@ shows them as they are:
 }
 ```
 
-`ctrl+s` is Claude Code's default for stashing the prompt; binding it gives that
-up. The `Pane` arrows apply to every mod's pane, and clash with `ctrl+x ←/→`,
-which resizes it.
-
 ### Known limits
 
 - **Fullscreen** reviews the reply in place, with a block map docked beside it.
@@ -143,30 +110,19 @@ which resizes it.
 - **One mod redraws a reply.** Another mod that changes how replies are drawn
   may be bypassed while you review; outside review Synaptik leaves replies alone
   unless they carry marks.
-- **Code blocks and tables** are one block each, marked as a whole (#5, #6).
+- **Code blocks and tables** are one block each, marked as a whole for now;
+  stepping into them is planned (#105).
 - **No key clears a mark yet.** Pressing the same verb again unmarks ✓ and ✗; a
   ✎ goes when its text is deleted or another verb replaces it (#100).
-
-Found something else? [An issue](https://github.com/synaptik-app/synaptik/issues/new/choose)
-— a bug, or what felt wrong or missing on a real reply — is the most useful
-thing you can send.
-
-## Layout
-
-```
-docs/SPEC.md                 what to build
-docs/DECISIONS.md            why it is built that way
-hosts/claude-code/           the mod: hooks, rendering, and pure logic in src/
-testbench/                   fixed replies for testing by hand
-```
-
-`hosts/` is deliberate. If another terminal agent offers UI extension, the
-portable artifact is the spec, not the code — so each host implements the same
-behaviour in its own language rather than sharing a runtime.
+- **A Claude Code update can break Synaptik:** it is built on the young mods
+  API. [An issue](https://github.com/synaptik-app/synaptik/issues/new/choose)
+  with your `claude --version` helps.
 
 ## Contributing
 
-Bug reports, ideas and design discussion are welcome; see
+Found a bug, or something that felt wrong or missing on a real reply?
+[An issue](https://github.com/synaptik-app/synaptik/issues/new/choose) is the
+most useful thing you can send. Ideas and design discussion are welcome; see
 [CONTRIBUTING.md](CONTRIBUTING.md). `docs/DECISIONS.md` records what was decided
 and what was deliberately left out, so a proposal is easier to argue for against
 that than from scratch. Security issues: [SECURITY.md](SECURITY.md).
