@@ -24,7 +24,8 @@ sandboxed**. What Synaptik does with them:
   when you press save** — after it has shown the exact entries it adds or removes.
   It changes only its own two settings (the key that opens Synaptik, the keys
   that move between its actions) and leaves every other binding as it was;
-- proposes text in the prompt box, and submits it only on your explicit key.
+- proposes text in the prompt box, as a suggestion. It never submits anything:
+  you take the suggestion and send it yourself.
 
 It makes no network requests, runs no commands, and registers no tool hooks: it
 never gates, changes or runs a tool call. `claude plugin validate
