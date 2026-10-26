@@ -681,6 +681,10 @@ between lines or rows, and the menu holds the four verbs plus **step back**,
 which returns to the blocks. Prose stays at block level: splitting a paragraph
 into sentences breaks how it wraps. Design and rendering: #105 (for #5, #6).
 
+**Revised 2026-10-27 by D41:** in fullscreen the reply's own `Client`s take the
+keys once clicked, so the scroll trick and the pane are needed only in classic.
+The keyboard path in fullscreen goes through the band, with `j` / `k`.
+
 ---
 
 ### D21 — Selection highlighting is a gutter column
@@ -1031,7 +1035,8 @@ outside the terminal (D40); a send button belongs to their design (#76).
 
 ### D31 — The navigator: a docked pane that maps the reply
 **Status:** settled · added 2026-10-15 · **the pane stays, in both renderers**
-(#19, 2026-10-18; see D20) · fullscreen design to finish on #39
+(#19, 2026-10-18; see D20) · fullscreen design to finish on #39 · **revised
+2026-10-27 by D41: classic only; fullscreen reviews in the reply**
 
 A pane beside the transcript serves two jobs:
 
@@ -1263,6 +1268,11 @@ real need (E10). No colours for now.
 **Consequence:** `SECURITY.md` must say the mod can write `keybindings.json`, and
 only after confirmation — updated with the change that builds the menu.
 
+**Revised 2026-10-27 (D41, #113):** the key setup is **classic's**. Fullscreen
+needs none: a click, or `ctrl+x tab` into the band, where ←/→ are bound by
+default. The `ctrl+s` entry option goes (it gives up the prompt stash); the
+←/→ preset for the pane stays.
+
 ---
 
 ### D39 — The `/synaptik` command
@@ -1329,6 +1339,61 @@ don't, offline review in the terminal stays a clear Synaptik case.
 support, glyph widths, renderer (fullscreen, classic) and width — the matrix on
 #13. The glyphs are plain Unicode (`✓ ✗ ✎ 💬 ⏺ ▲ ▼ █ ┃ │ ⎿ ▸ ‹`), no Nerd Font
 needed; emoji width (`💬`) is the one to watch.
+
+---
+
+### D41 — Fullscreen reviews in the reply itself; classic keeps its pane
+**Status:** settled · added 2026-10-27 · decided on a spike (`spike/client-reply`,
+Claude Code 2.1.308) · built on #39 · revises D20, D31, D38
+
+**In fullscreen there is no navigator pane.** Each block of the reply is drawn by
+its own `Client` (a region the mod's own module draws). **A click on a block
+selects it** and hands the reply the keyboard:
+- ↑/↓ and Home/End move between blocks;
+- ←/→ walk the menu of actions under the selected block, and ⏎ applies;
+- `a` / `x` / `c` / `d` act directly;
+- a comment is typed in place under its block: dim, with a cursor, `\` + Enter
+  for a new line, and a paste moved into it from the prompt box.
+
+The band carries the status (`✓2 ✗1`, `Block N of M`) and the keys.
+
+**The keyboard path goes through the band.** Only a click focuses a `Client`, so
+`ctrl+x tab` focuses the band instead. There, `j` / `k` move between blocks
+(↑/↓ are taken by scrolling the band, Shift+↑/↓ by extending the text selection;
+Claude Code's own lists use J/K too). ←/→ walk the actions, since Claude Code
+binds them in the band by default, and a comment is typed in a field in the band.
+The selection and the menu still show in the reply. Both paths are always on,
+with no setting.
+
+**Classic keeps its pane** above the band, as it is. It cannot redraw a reply
+that has scrolled off, so its block viewer is how those blocks are reviewed, and
+it has no clicks. `/synaptik config` stays for it: a pane takes only Tab/⇧Tab
+for the actions, and ←/→ needs the binding the menu writes (#113).
+
+**Why:** the pane existed to turn ↑/↓ into blocks (the scroll trick, D20) and to
+hold the comment field. A `Client` receives every key once clicked, arrows and
+typed text included, so the review can happen where the reply is. The ~24 columns
+beside the transcript, which #39 never found a good use for, go back to the
+reply.
+
+**How it holds together:**
+- **One `Client` per block,** so a click is exact. Estimating each block's rows
+  from its text missed on wrapped paragraphs, tables and code. The block clicked
+  keeps the keyboard and steers the others through the hooks, which hold the
+  review and hand it back to every block as props.
+- **Posts can be lost:** a later post in the same frame replaces an undelivered
+  one. So each post carries the whole review and every action not yet
+  confirmed, and the hooks apply each action once, by id.
+- **A `Client`'s props are plain data:** a missing value is refused, and the
+  whole reply falls back to Claude Code's own drawing.
+- **The suggestion** is proposed after every action, and again whenever the
+  prompt box becomes empty. It cannot show while the box holds text.
+
+**Known limits, asked of Claude Code (#23):**
+- **Esc is invisible.** A `Client` is never told it lost the keyboard, and Esc
+  raises no event or redraw. The menu stays drawn until the person types in the
+  prompt or focuses the band; then the reply lets go.
+- **The keyboard cannot focus a `Client`.** Hence the band path.
 
 ---
 
@@ -1986,7 +2051,7 @@ already considered and cut for a reason.
 | D28 | No intervention in Claude Code's tool runs | ✅ settled |
 | D29 | Band is source of truth, box is scratch | ✅ revised — the box shows it (D30) |
 | D30 | Send by live suggestion | ✅ settled — no send key (2026-10-24) |
-| D31 | The navigator pane | ✅ settled — both renderers; fullscreen design on #39 |
+| D31 | The navigator pane | ✅ revised — classic only (D41) |
 | D32 | Key bindings belong to the person | ✅ settled |
 | D33 | Share surfaces with other mods; redraw the reply only when needed | ✅ settled |
 | D34 | The spike evolves into phase 1 (revises D27) | ✅ settled |
