@@ -4,6 +4,8 @@
 
 import type { Elements, RenderElement } from 'claude-code'
 
+import { NEXT_BLOCK, PREVIOUS_BLOCK, VERBS } from '../ui'
+
 // The header, and the lead of each line under it: as Claude Code nests its own
 // output, so with several mods in the band it is clear which lines are ours.
 const TAGLINE = 'respond to the reply in place'
@@ -73,6 +75,59 @@ export function BandView(
             <Button key="open-pane" plain autoFocus label="⏎ to respond in place" onPress={onOpen} />
           </Box>
         )}
+      </Box>
+    </Box>
+  )
+}
+
+// Fullscreen's keyboard path (D41): the entry key focuses the band, whose ring
+// stops on the actions — hidden, since the menu under the selected block in
+// the reply shows them — with j / k to move between blocks (↑/↓ scroll the band).
+// While a comment is open from here, its field shows in the band.
+export type BandKeysModel = {
+  // The comment being typed from the band: its field's key and text.
+  comment?: { key: string; text: string }
+}
+
+export type BandKeysActions = {
+  move: (by: 1 | -1) => unknown
+  verb: (n: number) => unknown
+  type: (text: string) => unknown
+  submit: (text: string) => unknown
+}
+
+export function BandKeysView(
+  { Box, Button, Input }: Pick<Elements['terminal'], 'Box' | 'Button' | 'Input'>,
+  band: RenderElement,
+  m: BandKeysModel,
+  actions: BandKeysActions,
+) {
+  return (
+    <Box flexDirection="column">
+      {band}
+      {m.comment && (
+        <Input
+          key={m.comment.key}
+          placeholder="comment"
+          submitLabel="ok"
+          value={m.comment.text}
+          onInput={value => actions.type(value)}
+          onSubmit={value => actions.submit(value)}
+        />
+      )}
+      <Box display="none">
+        {VERBS.map((v, n) => (
+          <Button
+            key={v.key}
+            plain
+            hotkey={v.hotkey}
+            autoFocus={n === 0 ? true : undefined}
+            label={v.glyph}
+            onPress={() => actions.verb(n)}
+          />
+        ))}
+        <Button key={NEXT_BLOCK} plain hotkey="j" label="next block" onPress={() => actions.move(1)} />
+        <Button key={PREVIOUS_BLOCK} plain hotkey="k" label="previous block" onPress={() => actions.move(-1)} />
       </Box>
     </Box>
   )

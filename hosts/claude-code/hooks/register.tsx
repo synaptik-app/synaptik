@@ -16,6 +16,8 @@ import { lastTurnText } from '../src/turn'
 import { compile as compileTray, GLYPH } from '../src/compile'
 import { draftComment, dropComment, EMPTY, finishComment as finishTrayComment, toggle as toggleMark } from '../src/tray'
 import type { Tray } from '../src/tray'
+import { apply as applyMenu, closed, letGo, paste, receive, START } from '../src/review'
+import type { Action, Held, Numbered, Review } from '../src/review'
 import { DEFAULT_KEYS, keyLabel, keysFrom, parseKeyFile } from '../src/keys'
 import type { KeyFile, Keys } from '../src/keys'
 import { applySetup, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS } from '../src/keysetup'
@@ -23,27 +25,27 @@ import type { Setup } from '../src/keysetup'
 import { keybindingsPath, shownPath } from '../src/configpath'
 import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
-import { commentCount, glyphCounts, summary } from '../src/tally'
+import { glyphCounts, summary } from '../src/tally'
 import {
-  ACCENT,
+  BAND_COMMENT_PREFIX,
   BULLET,
   COMMENT_PREFIX,
   commentKey,
-  FIELD_CHROME,
   MARGIN,
   MAX_DRAWN,
+  NEXT_BLOCK,
   PANE,
   PANE_ANCHOR,
   PANE_COLUMNS,
-  ROW_CHROME,
+  PREVIOUS_BLOCK,
   SELECTED_BACKGROUND,
   VERBS,
 } from './ui'
 import { KeyMenuView } from './views/keymenu'
-import { ClassicView, EmptyView, MapView } from './views/navigator'
+import { ClassicView, EmptyView } from './views/navigator'
 import type { NavigatorActions } from './views/navigator'
 import { ReplyView } from './views/reply'
-import { BandView } from './views/band'
+import { BandKeysView, BandView } from './views/band'
 import type { KeyMenuModel } from './views/keymenu'
 import type { ConfigEnv } from '../src/configpath'
 
@@ -99,6 +101,26 @@ let blockTextRows = 1
 // Whether the compiled prompt is the prompt box's dim suggestion right now
 // (Tab takes it). Set from prompt.suggest's answer; the band words itself by it.
 let isSuggested = false
+
+// Fullscreen reviews in the reply itself (D41): each block a Client
+// (client/block.tsx), no navigator pane. Learned from the first drawing's
+// viewport, since a session starts before anything is drawn.
+let isFullscreen = false
+// The review the blocks share, and the last action applied (src/review.ts).
+let held: Held = { review: START, acked: 0 }
+// Who has the keyboard in fullscreen, as far as the hooks can tell: the reply (a
+// block posted), the band (its ring moved onto Synaptik's controls), or neither
+// (the person typed in the prompt). Esc raises nothing, so it is never seen.
+let holder: 'reply' | 'band' | undefined
+// Each adopted reply gets fresh Client instances, so nothing a block kept carries
+// over to the next reply's block in the same place.
+let replyGeneration = 0
+// The band's request id (for focus moves into it) and its comment field's key.
+let bandRequestId = ''
+let bandCommentSeq = 0
+// Whether the navigator pane has been closed for fullscreen: closed once, from
+// a drawing, where its close hook may not write $.state.
+let isPaneClosedForFullscreen = false
 const PLACEHOLDER = 'Give me a sec to read through this.'
 
 // `/synaptik help` (D39). Claude Code leads a command's output with its name
@@ -161,6 +183,9 @@ async function adoptLastReply($: EngineInterface) {
     await update($, selected, () => Math.max(0, count - 1))
     await writeTray($, () => EMPTY)
     await update($, isCommenting, () => false)
+    held = { review: { ...START, selected: Math.max(0, count - 1), epoch: held.review.epoch + 1 }, acked: held.acked }
+    holder = undefined
+    replyGeneration += 1
   }
   if (text) await openPane($)
 }
@@ -169,6 +194,9 @@ async function adoptLastReply($: EngineInterface) {
 // columns; opened from the person's press it is placed at any width. When it
 // waits or is closed, the band offers that press.
 async function openPane($: EngineInterface, focus = false) {
+  // Fullscreen has no navigator (D41); the key setup still opens the pane.
+  if (isFullscreen && !keyMenu) return
+  isPaneClosedForFullscreen = false
   const rows = classicRows(await read($, lastText), screen)
   const opened = await $.ui.open({
     id: PANE,
@@ -198,24 +226,7 @@ async function moveSelection($: EngineInterface, by: number) {
   const before = await read($, selected)
   blockOffset = 0
   await update($, selected, s => Math.max(0, Math.min(count - 1, s + by)))
-  // The transcript can be scrolled to a whole row only, never to a block in a
-  // reply, and a reply taller than the window always lands on its top. So:
-  // entering the first third of the blocks brings the reply's top into view;
-  // entering the last third brings the row after it (the turn's duration) to the
-  // window's bottom, which shows the reply's end. The middle is the person's to
-  // scroll (the wheel, PgUp/PgDn).
-  const now = await read($, selected)
-  const topThird = Math.ceil(count / 3)
-  const bottomThird = count - Math.ceil(count / 3)
-  if (replyRequestId && now < topThird && before >= topThird) {
-    const shown = await $.ui.scroll({ to: { requestId: replyRequestId }, block: 'start' })
-    observe(`reveal reply top: ${JSON.stringify(shown)}`)
-  }
-  if (now >= bottomThird && before < bottomThird) {
-    if (!turnRowId) return observe('reveal reply end: no turn row seen')
-    const shown = await $.ui.scroll({ to: { requestId: turnRowId }, block: 'end' })
-    observe(`reveal reply end via ${turnRowId.slice(0, 12)}: ${JSON.stringify(shown)}`)
-  }
+  await reveal($, before, await read($, selected), count)
 }
 
 // The tray (src/tray.ts) as $.state holds it: two atoms, marks and comments.
@@ -286,6 +297,113 @@ async function compile($: EngineInterface): Promise<string> {
   const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
   const tray = await readTray($)
   return compileTray(blocks, tray.marks, tray.comments)
+}
+
+// Brings the selected block into view, as far as the transcript allows.
+async function reveal($: EngineInterface, before: number, now: number, count: number) {
+  // The transcript can be scrolled to a whole row only, never to a block in a
+  // reply, and a reply taller than the window always lands on its top. So:
+  // entering the first third of the blocks brings the reply's top into view;
+  // entering the last third brings the row after it (the turn's duration) to the
+  // window's bottom, which shows the reply's end. The middle is the person's to
+  // scroll (the wheel, PgUp/PgDn).
+  const topThird = Math.ceil(count / 3)
+  const bottomThird = count - Math.ceil(count / 3)
+  // Best effort: a scroll that fails costs only the view, never the move.
+  const failed = (err: unknown) => ({ deny: String(err) })
+  if (replyRequestId && now < topThird && before >= topThird) {
+    const shown = await $.ui.scroll({ to: { requestId: replyRequestId }, block: 'start' }).catch(failed)
+    observe(`reveal reply top: ${JSON.stringify(shown)}`)
+  }
+  if (now >= bottomThird && before < bottomThird) {
+    if (!turnRowId) return observe('reveal reply end: no turn row seen')
+    const shown = await $.ui.scroll({ to: { requestId: turnRowId }, block: 'end' }).catch(failed)
+    observe(`reveal reply end via ${turnRowId.slice(0, 12)}: ${JSON.stringify(shown)}`)
+  }
+}
+
+// --- Fullscreen: the review in the reply (D41) -----------------------------
+
+// Closes the navigator pane once, from a drawing: fullscreen has none. Not
+// awaited — a drawing cannot wait on a close.
+function closePaneForFullscreen($: EngineInterface) {
+  if (isPaneClosedForFullscreen) return
+  isPaneClosedForFullscreen = true
+  void $.ui.close({ id: PANE }).catch(() => undefined)
+}
+
+// The review as the blocks draw it: plain data, with the selection the hooks
+// hold, active only while the reply or the band has the keyboard.
+async function shownReview($: EngineInterface): Promise<Review> {
+  return { ...held.review, selected: await read($, selected), isActive: held.review.isActive && holder !== undefined }
+}
+
+async function blockCount($: EngineInterface): Promise<number> {
+  return segment(await read($, lastText)).filter(s => s.isBlock).length
+}
+
+// One action from the review, applied to the tray.
+async function applyAction($: EngineInterface, a: Action) {
+  if (a.kind === 'mark') return toggle($, a.index, a.verb)
+  if (a.kind === 'discuss') return $.ui.toast('discuss: phase 2')
+  if (a.kind === 'comment') {
+    const { index, text } = a
+    await writeTray($, tray => finishTrayComment(draftComment(tray, index, text), index))
+  } else {
+    const { index } = a
+    await writeTray($, tray => dropComment(tray, index))
+  }
+  await suggestTray($)
+}
+
+// The person typed in the prompt: the reply lets go of its selection and menu.
+function releaseReview($: EngineInterface) {
+  if (!holder) return
+  holder = undefined
+  held = { ...held, review: letGo(held.review) }
+  $.ui.invalidate('ui.render')
+}
+
+// The keyboard path through the band: j / k between blocks.
+async function bandMove($: EngineInterface, by: 1 | -1) {
+  const count = await blockCount($)
+  const before = await read($, selected)
+  await update($, selected, s => Math.max(0, Math.min(count - 1, s + by)))
+  await reveal($, before, await read($, selected), count)
+  holder = 'band'
+  const review = closed(held.review)
+  held = { ...held, review: { ...review, selected: await read($, selected), isActive: true, seq: review.seq + 1 } }
+  $.ui.invalidate('ui.render')
+}
+
+// An action from the band: a / x / c / d, or ⏎ on the action under its cursor.
+// A comment opens a field in the band.
+async function bandVerb($: EngineInterface, n: number) {
+  const scope = { first: 0, last: (await blockCount($)) - 1, comments: (await read($, comments)) as Record<string, string> }
+  const s = applyMenu({ ...held.review, selected: await read($, selected) }, n, scope)
+  holder = 'band'
+  held = { ...held, review: s.review }
+  for (const a of s.actions) await applyAction($, a)
+  $.ui.invalidate('ui.render')
+  if (!s.review.editing) return
+  bandCommentSeq += 1
+  const moved = await $.ui
+    .focus({ requestId: bandRequestId, key: `${BAND_COMMENT_PREFIX}${bandCommentSeq}` })
+    .catch((err: unknown) => ({ deny: String(err) }))
+  observe(`band comment field: ${JSON.stringify(moved)}`)
+}
+
+async function bandComment($: EngineInterface, text: string, isDone: boolean) {
+  const open = held.review.editing
+  if (!open) return
+  if (!isDone) {
+    held = { ...held, review: { ...held.review, editing: { ...open, text, cursor: text.length } } }
+    return $.ui.invalidate('ui.render')
+  }
+  held = { ...held, review: { ...closed(held.review), seq: held.review.seq + 1 } }
+  await applyAction($, { kind: 'comment', index: open.index, text })
+  await $.ui.focus({ requestId: bandRequestId, key: VERBS[2]!.key }).catch(() => undefined)
+  $.ui.invalidate('ui.render')
 }
 
 // The keys the band names (src/keys.ts), from the person's own keybindings.json
@@ -549,6 +667,8 @@ export const register: Register = on => {
     if (args === '') {
       if (!(await read($, isOn))) return { text: 'off for this session · /synaptik on turns it back on' }
       if (!(await read($, lastText))) return { text: 'nothing to respond to yet — the navigator opens on the next reply' }
+      // Fullscreen has no navigator (D41): the review starts in the reply.
+      if (isFullscreen) return { text: 'click the reply to respond in place, or ctrl+x tab for the keys' }
       await openPane($, true)
       return {}
     }
@@ -632,6 +752,61 @@ export const register: Register = on => {
     // draws the transcript's text — bypassing any mod beneath that changes it
     // (D33).
     const pieceBlocks = segments.filter(s => s.isBlock).length
+
+    // Fullscreen (D41): every block is a Client, always, so a click on any of
+    // them starts the review — the reply cannot be passed through as D33 would.
+    // Each Client draws its block, its mark, and, once selected, the menu and the
+    // comment typed in place.
+    if (e.viewport?.isFullscreen) {
+      isFullscreen = true
+      if ((await read($, isPaneShown)) && !keyMenu) closePaneForFullscreen($)
+      const { Client } = $.ui.resolve(e)
+      const review = await shownReview($)
+      const staged = commented as Record<string, string>
+      let n = offset - 1
+      return (
+        <Box flexDirection="column" marginTop={1}>
+          {segments.map((seg, k) => {
+            const bullet = k === 0 && e.props.isFirstOfReply ? BULLET : undefined
+            if (!seg.isBlock) {
+              return (
+                <Box flexDirection="row" marginTop={seg.hasGapBefore ? 1 : 0}>
+                  <Box width={MARGIN} flexShrink={0}>
+                    <Text>{bullet ?? ''}</Text>
+                  </Box>
+                  <Box flexGrow={1}>
+                    <Markdown text={seg.text} />
+                  </Box>
+                </Box>
+              )
+            }
+            n += 1
+            const mark = marked[n]
+            return (
+              <Box flexDirection="column" marginTop={seg.hasGapBefore ? 1 : 0}>
+                <Client
+                  key={`block-${replyGeneration}-${n}`}
+                  module="./client/block.tsx"
+                  props={{
+                    index: n,
+                    text: seg.text,
+                    indent: seg.indent,
+                    ...(mark ? { glyph: GLYPH[mark] } : {}),
+                    ...(bullet ? { bullet } : {}),
+                    first: offset,
+                    last: offset + pieceBlocks - 1,
+                    review,
+                    acked: held.acked,
+                    comments: staged,
+                  }}
+                />
+              </Box>
+            )
+          })}
+        </Box>
+      )
+    }
+
     const isMarkedHere = Object.keys(marked).some(k => Number(k) >= offset && Number(k) < offset + pieceBlocks)
     const isTypingHere = isTyping && sel >= offset && sel < offset + pieceBlocks
     if (!isNavigatorFocused && !isMarkedHere && !isTypingHere) return next(e)
@@ -668,10 +843,79 @@ export const register: Register = on => {
     )
   }).catch(($, e, next) => next(e))
 
-  // --- The pane: minimap, ↑↓ via scroll, ←→ via the focus ring ---------------
+  // --- Fullscreen: what the reply's blocks post, and who has the keyboard -----
+
+  // A block's post: the review, and every action not yet confirmed. Each action
+  // is applied once (src/review.ts, receive).
+  on('ui.message', { component: 'AssistantMessage' }, async ($, e, next) => {
+    const data = (e.data ?? {}) as { review?: Review; actions?: Numbered[] }
+    const got = receive(held, data.review, data.actions ?? [])
+    held = got.held
+    for (const a of got.apply) await applyAction($, a)
+    if (data.review) {
+      holder = 'reply'
+      const before = await read($, selected)
+      await update($, selected, () => got.held.review.selected)
+      await reveal($, before, got.held.review.selected, await blockCount($))
+    }
+    $.ui.invalidate('ui.render')
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // The band's ring: in fullscreen it stops on Synaptik's actions only (j / k are
+  // hotkeys, not stops), and landing on one hands the review to the band.
+  on('ui.focus', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (!isFullscreen) return next(e)
+    const element = e.element ?? ''
+    if (element === NEXT_BLOCK || element === PREVIOUS_BLOCK) return { deny: 'synaptik: not a stop' }
+    const verb = VERBS.findIndex(v => v.key === element)
+    if (verb >= 0 || element.startsWith(BAND_COMMENT_PREFIX)) {
+      holder = 'band'
+      const r = held.review
+      held = { ...held, review: { ...r, isActive: true, ...(verb >= 0 ? { verb } : {}), seq: r.seq + 1 } }
+    } else if (holder === 'reply') {
+      // The ring went elsewhere in the band: the reply no longer has the keys.
+      releaseReview($)
+    }
+    $.ui.invalidate('ui.render')
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // An edit in the prompt box. A paste while a comment is open in the reply goes
+  // into the comment instead: Claude Code hands every paste to the box. Any other
+  // edit means the person is typing there, so the reply lets go.
+  on('prompt.edit', async ($, e, next) => {
+    const pasted = holder === 'reply' && !e.key ? paste(held.review, e.inputText) : undefined
+    if (pasted) {
+      held = { ...held, review: pasted }
+      $.ui.invalidate('ui.render')
+      return next({ ...e, inputText: '' })
+    }
+    releaseReview($)
+    // A suggestion cannot show while the box holds text: when it is empty again,
+    // propose the feedback again.
+    const box = await next(e)
+    if (box.text === '') void suggestTray($)
+    return box
+  }).catch(($, e, next) => next(e))
+
+  // The same after a clear, an undo or a recalled history entry.
+  on('prompt.change', async ($, e, next) => {
+    const box = await next(e)
+    if (box.text === '') void suggestTray($)
+    return box
+  }).catch(($, e, next) => next(e))
+
+  // --- The pane: classic's block viewer, ↑↓ via scroll, ←→ via the focus ring --
 
   on('ui.close', { id: PANE }, async ($, e, next) => {
     observe(`pane closed by ${e.origin.kind}`)
+    // Closed for fullscreen, from a drawing: nothing to finish, and no $.state
+    // writes there. isPaneShown is not read in fullscreen.
+    if (isPaneClosedForFullscreen && e.origin.kind === 'plugin') {
+      isNavigatorFocused = false
+      return next(e)
+    }
     await finishComment($)
     await update($, isPaneShown, () => false)
     isNavigatorFocused = false
@@ -758,6 +1002,14 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     if (e.surface !== 'terminal') return next(e)
+    // Fullscreen has no navigator (D41). A pane opened before the mod knew it was
+    // fullscreen (at session start) closes on its first drawing. The key setup
+    // still uses it.
+    if (e.viewport?.isFullscreen && !keyMenu) {
+      isFullscreen = true
+      closePaneForFullscreen($)
+      return next(e)
+    }
     const { Box, Text, Button, Input, Markdown } = $.ui.resolve(e)
 
     // The key setup, drawn instead of the map while it is open. Esc gives the
@@ -802,7 +1054,6 @@ export const register: Register = on => {
       $.ui.invalidate('ui.render')
     }
     const rows = Math.max(6, e.props.scroll.bodyRows)
-    const words = Math.max(4, e.props.bodyColumns - ROW_CHROME)
     const counts = glyphCounts(marked)
     const heading = working
       ? 'Waiting for the reply...'
@@ -837,10 +1088,10 @@ export const register: Register = on => {
       />
     )
 
-    // Classic (#31): the classic renderer places the pane inline, above the
-    // prompt — the one surface that stays current there. Show the selected
+    // Classic (#31): the pane sits above the prompt — the one surface that
+    // stays current there; fullscreen has none (D41). Show the selected
     // block itself, in full, with its neighbours, menu and comment.
-    if (e.props.placement === 'inline' && !working) {
+    if (!working) {
       const all = segment(await read($, lastText))
       let crumb = ''
       let k = -1
@@ -884,49 +1135,7 @@ export const register: Register = on => {
       )
     }
 
-    // Everything but the heading and position rows, less one row for each
-    // comment, which may need a row of its own under a one-row block.
-    const commentRows = commentCount(marked, commented)
-    // Rows for the comment field while it is open: as many as its text wraps
-    // to, so the whole comment — and the cursor, wherever it is — stays in view.
-    // The field reports no cursor position, so a window around the cursor is not
-    // possible; showing all of it is. Capped at half the pane.
-    // The field shares each line with its submit hint (`⏎ ok`, drawn beside
-    // it while focused) and wraps at word boundaries, so a line holds well under
-    // the pane's width: estimate generously, plus a row of margin.
-    const fieldText = commented[sel] ?? seed
-    const fieldWidth = Math.max(4, e.props.bodyColumns - FIELD_CHROME)
-    const fieldRows = isTyping
-      ? Math.min(Math.max(1, Math.floor(rows / 2)), Math.ceil((fieldText.length * 1.25) / fieldWidth) + 1)
-      : 0
-    const heights = minimap(
-      blocks.map(b => b.text.length),
-      Math.max(blocks.length, rows - 2 - commentRows - fieldRows),
-    )
-    return MapView(
-      { Box, Text, Button },
-      {
-        rows,
-        heading: clip(heading, words + 2),
-        isWorking: working,
-        bars: blocks.map((block, i) => {
-          const mark = marked[i]
-          return {
-            isSelected: i === sel,
-            glyph: mark ? GLYPH[mark] : undefined,
-            // One row of words per staged block. Mirroring the reply line for
-            // line was tried: the mod cannot see how the reply wraps, so the
-            // lines never quite aligned.
-            opening: mark ? clip(quote(block.text, 10_000), words) : '',
-            comment: mark === 'comment' ? clip(commented[i]?.trim() ?? '', words - 2) : '',
-            span: heights[i] ?? 1,
-          }
-        }),
-        counter: working ? '' : clip(blockCounter(sel, blocks.length), words + 2),
-      },
-      actions,
-      isTyping ? field : undefined,
-    )
+    return EmptyView({ Box, Text }, 'Waiting for the reply...')
   }).catch(($, e, next) => next(e))
 
   // --- The band: read-only. Says what you can do now, never names a component.
@@ -957,9 +1166,17 @@ export const register: Register = on => {
     // Under a "Synaptik" header, each line led by ⎿ as Claude Code nests its own
     // output, so with several mods in the band it is clear which lines are ours.
     // The last line, just above the prompt: what the keys do right now.
+    const fullscreenAction =
+      holder === 'band'
+        ? `${blockCounter(sel, blocks.length)} · j/k blocks · ←→ actions · ⏎ apply · esc done`
+        : holder === 'reply'
+          ? `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ←→ actions · ⏎ apply · esc done`
+          : `click the reply to ${staged ? 'continue responding' : 'respond in place'} · ${key} for keys`
     const action = keyMenu
       ? 'customizing Synaptik'
-      : reviewing
+      : isFullscreen
+        ? fullscreenAction
+        : reviewing
       ? `${blockCounter(sel, blocks.length)} · ↑↓ move · ${keys.choose} choose · ⏎ apply · esc done`
       : staged && isSuggested && box.text.trim() === ''
         ? `tab to take it into the prompt · ${key} to continue responding`
@@ -969,8 +1186,9 @@ export const register: Register = on => {
     // else (what to say then is an open decision; for now, the warning).
     const isTaken = boxText !== '' && boxText === compiled.trim()
     const isTyping = boxText !== '' && !isTaken
-    const beneath = reviewing ? null : await next(e)
-    return BandView(
+    const beneath = reviewing || holder === 'band' ? null : await next(e)
+    bandRequestId = e.requestId
+    const band = BandView(
       { Box, Text, Button },
       {
         beneath,
@@ -980,10 +1198,26 @@ export const register: Register = on => {
         action,
         // The navigator not on screen (narrow terminal, or closed): the band
         // offers the press that opens it instead of the action line.
-        isNavigatorShown: isShown || reviewing,
+        isNavigatorShown: isShown || reviewing || isFullscreen,
         entryKey: key,
       },
       () => openPane($),
+    )
+    if (!isFullscreen) return band
+    // Fullscreen's keyboard path (D41): the actions and j / k as the band's own
+    // controls, and a comment opened from here typed in the band.
+    const { Input } = $.ui.resolve(e)
+    const open = holder === 'band' ? held.review.editing : undefined
+    return BandKeysView(
+      { Box, Button, Input },
+      band,
+      open ? { comment: { key: `${BAND_COMMENT_PREFIX}${bandCommentSeq}`, text: open.text } } : {},
+      {
+        move: by => bandMove($, by),
+        verb: n => bandVerb($, n),
+        type: text => bandComment($, text, false),
+        submit: text => bandComment($, text, true),
+      },
     )
   }).catch(($, e, next) => next(e))
 }

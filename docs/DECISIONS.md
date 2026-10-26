@@ -4,7 +4,7 @@
 **Status:** Spike done — **32 decisions and 3 principles**; P1, D20, D21, D24 and
 D29 revised from it. The build spec is `SPEC.md`; this file holds the rationale
 behind it. Open items from the spike are in §11.
-**Framework:** Claude Code mods (CLI v2.1.287+, Desktop Code tab v2.1.286+)
+**Framework:** Claude Code mods (CLI v2.1.301+ since 2026-10-27, was 2.1.287+; Desktop Code tab v2.1.286+)
 
 > **Review convention.** Decisions keep their original numbers even when revised,
 > collapsed or killed, so they stay citable across sessions. Numbers are never
@@ -1121,6 +1121,11 @@ mods would run, nothing of theirs would show, and the reply would be drawn twice
 secrets, translating — is bypassed for that reply. Decision 2 narrows the window
 to reviewing and marked pieces; it does not close it. Revisit if such a mod
 appears; the upstream fix is a way to share one reply drawing (#23).
+
+**Revised 2026-10-27 (fullscreen review in the reply, #39):** in fullscreen the
+reply is always drawn by Synaptik, each block a `Client`, so that a click on any
+block can start a review. There, another mod that changes how replies are drawn
+is bypassed. Classic keeps this decision as written.
 
 ---
 

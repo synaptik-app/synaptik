@@ -26,7 +26,7 @@ the classic renderer. What comes next is on the
 
 ## Install
 
-Claude Code **v2.1.287+** in a terminal — any terminal, including the ones in
+Claude Code **v2.1.301+** in a terminal — any terminal, including the ones in
 VS Code, Cursor and JetBrains IDEs, and over SSH or tmux. Mods are enabled by
 default; `claude --version` reports yours.
 
@@ -69,8 +69,23 @@ the rest.
 
 ### Keys
 
-After a reply, the band above the prompt says how to start. Inside the
-navigator:
+After a reply, the band above the prompt says how to start.
+
+**Fullscreen** — no setup. Click any block of the reply, or use the keyboard:
+
+| | Mouse | Keyboard |
+|---|---|---|
+| Start reviewing | click a block | `ctrl+x tab` |
+| Move between blocks | ↑ / ↓, Home / End | `j` / `k` |
+| Choose an action | ← / → | ← / → |
+| Apply it | ⏎, or click it | ⏎ |
+| Apply directly | `a` accept · `x` reject · `c` comment | same |
+| Done | type in the prompt | same |
+
+A comment is typed right under its block; `\` then ⏎ starts a new line, and a
+paste goes into it.
+
+**Classic** — the navigator above the band shows the selected block:
 
 | | Default | With the bindings below |
 |---|---|---|
@@ -100,16 +115,19 @@ shows them as they are:
 
 ### Known limits
 
-- **Fullscreen** reviews the reply in place, with a block map docked beside it.
-  **Classic** cannot redraw what has scrolled off, so the navigator shows the
-  selected block itself, above the prompt.
-- **The navigator may not appear on narrow terminals**: Claude Code holds back
-  a pane opened unasked below about 144 columns. The band then offers to open it.
+- **Fullscreen** reviews the reply in place. **Classic** cannot redraw what has
+  scrolled off, so its navigator shows the selected block itself, above the
+  prompt — and may not appear on narrow terminals: Claude Code holds back a pane
+  opened unasked below about 144 columns. The band then offers to open it.
+- **Esc doesn't end a fullscreen review**: Claude Code doesn't tell a mod about
+  it, so the menu stays under the block until you type in the prompt.
+- **In fullscreen Synaptik draws every reply itself**, so a click can start a
+  review: another mod that changes how replies are drawn is bypassed there.
 - **Only the last reply** can be marked, and marks last for the session — they
   are not saved, and nothing is written into the conversation.
-- **One mod redraws a reply.** Another mod that changes how replies are drawn
-  may be bypassed while you review; outside review Synaptik leaves replies alone
-  unless they carry marks.
+- **One mod redraws a reply.** In classic, another mod that changes how replies
+  are drawn may be bypassed while you review; outside review Synaptik leaves
+  replies alone unless they carry marks.
 - **Code blocks and tables** are one block each, marked as a whole for now;
   stepping into them is planned (#105).
 - **No key clears a mark yet.** Pressing the same verb again unmarks ✓ and ✗; a

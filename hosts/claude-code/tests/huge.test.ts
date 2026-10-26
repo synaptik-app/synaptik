@@ -3,6 +3,7 @@
 // looking the same, and the classic pane's layout.
 
 import { expect, test } from 'claude-code/testing'
+import type { FoundElement } from 'claude-code/testing'
 
 import { check, ENGINE_DRAWING, pane, reply, select, start, suggested } from './engine'
 
@@ -12,15 +13,15 @@ test(check(F, 'With the navigator open, the reply draws whole'), async ($, on) =
   await start($, on, F)
   await pane($, 'dock')
   const ui = await reply($, F)
-  const texts = (await ui.findAll({ type: 'Markdown' })).map(m => String(m.props.text ?? m.text))
+  const texts = (await ui.findAll({ type: 'Markdown' })).map((m: FoundElement) => String(m.props.text ?? m.text))
   // Drawn in pieces of at most 10,000 characters, each fenced: Claude Code
   // before 2.1.304 refuses a longer Markdown element.
-  const pieces = texts.filter(t => t.startsWith('```ts'))
+  const pieces = texts.filter((t: string) => t.startsWith('```ts'))
   expect(pieces.length).toBeGreaterThan(1)
-  expect(pieces.every(p => p.length <= 10_000)).toBe(true)
+  expect(pieces.every((p: string) => p.length <= 10_000)).toBe(true)
   expect(pieces[0]).toContain("resource/001'")
   expect(pieces[pieces.length - 1]).toContain("resource/120'")
-  expect(texts.some(t => t.startsWith('Paragraph 12 of the long tail'))).toBe(true)
+  expect(texts.some((t: string) => t.startsWith('Paragraph 12 of the long tail'))).toBe(true)
 })
 
 test(check(F, 'The code block is one block'), async ($, on) => {

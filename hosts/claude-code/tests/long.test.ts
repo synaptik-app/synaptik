@@ -46,16 +46,6 @@ test(check(F, 'Marks spread across sections all reach the suggestion'), async ($
   expect(lines[1]).toMatch(/^✓ "8\. Remove the old columns/)
 })
 
-test(check(F, "The navigator's staged rows show the right opening words"), async ($, on) => {
-  await start($, on, F)
-  const nav = await pane($, 'inline')
-  await select($, nav, /^2\. Start at five requests/)
-  await nav.press({ key: 'verb-accept' })
-  await nav.unmount()
-  const dock = await pane($, 'dock', false)
-  expect(await dock.find({ type: 'Text', text: /✓ 2\. Start at five/ })).toBeDefined()
-})
-
 test(check(F, 'Classic renderer: the pane shows the selected block in full'), async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')

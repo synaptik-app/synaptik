@@ -29,6 +29,7 @@ When the person asks to run a test — "run the rendering test", "run split",
 | split | `fixtures/split.md` |
 | nesting | `fixtures/nesting.md` |
 | long | `fixtures/long.md` |
+| fullscreen | `fixtures/fullscreen.md` — fullscreen only |
 | all, everything, whole test | every fixture above, in that order |
 | neighbour | `fixtures/neighbour.md` — only with `neighbour-mod` loaded; not part of "all" |
 | huge | `fixtures/huge.md` — a reply over 14,000 characters; not part of "all" |

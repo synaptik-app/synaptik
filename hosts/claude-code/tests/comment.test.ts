@@ -113,17 +113,6 @@ test('leaving the field empty drops the comment', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /Nothing marked yet/ })).toBeDefined()
 })
 
-test('a long comment gets more rows in the navigator (#18)', async ($, on) => {
-  const bars = async (ui: Awaited<ReturnType<typeof pane>>) =>
-    (await ui.findAll({ type: 'Text', text: /^[│┃█]/ })).length
-  // Tall enough that the map has rows to spare beyond one per block.
-  const ui = await open($, on, 80)
-  await ui.input({ key: FIELD, text: 'short', kind: 'change' })
-  const short = await bars(ui)
-  await ui.input({ key: FIELD, text: 'a much longer comment '.repeat(8), kind: 'change' })
-  expect(await bars(ui)).toBeLessThan(short)
-})
-
 test('reopening a comment starts from what was staged, in a fresh field', async ($, on) => {
   const ui = await open($, on)
   await ui.input({ key: FIELD, text: 'too vague' })

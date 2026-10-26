@@ -3,6 +3,7 @@
 // the keyboard, since the box shows only the last suggestion proposed.
 
 import { expect, test } from 'claude-code/testing'
+import type { FoundElement } from 'claude-code/testing'
 
 import { focus, pane, start, submitted, suggested, suggestions } from './engine'
 
@@ -86,8 +87,8 @@ test('nothing in the navigator sends: the person takes the suggestion and sends 
     const ui = await pane($, placement)
     await ui.press({ key: 'verb-accept' })
     const buttons = await ui.findAll({ type: 'Button' })
-    expect(buttons.some(b => b.props.hotkey === 'a')).toBe(true) // the hidden verbs are found
-    expect(buttons.some(b => b.props.hotkey === 's' || b.key === 'send')).toBe(false)
+    expect(buttons.some((b: FoundElement) => b.props.hotkey === 'a')).toBe(true) // the hidden verbs are found
+    expect(buttons.some((b: FoundElement) => b.props.hotkey === 's' || b.key === 'send')).toBe(false)
     await ui.unmount()
   }
   expect(suggested()).not.toBe('')
