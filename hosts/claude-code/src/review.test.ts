@@ -40,6 +40,11 @@ test('←/→ walk the menu around, ⏎ applies the item under the cursor', asyn
   expect(actions).toEqual([{ kind: 'mark', verb: 'reject', index: 2 }])
 })
 
+test('q ends the review; in a comment it types a q', async () => {
+  expect(keys(active, ['q']).actions).toEqual([{ kind: 'end' }])
+  expect(keys(active, ['c', 'q']).review.editing?.text).toBe('q')
+})
+
 test('a / x / d act directly; c opens the comment field', async () => {
   expect(keys(active, ['a']).actions).toEqual([{ kind: 'mark', verb: 'accept', index: 2 }])
   expect(keys(active, ['x']).actions).toEqual([{ kind: 'mark', verb: 'reject', index: 2 }])

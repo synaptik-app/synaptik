@@ -14,6 +14,15 @@ export const VERBS = [
 // The band's j / k hotkeys in fullscreen (D41): hotkeys, never ring stops.
 export const NEXT_BLOCK = 'block-next'
 export const PREVIOUS_BLOCK = 'block-previous'
+// The band's q hotkey: ends the review (Esc would, but a mod never sees it).
+export const END_REVIEW = 'review-end'
+
+// The band's controls are keyed per generation: ending a review draws them under
+// fresh keys, so the one holding the keyboard disappears and Claude Code hands
+// the keyboard back to the prompt (a mod cannot move it there). `@<n>` after the
+// base key; the first generation has none.
+export const generational = (key: string, generation: number) => (generation ? `${key}@${generation}` : key)
+export const baseKey = (key: string) => key.split('@')[0] ?? key
 // The comment field the band shows when a comment is opened from there.
 export const BAND_COMMENT_PREFIX = 'band-comment-'
 

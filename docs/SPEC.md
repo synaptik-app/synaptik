@@ -271,8 +271,9 @@ elsewhere can be guaranteed to line up with the reply's on-screen lines.
 ## 7. The band
 
 Hook: `ui.render` with `{ component: 'AbovePrompt' }`. One instance, drawn to
-`e.props.bodyColumns`. **Read-only**: it holds no focusable element, so the
-entry key goes past it to the navigator (§10).
+`e.props.bodyColumns`. In classic it holds no focusable element, so the entry key
+goes past it to the navigator (§10); in fullscreen it holds the review's hidden
+controls and its hint line (§10, *Fullscreen*).
 
 The band never names a component ("pane", "band") or uses jargon ("marks"). It
 says what you can do now, under a header — each line led by `⎿`, as Claude Code
@@ -280,18 +281,32 @@ nests its own output — so with several mods in the band it is clear which line
 are Synaptik's:
 
 ```
-Synaptik · respond to the reply in place
-⎿  1 accepted · 1 rejected
-⎿  tab to take it into the prompt · ctrl+s to continue responding
+Synaptik
+⎿  ✓2 ✗1 ✎1 · tab, then ⏎ to send
+⎿  ctrl+x tab to continue reviewing
 ```
 
 | Line | Shows |
 |---|---|
-| Header *(always)* | `Synaptik · respond to the reply in place` |
-| Summary *(only when something is staged)* | `⎿  2 accepted · 1 rejected · 1 comment` |
+| Header *(always)* | `Synaptik` |
+| Staged *(only when something is staged)* | the counts, as the margins mark them, and what the prompt box will do with them (below) |
 | Action *(always, last, just above the prompt)* | what the keys do right now |
 
-The action line:
+The staged line. **During a review ⏎ applies an action, so it says nothing
+about the prompt box**; outside one it does:
+
+| State | Text |
+|---|---|
+| Reviewing | `⎿  ✓2 ✗1 ✎1` |
+| The suggestion showing in an empty box | `⎿  ✓2 ✗1 ✎1 · tab, then ⏎ to send` |
+| The box holds exactly the suggestion | `⎿  ✓2 ✗1 ✎1 · ⏎ sends your feedback` |
+| The box holds anything else *(yellow)* | `⎿  ✓2 ✗1 ✎1 · ⏎ sends what you typed` |
+| Otherwise | `⎿  ✓2 ✗1 ✎1` |
+
+The action line, in **fullscreen**: outside a review, `ctrl+x tab to review the
+reply` and `click here to review the reply` in turn (`…to continue reviewing`
+once something is staged); while reviewing, `Block 3 of 12 · ↑↓ blocks · ←→
+actions · ⏎ apply · q done` (`j/k blocks` from the band). In **classic**:
 
 | State | Text |
 |---|---|
@@ -332,11 +347,13 @@ modification time changes.
 The compiled prompt (§9) is proposed in the **empty prompt box** with
 `$.prompt.suggest`, the same dim text Claude Code uses for its own suggestions.
 It is re-proposed after every change to the tray (a mark, an unmark, a comment
-finishing). `→` or `Tab` takes it into the box, where it can be edited; `⏎`
-sends it as the person's own message; `ctrl+c` clears it.
+finishing). `→` or `Tab` takes it into the box, where it can be edited, and
+`⏎` then sends it as the person's own message — `⏎` on the empty box with the
+suggestion showing sends nothing (checked 2026-10-28); `ctrl+c` clears it.
 
-- The text is proposed with **a leading space**: the box draws its cursor over a
-  suggestion's first cell, which would hide the first mark glyph.
+- The text is proposed **as compiled**, with no leading space. The box draws its
+  cursor over a suggestion's first cell, so the first mark glyph hides under it
+  until the suggestion is taken; a leading space to avoid that looked worse.
 - **A suggestion cannot be withdrawn**: there is no call for it, a blank one
   cannot show, and writing to the box does not dismiss it. When the last mark is
   cleared, the mod proposes a harmless placeholder instead — currently `Give me a
@@ -495,10 +512,19 @@ every key once clicked. **The pane is classic's** (D41).
 
 ### Fullscreen: the review in the reply (D41)
 
-There is **no navigator pane** in fullscreen. Each block of the reply is drawn by
-its own `Client` (`hooks/client/block.tsx`), always, so a click on any block
-starts the review — the reply is never passed through to Claude Code there (D33
-yields to this). Headings and rules are drawn as plain Markdown between them.
+There is **no navigator pane** in fullscreen. **A review starts two ways**, which
+the band's hint line names in turn (`ctrl+x tab to review the reply` ↔ `click
+here to review the reply`, every 3 s, on the hint `Client`'s own timer): `ctrl+x tab` (the
+band's keyboard lands on Synaptik's actions — as a click elsewhere in the band
+does, since Claude Code reports both alike), or a click on the hint itself, which
+hands that `Client` the raw keys, ↑/↓ included. It lasts until the person types in
+the prompt, or the band's focus leaves Synaptik's controls (Esc from the band).
+**During a review** each block of the reply is drawn by its own `Client`
+(`hooks/client/block.tsx`), so a click on one selects it; headings and rules are
+drawn as plain Markdown between them. **Outside a review** the reply is drawn as
+in classic — passed through, or with its marks in place (D33, D35) — so its text
+can be selected and copied: a `Client` holds the pointer, and the transcript
+selects nothing inside one.
 
 ```
 ⏺ Two separate problems, so two fixes:
@@ -511,7 +537,7 @@ yields to this). Headings and rules are drawn as plain Markdown between them.
     → make it 5 per minute per account
 ```
 
-**With the mouse** (the default):
+**With the mouse**, during a review:
 - **A click on a block selects it** and hands the reply the keyboard. The click
   lands on that block's own `Client`, so it is exact.
 - ↑/↓ move between blocks, Home/End (and PgUp/PgDn) jump to the first or last.
@@ -526,15 +552,16 @@ yields to this). Headings and rules are drawn as plain Markdown between them.
 - **A paste** while a comment is open goes into the comment: Claude Code hands
   every paste to the prompt box, and a `prompt.edit` hook moves it.
 
-**With the keyboard:** only a click can focus a `Client`, so `ctrl+x tab`
-focuses the **band**. Its ring stops on the four actions (hidden; the menu in the
+**With the keyboard:** only a click can focus a `Client`, so the review stays in
+the **band**, where `ctrl+x tab` put it. Its ring stops on the four actions (hidden; the menu in the
 reply shows the cursor), with `j` / `k` as hotkeys between blocks — ↑/↓ scroll
 the band, and Claude Code's own lists use J/K. ←/→ walk the actions (Claude Code
 binds them in the band by default), `⏎` applies, `a` `x` `c` `d` act; a comment
 opened from the band is typed in a field in the band and shows under its block.
 
-**Status in the band:** `click the reply to respond in place · ctrl+x tab for
-keys`, or, while reviewing, `Block N of M · ↑↓ blocks · ←→ actions · ⏎ apply ·
+**Status in the band:** the hint line above, or, while reviewing (the hint stays
+drawn, showing the legend — removing the `Client` the person clicked would take
+the keyboard with it), `Block N of M · ↑↓ blocks · ←→ actions · ⏎ apply ·
 esc done` (`j/k blocks` from the band). The staged counts sit above it.
 
 **How the blocks hold together** (`src/review.ts`):
@@ -550,10 +577,14 @@ esc done` (`j/k blocks` from the band). The staged counts sit above it.
   never `undefined`.
 - Each adopted reply gets fresh `Client` instances (`block-<reply>-<index>`).
 
-**Letting go.** Typing in the prompt (any edit but a paste into an open comment)
-takes the selection and the menu off the reply; a click brings them back. **Esc
-is invisible** to a mod — a `Client` is never told it lost the keyboard — so after
-Esc the menu stays drawn until the person types in the prompt (#23).
+**Ending a review: `q`**, from the reply, the band or its hint (in a comment, `q`
+types a `q`); the legend says `q done`. **Esc does not end it:** a mod never sees
+Esc — a `Client` is never told it lost the keyboard, and the band raises nothing
+when its focus goes back to the prompt (#23). If Claude Code ever reports it, Esc
+joins `q` and `q` stays, unadvertised. Typing in the prompt (any edit but a paste
+into an open comment) also ends the review, and the band's focus moving off
+Synaptik's controls does, after a short grace (300 ms) in which a click into a
+block — which also takes the focus from the band — keeps it going.
 
 **The suggestion** is proposed after every action, and again whenever the prompt
 box becomes empty (`prompt.edit`, `prompt.change`): it cannot show while the box
@@ -600,12 +631,12 @@ dropped. `⏎` or backspace on an empty line cancels it.
 
 | | With the mouse | With the keyboard |
 |---|---|---|
-| Start | click a block | `ctrl+x tab` (the band) |
+| Start | click the band's hint (↑/↓ from there), then a block | `ctrl+x tab` |
 | Move between blocks | ↑ / ↓, Home / End | `j` / `k` |
 | Walk the actions | ← / → | ← / → |
 | Apply the action under the cursor | ⏎, or click it | ⏎ |
 | Apply an action directly | `a` `x` `c` `d` | `a` `x` `c` `d` |
-| Leave | type in the prompt (Esc is not seen, #23) | type in the prompt |
+| Leave | `q` (Esc is not seen, #23) | `q` |
 
 **Classic** (the pane):
 

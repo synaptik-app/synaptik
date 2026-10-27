@@ -32,6 +32,8 @@ export type Action =
   | { kind: 'discuss'; index: number }
   | { kind: 'comment'; index: number; text: string }
   | { kind: 'cancel'; index: number }
+  // q: the review ends (Esc would, but a mod never sees it — #23).
+  | { kind: 'end' }
 
 export type Key = { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean }
 
@@ -146,6 +148,8 @@ export function press(review: Review, key: Key, scope: Scope): Step | undefined 
       return apply(review, 2, scope)
     case 'd':
       return apply(review, 3, scope)
+    case 'q':
+      return step(review, review, [{ kind: 'end' }])
   }
   return undefined
 }

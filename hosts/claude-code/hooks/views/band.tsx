@@ -4,11 +4,10 @@
 
 import type { Elements, RenderElement } from 'claude-code'
 
-import { NEXT_BLOCK, PREVIOUS_BLOCK, VERBS } from '../ui'
+import { END_REVIEW, generational, NEXT_BLOCK, PREVIOUS_BLOCK, VERBS } from '../ui'
 
-// The header, and the lead of each line under it: as Claude Code nests its own
-// output, so with several mods in the band it is clear which lines are ours.
-const TAGLINE = 'respond to the reply in place'
+// The lead of each line under the header: as Claude Code nests its own output,
+// so with several mods in the band it is clear which lines are ours.
 const NEST = '⎿  '
 
 export type BandModel = {
@@ -16,13 +15,16 @@ export type BandModel = {
   // stands alone as the key legend).
   beneath: RenderElement | null | undefined
   columns: number
-  // "2 accepted · 1 rejected", empty when nothing is staged; and what ⏎ does
-  // with it given the prompt box: drops it (other text there), sends it (the
-  // box holds exactly the suggestion), or nothing to say.
+  // What is staged, as the margins mark it ("✓2 ✗1 ✎1"), empty when nothing
+  // is; and, outside a review, what the prompt box will do with it: take the
+  // suggestion (Tab), send it (the box holds exactly it), or send what the person
+  // typed instead (a warning). During a review ⏎ applies an action, so no note.
   staged: string
-  stagedAs: 'dropped' | 'taken' | 'plain'
-  // The last line, just above the prompt: what the keys do right now.
+  stagedAs: 'reviewing' | 'suggested' | 'taken' | 'typed' | 'plain'
+  // The last line, just above the prompt: what the keys do right now — or, in
+  // fullscreen outside a review, the hooks' rotating hint (a Client) instead.
   action: string
+  actionElement?: RenderElement
   isNavigatorShown: boolean
   entryKey: string
 }
@@ -39,27 +41,29 @@ export function BandView(
     <Box flexDirection="column">
       {m.beneath}
       <Box flexDirection="column" width={m.columns}>
-        <Text wrap="truncate">
-          Synaptik<Text dimColor> · {TAGLINE}</Text>
-        </Text>
+        <Text wrap="truncate">Synaptik</Text>
         {m.staged &&
-          (m.stagedAs === 'dropped' ? (
+          (m.stagedAs === 'typed' ? (
             <Text color="yellow" wrap="truncate">
               {NEST}
-              {m.staged} staged · ⏎ sends only what you typed and drops them
-            </Text>
-          ) : m.stagedAs === 'taken' ? (
-            <Text wrap="truncate">
-              {NEST}
-              {m.staged} · ⏎ sends your feedback
+              {m.staged} · ⏎ sends what you typed
             </Text>
           ) : (
             <Text wrap="truncate">
               {NEST}
               {m.staged}
+              {m.stagedAs === 'taken' ? (
+                <Text dimColor> · ⏎ sends your feedback</Text>
+              ) : m.stagedAs === 'suggested' ? (
+                <Text dimColor> · tab, then ⏎ to send</Text>
+              ) : (
+                ''
+              )}
             </Text>
           ))}
-        {m.isNavigatorShown ? (
+        {m.actionElement ? (
+          m.actionElement
+        ) : m.isNavigatorShown ? (
           <Text dimColor wrap="truncate">
             {NEST}
             {m.action}
@@ -85,12 +89,15 @@ export function BandView(
 // the reply shows them — with j / k to move between blocks (↑/↓ scroll the band).
 // While a comment is open from here, its field shows in the band.
 export type BandKeysModel = {
+  // The controls' generation (ui.ts, generational).
+  generation: number
   // The comment being typed from the band: its field's key and text.
   comment?: { key: string; text: string }
 }
 
 export type BandKeysActions = {
   move: (by: 1 | -1) => unknown
+  end: () => unknown
   verb: (n: number) => unknown
   type: (text: string) => unknown
   submit: (text: string) => unknown
@@ -106,19 +113,23 @@ export function BandKeysView(
     <Box flexDirection="column">
       {band}
       {m.comment && (
-        <Input
+        // Hidden: it takes the typing, and the comment shows in place, under its
+        // block in the reply.
+        <Box display="none">
+          <Input
           key={m.comment.key}
           placeholder="comment"
           submitLabel="ok"
           value={m.comment.text}
           onInput={value => actions.type(value)}
           onSubmit={value => actions.submit(value)}
-        />
+          />
+        </Box>
       )}
       <Box display="none">
         {VERBS.map((v, n) => (
           <Button
-            key={v.key}
+            key={generational(v.key, m.generation)}
             plain
             hotkey={v.hotkey}
             autoFocus={n === 0 ? true : undefined}
@@ -126,8 +137,9 @@ export function BandKeysView(
             onPress={() => actions.verb(n)}
           />
         ))}
-        <Button key={NEXT_BLOCK} plain hotkey="j" label="next block" onPress={() => actions.move(1)} />
-        <Button key={PREVIOUS_BLOCK} plain hotkey="k" label="previous block" onPress={() => actions.move(-1)} />
+        <Button key={generational(NEXT_BLOCK, m.generation)} plain hotkey="j" label="next block" onPress={() => actions.move(1)} />
+        <Button key={generational(PREVIOUS_BLOCK, m.generation)} plain hotkey="k" label="previous block" onPress={() => actions.move(-1)} />
+        <Button key={generational(END_REVIEW, m.generation)} plain hotkey="q" label="end review" onPress={() => actions.end()} />
       </Box>
     </Box>
   )

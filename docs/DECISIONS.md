@@ -1007,7 +1007,8 @@ the other case.
 
 **Mechanics the spike settled:**
 - A leading space: the box's cursor sits on a suggestion's first cell and would
-  hide the first mark glyph.
+  hide the first mark glyph. **Revised 2026-10-28: no leading space** — the
+  indented first line looked worse than a glyph under the cursor until taken.
 - Comments re-propose when they finish (⏎, or focus leaving the field), not per
   keystroke.
 - A suggestion **cannot be withdrawn**. When the last mark is cleared, a harmless
@@ -1122,10 +1123,12 @@ secrets, translating — is bypassed for that reply. Decision 2 narrows the wind
 to reviewing and marked pieces; it does not close it. Revisit if such a mod
 appears; the upstream fix is a way to share one reply drawing (#23).
 
-**Revised 2026-10-27 (fullscreen review in the reply, #39):** in fullscreen the
-reply is always drawn by Synaptik, each block a `Client`, so that a click on any
-block can start a review. There, another mod that changes how replies are drawn
-is bypassed. Classic keeps this decision as written.
+**Revised 2026-10-27 (fullscreen review in the reply, #39):** during a fullscreen
+review the reply is drawn by Synaptik, each block a `Client`, and another mod that
+changes how replies are drawn is bypassed. Outside a review this decision holds
+as written, in both renderers: the `Client`s are drawn only between `ctrl+x tab`
+and the end of the review, since a `Client` holds the pointer and blocks text
+selection.
 
 ---
 

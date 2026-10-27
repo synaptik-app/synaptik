@@ -38,30 +38,31 @@ test('outside the navigator: the entry key is the person’s own binding', async
   expect(String(found?.text ?? '')).toContain('ctrl+s')
 })
 
-test('the band sums up what is staged', async ($, on) => {
+test('the band counts what is staged as the margins mark it; during a review, nothing about the prompt', async ($, on) => {
   await start($, on, 'rendering')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await arrow($, -1)
   await ui.press({ key: 'verb-reject' })
   const drawn = await band($)
-  expect(await drawn.find({ type: 'Text', text: /1 accepted · 1 rejected$/ })).toBeDefined()
+  expect((await drawn.find({ type: 'Text', text: /✓1 ✗1/ }))?.text).toBe('⎿  ✓1 ✗1')
 })
 
 test('nothing staged: no summary line', async ($, on) => {
   await start($, on, 'rendering')
   const drawn = await band($)
-  expect(await drawn.find({ type: 'Text', text: /accepted|rejected|comment/ })).toBeUndefined()
+  expect(await drawn.find({ type: 'Text', text: /[✓✗✎]\d/ })).toBeUndefined()
 })
 
-test('other text in the prompt box: a yellow warning that ⏎ drops the marks', async ($, on) => {
+test('other text in the prompt box: a yellow note that ⏎ sends what was typed', async ($, on) => {
   await start($, on, 'rendering')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await ui.unmount()
+  await pane($, 'inline', false) // Esc: the navigator lets go of the keyboard
   promptBox.text = 'something else entirely'
-  const found = await (await band($)).find({ type: 'Text', text: /⏎ sends only what you typed and drops them/ })
-  expect(found?.text).toMatch(/^⎿ {2}1 accepted staged/)
+  const found = await (await band($)).find({ type: 'Text', text: /⏎ sends what you typed/ })
+  expect(found?.text).toBe('⎿  ✓1 · ⏎ sends what you typed')
   expect(found?.props.color).toBe('yellow')
 })
 
@@ -70,8 +71,9 @@ test('the box holding exactly the taken suggestion: ⏎ sends your feedback', as
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await ui.unmount()
+  await pane($, 'inline', false)
   promptBox.text = suggested()
-  expect(await (await band($)).find({ type: 'Text', text: /1 accepted · ⏎ sends your feedback/ })).toBeDefined()
+  expect(await (await band($)).find({ type: 'Text', text: /✓1 · ⏎ sends your feedback/ })).toBeDefined()
 })
 
 test('the suggestion showing in an empty box: tab takes it', async ($, on) => {

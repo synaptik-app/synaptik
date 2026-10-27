@@ -48,10 +48,9 @@ export function check(name: string, startsWith: string): string {
 // is what the box shows. Reset by `engine`.
 export const suggestions: string[] = []
 
-// The compiled prompt as last proposed, without the leading space that keeps
-// its first glyph clear of the cursor.
+// The compiled prompt as last proposed.
 export function suggested(): string {
-  return (suggestions[suggestions.length - 1] ?? '').replace(/^ /, '')
+  return suggestions[suggestions.length - 1] ?? ''
 }
 
 // What the prompt box holds, as `$.prompt.read()` answers it; a test sets it to

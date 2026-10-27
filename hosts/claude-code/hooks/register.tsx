@@ -16,8 +16,8 @@ import { lastTurnText } from '../src/turn'
 import { compile as compileTray, GLYPH } from '../src/compile'
 import { draftComment, dropComment, EMPTY, finishComment as finishTrayComment, toggle as toggleMark } from '../src/tray'
 import type { Tray } from '../src/tray'
-import { apply as applyMenu, closed, letGo, paste, receive, START } from '../src/review'
-import type { Action, Held, Numbered, Review } from '../src/review'
+import { apply as applyMenu, closed, letGo, paste, press, receive, START } from '../src/review'
+import type { Action, Held, Key, Numbered, Review } from '../src/review'
 import { DEFAULT_KEYS, keyLabel, keysFrom, parseKeyFile } from '../src/keys'
 import type { KeyFile, Keys } from '../src/keys'
 import { applySetup, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS } from '../src/keysetup'
@@ -25,7 +25,7 @@ import type { Setup } from '../src/keysetup'
 import { keybindingsPath, shownPath } from '../src/configpath'
 import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
-import { glyphCounts, summary } from '../src/tally'
+import { glyphCounts } from '../src/tally'
 import {
   BAND_COMMENT_PREFIX,
   BULLET,
@@ -33,6 +33,9 @@ import {
   commentKey,
   MARGIN,
   MAX_DRAWN,
+  baseKey,
+  END_REVIEW,
+  generational,
   NEXT_BLOCK,
   PANE,
   PANE_ANCHOR,
@@ -109,18 +112,29 @@ let isFullscreen = false
 // The review the blocks share, and the last action applied (src/review.ts).
 let held: Held = { review: START, acked: 0 }
 // Who has the keyboard in fullscreen, as far as the hooks can tell: the reply (a
-// block posted), the band (its ring moved onto Synaptik's controls), or neither
-// (the person typed in the prompt). Esc raises nothing, so it is never seen.
-let holder: 'reply' | 'band' | undefined
+// block posted), the band (its ring moved onto Synaptik's controls), the band's
+// hint (clicked, it takes the raw keys), or neither (the person typed in the
+// prompt). Esc raises nothing, so it is never seen.
+let holder: 'reply' | 'band' | 'hint' | undefined
 // Each adopted reply gets fresh Client instances, so nothing a block kept carries
 // over to the next reply's block in the same place.
 let replyGeneration = 0
 // The band's request id (for focus moves into it) and its comment field's key.
 let bandRequestId = ''
+// The band's controls' generation: each end of a review draws them anew, which
+// hands the keyboard back to the prompt (ui.ts, generational).
+let bandGeneration = 0
 let bandCommentSeq = 0
 // Whether the navigator pane has been closed for fullscreen: closed once, from
 // a drawing, where its close hook may not write $.state.
 let isPaneClosedForFullscreen = false
+// The band's focus leaving Synaptik's controls ends a review after this long,
+// unless a block took the keyboard meanwhile; each leave is counted, so a later
+// one supersedes an earlier wait.
+const REVIEW_GRACE_MS = 300
+// How long the band's hint shows each of its lines.
+const HINT_EVERY_MS = 3000
+let bandLeaves = 0
 const PLACEHOLDER = 'Give me a sec to read through this.'
 
 // `/synaptik help` (D39). Claude Code leads a command's output with its name
@@ -148,16 +162,17 @@ async function suggestTray($: EngineInterface) {
       // cannot show, and emptying the box does not dismiss it — so replace ours
       // with something harmless to send, which guesses nothing about intent.
       if (isSuggested) {
-        const shown = await $.prompt.suggest({ text: ` ${PLACEHOLDER}` })
+        const shown = await $.prompt.suggest({ text: PLACEHOLDER })
         observe(`suggest placeholder: ${JSON.stringify(shown)}`)
       }
       isSuggested = false
       $.ui.invalidate('ui.render')
       return
     }
-    // The box draws its cursor over a suggestion's first cell, hiding it; a
-    // leading space takes the cursor so the first mark glyph stays visible.
-    const shown = await $.prompt.suggest({ text: ` ${text}` })
+    // Proposed as compiled. The box draws its cursor over the first cell, so the
+    // first glyph hides under it until taken — a leading space to avoid that
+    // looked worse (D30, revised 2026-10-28).
+    const shown = await $.prompt.suggest({ text })
     isSuggested = shown.isShown
     observe(`suggest ${text.split('\n').length} lines: ${JSON.stringify(shown)}`)
     $.ui.invalidate('ui.render')
@@ -344,6 +359,7 @@ async function blockCount($: EngineInterface): Promise<number> {
 
 // One action from the review, applied to the tray.
 async function applyAction($: EngineInterface, a: Action) {
+  if (a.kind === 'end') return releaseReview($)
   if (a.kind === 'mark') return toggle($, a.index, a.verb)
   if (a.kind === 'discuss') return $.ui.toast('discuss: phase 2')
   if (a.kind === 'comment') {
@@ -360,12 +376,13 @@ async function applyAction($: EngineInterface, a: Action) {
 function releaseReview($: EngineInterface) {
   if (!holder) return
   holder = undefined
+  bandGeneration += 1
   held = { ...held, review: letGo(held.review) }
   $.ui.invalidate('ui.render')
 }
 
 // The keyboard path through the band: j / k between blocks.
-async function bandMove($: EngineInterface, by: 1 | -1) {
+async function bandMove($: EngineInterface, by: 1 | -1 | 0) {
   const count = await blockCount($)
   const before = await read($, selected)
   await update($, selected, s => Math.max(0, Math.min(count - 1, s + by)))
@@ -373,6 +390,24 @@ async function bandMove($: EngineInterface, by: 1 | -1) {
   holder = 'band'
   const review = closed(held.review)
   held = { ...held, review: { ...review, selected: await read($, selected), isActive: true, seq: review.seq + 1 } }
+  $.ui.invalidate('ui.render')
+}
+
+// A key from the band's hint: a Client the person clicked,
+// which gets the raw keys. They go through the same steps as a clicked block's
+// (src/review.ts): ↑/↓ between blocks, ←/→ and ⏎ through the actions,
+// a / x / c / d, q, and a comment typed in place under its block.
+async function steer($: EngineInterface, key: Key) {
+  const count = await blockCount($)
+  const scope = { first: 0, last: count - 1, comments: (await read($, comments)) as Record<string, string> }
+  const before = await read($, selected)
+  const s = press({ ...held.review, selected: before, isActive: true }, key, scope)
+  if (!s) return
+  holder = 'hint'
+  held = { ...held, review: s.review }
+  await update($, selected, () => s.review.selected)
+  for (const a of s.actions) await applyAction($, a)
+  await reveal($, before, s.review.selected, count)
   $.ui.invalidate('ui.render')
 }
 
@@ -402,7 +437,7 @@ async function bandComment($: EngineInterface, text: string, isDone: boolean) {
   }
   held = { ...held, review: { ...closed(held.review), seq: held.review.seq + 1 } }
   await applyAction($, { kind: 'comment', index: open.index, text })
-  await $.ui.focus({ requestId: bandRequestId, key: VERBS[2]!.key }).catch(() => undefined)
+  await $.ui.focus({ requestId: bandRequestId, key: generational(VERBS[2]!.key, bandGeneration) }).catch(() => undefined)
   $.ui.invalidate('ui.render')
 }
 
@@ -721,6 +756,19 @@ export const register: Register = on => {
     return next(e)
   }).catch(($, e, next) => next(e))
 
+  // The band's hint, clicked: the review starts, and its keys steer it.
+  on('ui.message', { component: 'AbovePrompt' }, async ($, e, next) => {
+    const d = (e.data ?? {}) as { kind?: string; key?: string; ctrl?: boolean; shift?: boolean; meta?: boolean }
+    if (d.kind === 'start') {
+      await bandMove($, 0)
+      holder = 'hint'
+      $.ui.invalidate('ui.render')
+    }
+    if (d.kind === 'key' && d.key) await steer($, { key: d.key, ctrl: d.ctrl, shift: d.shift, meta: d.meta })
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+
   // --- The reply: the selected block's marker and in-place menu -------------
 
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
@@ -753,13 +801,16 @@ export const register: Register = on => {
     // (D33).
     const pieceBlocks = segments.filter(s => s.isBlock).length
 
-    // Fullscreen (D41): every block is a Client, always, so a click on any of
-    // them starts the review — the reply cannot be passed through as D33 would.
-    // Each Client draws its block, its mark, and, once selected, the menu and the
-    // comment typed in place.
+    // Fullscreen (D41): during a review every block is a Client, so a click on
+    // one selects it and hands the reply the keyboard; each draws its block, its
+    // mark, and, once selected, the menu and the comment typed in place. Outside a
+    // review the reply is drawn as below — plain, so its text can be selected
+    // (a Client holds the pointer, and the transcript selects nothing in it).
     if (e.viewport?.isFullscreen) {
       isFullscreen = true
       if ((await read($, isPaneShown)) && !keyMenu) closePaneForFullscreen($)
+    }
+    if (e.viewport?.isFullscreen && holder) {
       const { Client } = $.ui.resolve(e)
       const review = await shownReview($)
       const staged = commented as Record<string, string>
@@ -849,11 +900,18 @@ export const register: Register = on => {
   // is applied once (src/review.ts, receive).
   on('ui.message', { component: 'AssistantMessage' }, async ($, e, next) => {
     const data = (e.data ?? {}) as { review?: Review; actions?: Numbered[] }
+    const r = data.review
+    observe(
+      `block ${e.element}: holder=${holder ?? '-'} seq=${r?.seq}/${held.review.seq} epoch=${r?.epoch}/${held.review.epoch} ` +
+        `sel=${r?.selected} editing=${r?.editing ? JSON.stringify(r.editing.text.slice(-12)) : '-'} ` +
+        `actions=${JSON.stringify((data.actions ?? []).filter(a => a.id > held.acked).map(a => a.kind))}`,
+    )
     const got = receive(held, data.review, data.actions ?? [])
     held = got.held
+    const isEnd = got.apply.some(a => a.kind === 'end')
+    if (data.review && !isEnd) holder = 'reply'
     for (const a of got.apply) await applyAction($, a)
-    if (data.review) {
-      holder = 'reply'
+    if (data.review && !isEnd) {
       const before = await read($, selected)
       await update($, selected, () => got.held.review.selected)
       await reveal($, before, got.held.review.selected, await blockCount($))
@@ -864,18 +922,28 @@ export const register: Register = on => {
 
   // The band's ring: in fullscreen it stops on Synaptik's actions only (j / k are
   // hotkeys, not stops), and landing on one hands the review to the band.
+  // The band's ring: in fullscreen it stops on Synaptik's actions only (j / k are
+  // hotkeys, not stops). Landing on one starts the review (ctrl+x tab); leaving
+  // them ends it — unless a block takes the keyboard (a click into the reply),
+  // which its own post reports right after.
   on('ui.focus', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (!isFullscreen) return next(e)
-    const element = e.element ?? ''
-    if (element === NEXT_BLOCK || element === PREVIOUS_BLOCK) return { deny: 'synaptik: not a stop' }
+    const element = baseKey(e.element ?? '')
+    observe(`band focus → ${element || '(off)'} by ${e.origin.kind}`)
+    if (element === NEXT_BLOCK || element === PREVIOUS_BLOCK || element === END_REVIEW) return { deny: 'synaptik: not a stop' }
     const verb = VERBS.findIndex(v => v.key === element)
     if (verb >= 0 || element.startsWith(BAND_COMMENT_PREFIX)) {
       holder = 'band'
       const r = held.review
       held = { ...held, review: { ...r, isActive: true, ...(verb >= 0 ? { verb } : {}), seq: r.seq + 1 } }
     } else if (holder === 'reply') {
-      // The ring went elsewhere in the band: the reply no longer has the keys.
+      // The ring moved within the band while the reply had the keys.
       releaseReview($)
+    } else if (holder === 'band') {
+      const asOf = bandLeaves += 1
+      void $.clock.sleep(REVIEW_GRACE_MS).then(() => {
+        if (holder === 'band' && bandLeaves === asOf) releaseReview($)
+      })
     }
     $.ui.invalidate('ui.render')
     return next(e)
@@ -885,7 +953,7 @@ export const register: Register = on => {
   // into the comment instead: Claude Code hands every paste to the box. Any other
   // edit means the person is typing there, so the reply lets go.
   on('prompt.edit', async ($, e, next) => {
-    const pasted = holder === 'reply' && !e.key ? paste(held.review, e.inputText) : undefined
+    const pasted = (holder === 'reply' || holder === 'hint') && !e.key ? paste(held.review, e.inputText) : undefined
     if (pasted) {
       held = { ...held, review: pasted }
       $.ui.invalidate('ui.render')
@@ -893,9 +961,11 @@ export const register: Register = on => {
     }
     releaseReview($)
     // A suggestion cannot show while the box holds text: when it is empty again,
-    // propose the feedback again.
+    // propose the feedback again. The band's staged line names what ⏎ will do
+    // with the box, so it is drawn again on every change.
     const box = await next(e)
     if (box.text === '') void suggestTray($)
+    $.ui.invalidate('ui.render')
     return box
   }).catch(($, e, next) => next(e))
 
@@ -903,6 +973,7 @@ export const register: Register = on => {
   on('prompt.change', async ($, e, next) => {
     const box = await next(e)
     if (box.text === '') void suggestTray($)
+    $.ui.invalidate('ui.render')
     return box
   }).catch(($, e, next) => next(e))
 
@@ -1152,6 +1223,7 @@ export const register: Register = on => {
     const target = await read($, lastText)
     if (!target) return next(e)
 
+    if (e.viewport?.isFullscreen) isFullscreen = true
     const { Box, Text, Button } = $.ui.resolve(e)
     const blocks = segment(target).filter(s => s.isBlock)
     const sel = await read($, selected)
@@ -1159,7 +1231,7 @@ export const register: Register = on => {
     const reviewing = isNavigatorFocused
     const keys = await currentKeys($)
     const key = keys.entry
-    const staged = summary(await read($, marks), (await read($, comments)) as Record<number, string>)
+    const staged = glyphCounts(await read($, marks))
     const compiled = await compile($)
     const box = await $.prompt.read()
 
@@ -1168,10 +1240,10 @@ export const register: Register = on => {
     // The last line, just above the prompt: what the keys do right now.
     const fullscreenAction =
       holder === 'band'
-        ? `${blockCounter(sel, blocks.length)} · j/k blocks · ←→ actions · ⏎ apply · esc done`
-        : holder === 'reply'
-          ? `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ←→ actions · ⏎ apply · esc done`
-          : `click the reply to ${staged ? 'continue responding' : 'respond in place'} · ${key} for keys`
+        ? `${blockCounter(sel, blocks.length)} · j/k blocks · ←→ actions · ⏎ apply · q done`
+        : holder
+          ? `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ←→ actions · ⏎ apply · q done`
+          : `${key} to ${staged ? 'continue reviewing' : 'review the reply'}`
     const action = keyMenu
       ? 'customizing Synaptik'
       : isFullscreen
@@ -1188,17 +1260,43 @@ export const register: Register = on => {
     const isTyping = boxText !== '' && !isTaken
     const beneath = reviewing || holder === 'band' ? null : await next(e)
     bandRequestId = e.requestId
+    // Fullscreen: the hint line is a Client, outside a review cycling between the
+    // two ways in; a click on it starts the review and hands it the raw keys, so
+    // ↑/↓ move between blocks (client/hint.tsx). It stays drawn during the review,
+    // showing the legend: removing it would take the keyboard with it.
+    const { Client } = $.ui.resolve(e)
+    const what = staged ? 'continue reviewing' : 'review the reply'
+    const messages = holder ? [fullscreenAction] : [`${key} to ${what}`, `click here to ${what}`]
+    const hint =
+      isFullscreen && !keyMenu ? (
+        <Client
+          key={generational('band-hint', bandGeneration)}
+          module="./client/hint.tsx"
+          props={{ messages, everyMs: HINT_EVERY_MS }}
+        />
+      ) : undefined
     const band = BandView(
       { Box, Text, Button },
       {
         beneath,
         columns: e.props.bodyColumns,
         staged,
-        stagedAs: isTyping ? 'dropped' : isTaken ? 'taken' : 'plain',
+        // During a review ⏎ applies an action: nothing to say about the prompt.
+        stagedAs:
+          holder || reviewing
+            ? 'reviewing'
+            : isTyping
+              ? 'typed'
+              : isTaken
+                ? 'taken'
+                : isSuggested && boxText === ''
+                  ? 'suggested'
+                  : 'plain',
         action,
         // The navigator not on screen (narrow terminal, or closed): the band
         // offers the press that opens it instead of the action line.
         isNavigatorShown: isShown || reviewing || isFullscreen,
+        ...(hint ? { actionElement: hint } : {}),
         entryKey: key,
       },
       () => openPane($),
@@ -1211,9 +1309,13 @@ export const register: Register = on => {
     return BandKeysView(
       { Box, Button, Input },
       band,
-      open ? { comment: { key: `${BAND_COMMENT_PREFIX}${bandCommentSeq}`, text: open.text } } : {},
+      {
+        generation: bandGeneration,
+        ...(open ? { comment: { key: `${BAND_COMMENT_PREFIX}${bandCommentSeq}`, text: open.text } } : {}),
+      },
       {
         move: by => bandMove($, by),
+        end: () => releaseReview($),
         verb: n => bandVerb($, n),
         type: text => bandComment($, text, false),
         submit: text => bandComment($, text, true),
