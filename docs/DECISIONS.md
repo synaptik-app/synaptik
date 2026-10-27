@@ -4,7 +4,7 @@
 **Status:** Spike done — **32 decisions and 3 principles**; P1, D20, D21, D24 and
 D29 revised from it. The build spec is `SPEC.md`; this file holds the rationale
 behind it. Open items from the spike are in §11.
-**Framework:** Claude Code mods (CLI v2.1.287+, Desktop Code tab v2.1.286+)
+**Framework:** Claude Code mods (CLI v2.1.301+ since 2026-10-27, was 2.1.287+; Desktop Code tab v2.1.286+)
 
 > **Review convention.** Decisions keep their original numbers even when revised,
 > collapsed or killed, so they stay citable across sessions. Numbers are never
@@ -1007,7 +1007,8 @@ the other case.
 
 **Mechanics the spike settled:**
 - A leading space: the box's cursor sits on a suggestion's first cell and would
-  hide the first mark glyph.
+  hide the first mark glyph. **Revised 2026-10-28: no leading space** — the
+  indented first line looked worse than a glyph under the cursor until taken.
 - Comments re-propose when they finish (⏎, or focus leaving the field), not per
   keystroke.
 - A suggestion **cannot be withdrawn**. When the last mark is cleared, a harmless
@@ -1121,6 +1122,13 @@ mods would run, nothing of theirs would show, and the reply would be drawn twice
 secrets, translating — is bypassed for that reply. Decision 2 narrows the window
 to reviewing and marked pieces; it does not close it. Revisit if such a mod
 appears; the upstream fix is a way to share one reply drawing (#23).
+
+**Revised 2026-10-27 (fullscreen review in the reply, #39):** during a fullscreen
+review the reply is drawn by Synaptik, each block a `Client`, and another mod that
+changes how replies are drawn is bypassed. Outside a review this decision holds
+as written, in both renderers: the `Client`s are drawn only between `ctrl+x tab`
+and the end of the review, since a `Client` holds the pointer and blocks text
+selection.
 
 ---
 
@@ -1344,7 +1352,8 @@ needed; emoji width (`💬`) is the one to watch.
 
 ### D41 — Fullscreen reviews in the reply itself; classic keeps its pane
 **Status:** settled · added 2026-10-27 · decided on a spike (`spike/client-reply`,
-Claude Code 2.1.308) · built on #39 · revises D20, D31, D38
+Claude Code 2.1.308) · built on #39 · revises D20, D31, D38 · **revised
+2026-10-28: review mode** (below)
 
 **In fullscreen there is no navigator pane.** Each block of the reply is drawn by
 its own `Client` (a region the mod's own module draws). **A click on a block
@@ -1394,6 +1403,39 @@ reply.
   raises no event or redraw. The menu stays drawn until the person types in the
   prompt or focuses the band; then the reply lets go.
 - **The keyboard cannot focus a `Client`.** Hence the band path.
+
+#### Revision 2026-10-28 — review mode, the band's hint, q
+
+Tried on the terminal, three things changed what is above:
+
+- **A `Client` blocks text selection.** It holds the pointer from down to up, and
+  the transcript selects nothing inside it, so a reply drawn entirely as
+  `Client`s could not be selected or copied. **The block `Client`s are now drawn
+  only during a review.** Outside one, the reply is drawn as in classic —
+  passed through, or with its marks in place — and selects as usual. So a click
+  on a block no longer *starts* a review; it selects a block within one.
+- **Two ways in, named by the band's hint line.** The hint is a `Client` that
+  alternates `ctrl+x tab to review the reply` and `click here to review the
+  reply` on its own timer. **A click on it** starts the review and hands it the
+  raw keys: ↑/↓ and everything a clicked block does, through the same steps.
+  **`ctrl+x tab`** keeps the band path, with `j` / `k`. The hint stays drawn
+  during the review as the legend, because removing the element that holds the
+  keyboard gives it back to the prompt. Claude Code reports a click elsewhere in
+  the band exactly as `ctrl+x tab`, so that click starts a `j` / `k` review.
+- **`q` ends a review**, from the reply, the band or the hint (in a comment, `q`
+  types a `q`). Esc is invisible from the band as from a `Client`: the band
+  raises nothing when its focus returns to the prompt. If Claude Code ever
+  reports Esc, it joins `q`, and `q` stays unadvertised. Ending a review draws
+  the band's controls under new keys: the one holding the keyboard disappears,
+  and Claude Code hands the keyboard back to the prompt, which a mod cannot do
+  directly.
+
+**The band** became: the header `Synaptik`; the staged line in glyph counts
+(`✓2 ✗1 ✎1`) with a note on the prompt box **only outside a review** (during one
+⏎ applies an action) — `tab, then ⏎ to send`, `⏎ sends your feedback`, or in
+yellow `⏎ sends what you typed`; and the hint line. Prompt edits and changes
+redraw it, so the note follows the box. During a review, D33 yields: the reply
+is Synaptik's to draw.
 
 ---
 

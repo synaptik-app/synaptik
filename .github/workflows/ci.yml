@@ -21,7 +21,7 @@ jobs:
         # Pinned: a new Claude Code release cannot break CI without a deliberate
         # bump. The oldest version Synaptik supports (README, SPEC §14), and the
         # newest it is tested on.
-        claude-code: ['2.1.287', '2.1.304']
+        claude-code: ['2.1.301', '2.1.308']
     env:
       CLAUDE_CODE_VERSION: ${{ matrix.claude-code }}
       DISABLE_AUTOUPDATER: '1'

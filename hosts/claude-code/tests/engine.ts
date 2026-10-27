@@ -48,10 +48,9 @@ export function check(name: string, startsWith: string): string {
 // is what the box shows. Reset by `engine`.
 export const suggestions: string[] = []
 
-// The compiled prompt as last proposed, without the leading space that keeps
-// its first glyph clear of the cursor.
+// The compiled prompt as last proposed.
 export function suggested(): string {
-  return (suggestions[suggestions.length - 1] ?? '').replace(/^ /, '')
+  return suggestions[suggestions.length - 1] ?? ''
 }
 
 // What the prompt box holds, as `$.prompt.read()` answers it; a test sets it to
@@ -80,7 +79,8 @@ export const written: { path: string; text: string }[] = []
 // Set to a reason to make every file write fail with it. Reset by `engine`.
 export const failing = { write: '' }
 
-// Every prompt Synaptik submitted (`s` in the navigator). Reset by `engine`.
+// Every prompt submitted by Synaptik — none: the person sends (D30). Reset by
+// `engine`.
 export const submitted: string[] = []
 
 // Answers every engine call Synaptik makes, with `rows` as the transcript —
@@ -133,6 +133,15 @@ export function engine(on: On, rows: Row[]) {
   })
   event('prompt.submit', (e: { text: string }) => {
     submitted.push(e.text)
+    return { text: e.text }
+  })
+  // An edit in the prompt box, as the editor makes it: the box holds the result.
+  event('prompt.edit', (e: { text: string; start: number; end: number; inputText: string }) => {
+    promptBox.text = e.text.slice(0, e.start) + e.inputText + e.text.slice(e.end)
+    return { text: promptBox.text, cursor: e.start + e.inputText.length }
+  })
+  event('prompt.change', (e: { text: string }) => {
+    promptBox.text = e.text
     return { text: e.text }
   })
   event('prompt.suggest', (e: { text: string }) => {
@@ -216,6 +225,32 @@ export function reply($: Dollar, name: string, piece = 0) {
     component: 'AssistantMessage',
     props: { text: FIXTURES[name]!.pieces[piece]!, isFirstOfReply: piece === 0 },
     viewport: { columns: 120, rows: 40 },
+  })
+}
+
+// Mounts one piece of a fixture's reply as fullscreen draws it (D41): each
+// block a Client the person clicks and types into.
+export function fullscreen($: Dollar, name: string, piece = 0) {
+  return $.ui.mount({
+    plugin: PLUGIN,
+    surface: 'terminal',
+    component: 'AssistantMessage',
+    props: { text: FIXTURES[name]!.pieces[piece]!, isFirstOfReply: piece === 0 },
+    viewport: { columns: 120, rows: 40, isFullscreen: true },
+  })
+}
+
+// The person types (or pastes, with no key) into the prompt box.
+export function typeInPrompt($: Dollar, inputText: string, key: { key: string } | null = { key: inputText }) {
+  const text = promptBox.text
+  return $.prompt.edit({
+    origin: { kind: 'person' },
+    text,
+    cursor: text.length,
+    start: text.length,
+    end: text.length,
+    inputText,
+    ...(key ? { key } : {}),
   })
 }
 

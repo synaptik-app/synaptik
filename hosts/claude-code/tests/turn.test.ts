@@ -14,15 +14,12 @@ const ask = (text: string): Row => ({ role: 'user', text, toolUses: [] })
 const answer = (text: string): Row => ({ role: 'assistant', text, toolUses: [] })
 const NEW_REPLY = 'First new point.\n\nSecond new point.'
 
-test('while a turn runs, verbs mark nothing', async ($, on) => {
+test('while a turn runs, the navigator offers no actions: it waits for the reply', async ($, on) => {
   await start($, on, F)
   await $.turn.start({ text: 'next', turnId: 'turn-2' })
   const ui = await pane($, 'inline')
-  await ui.press({ key: 'verb-accept' })
-  await $.turn.complete({
-    turnId: 'turn-2', answer: '', durationMs: 1, isAborted: false, reason: 'answer',
-  })
-  expect(await ui.find({ type: 'Text', text: /Nothing marked yet/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Waiting for the reply/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'verb-accept' })).toBeUndefined()
 })
 
 test('while a turn runs, the reply and the band are Claude Code’s own', async ($, on) => {

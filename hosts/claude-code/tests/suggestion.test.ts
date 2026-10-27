@@ -3,6 +3,7 @@
 // the keyboard, since the box shows only the last suggestion proposed.
 
 import { expect, test } from 'claude-code/testing'
+import type { FoundElement } from 'claude-code/testing'
 
 import { focus, pane, start, submitted, suggested, suggestions } from './engine'
 
@@ -26,11 +27,11 @@ test('every mark and unmark proposes the suggestion again', async ($, on) => {
   expect(suggested()).toMatch(/^✗ "/)
 })
 
-test('the suggestion leads with a space, so the cursor does not hide its first glyph', async ($, on) => {
+test('the suggestion is proposed as compiled, with no leading space (D30, revised)', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
-  expect(suggestions.at(-1)).toMatch(/^ ✓ "/)
+  expect(suggestions.at(-1)).toMatch(/^✓ "/)
 })
 
 test('clearing the last mark proposes the placeholder, since a suggestion cannot be withdrawn', async ($, on) => {
@@ -38,7 +39,7 @@ test('clearing the last mark proposes the placeholder, since a suggestion cannot
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await ui.press({ key: 'verb-accept' }) // the same verb again unmarks
-  expect(suggestions.at(-1)).toBe(` ${PLACEHOLDER}`)
+  expect(suggestions.at(-1)).toBe(PLACEHOLDER)
 })
 
 test('nothing marked yet: no suggestion is proposed at all', async ($, on) => {
@@ -86,8 +87,8 @@ test('nothing in the navigator sends: the person takes the suggestion and sends 
     const ui = await pane($, placement)
     await ui.press({ key: 'verb-accept' })
     const buttons = await ui.findAll({ type: 'Button' })
-    expect(buttons.some(b => b.props.hotkey === 'a')).toBe(true) // the hidden verbs are found
-    expect(buttons.some(b => b.props.hotkey === 's' || b.key === 'send')).toBe(false)
+    expect(buttons.some((b: FoundElement) => b.props.hotkey === 'a')).toBe(true) // the hidden verbs are found
+    expect(buttons.some((b: FoundElement) => b.props.hotkey === 's' || b.key === 'send')).toBe(false)
     await ui.unmount()
   }
   expect(suggested()).not.toBe('')

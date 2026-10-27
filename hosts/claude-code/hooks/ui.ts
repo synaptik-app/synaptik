@@ -11,6 +11,21 @@ export const VERBS = [
 ] as const
 // Each opening of the comment field gets a fresh key: a field drawn again
 // under the same key and the same value keeps what was typed last time.
+// The band's j / k hotkeys in fullscreen (D41): hotkeys, never ring stops.
+export const NEXT_BLOCK = 'block-next'
+export const PREVIOUS_BLOCK = 'block-previous'
+// The band's q hotkey: ends the review (Esc would, but a mod never sees it).
+export const END_REVIEW = 'review-end'
+
+// The band's controls are keyed per generation: ending a review draws them under
+// fresh keys, so the one holding the keyboard disappears and Claude Code hands
+// the keyboard back to the prompt (a mod cannot move it there). `@<n>` after the
+// base key; the first generation has none.
+export const generational = (key: string, generation: number) => (generation ? `${key}@${generation}` : key)
+export const baseKey = (key: string) => key.split('@')[0] ?? key
+// The comment field the band shows when a comment is opened from there.
+export const BAND_COMMENT_PREFIX = 'band-comment-'
+
 export const COMMENT_PREFIX = 'comment-'
 export const commentKey = (seq: number) => `${COMMENT_PREFIX}${seq}`
 
@@ -21,13 +36,6 @@ export const PANE = 'synaptik-map'
 export const PANE_ANCHOR = 'pane-anchor'
 export const PANE_COLUMNS = 4
 
-// A navigator row is bar, space, glyph, space (4 cells), then the block's
-// words and "..." (3 cells), sized to the pane's current width less a 2-cell
-// margin, which keeps clear of the terminal's scrollbar.
-export const ROW_CHROME = 9
-
-// Cells of each comment-field line taken by its submit hint (`⏎ ok`) and gaps.
-export const FIELD_CHROME = 7
 export const ACCENT = 'cyan'
 
 // The selected block's background: Claude Code's own text-selection colour, a
