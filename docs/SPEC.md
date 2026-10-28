@@ -491,6 +491,18 @@ message one turn ago; a short quote locates anything.
 
 A comment with no text is never emitted.
 
+**A comment of several lines** keeps them, the rest lined up under its first
+character, so every line stays with its block in the nesting (#16):
+
+```
+✓ "1. Cache sessions in Redis"
+    ✎ "expire after 5 minutes" → too short
+                                 and per user, not global
+```
+
+Where only one row fits — under a block, in classic's viewer — a comment shows
+its first line and how many more: `→ too short (+1 line)`.
+
 Marks and thread summaries **interleave by position**, never grouped by type —
 document order is the order you read it in and the order the agent wrote it.
 
@@ -626,8 +638,10 @@ the wheel is for scrolling the reply, over the transcript (#62).
 lets the ring stop on verbs and the comment field only. The menu under the
 selected block in the reply shows which verb holds the ring.
 
-**Comments** are typed into an `Input` shown in the pane — visible, because only
-the field knows where its cursor is: its events carry the text, never the cursor,
+**Comments** are typed into an `Input` shown in the pane — of several lines
+(`rows`, #16: ⏎ stages, Shift+⏎ or `\` then ⏎ starts a new line), growing with
+them to 3 rows and then scrolling with its cursor; the block viewer gives up the
+rows. Visible, because only the field knows where its cursor is: its events carry the text, never the cursor,
 and moving the cursor raises none. The text also shows under the block in the
 reply as it is typed. Each opening of the field gets a fresh
 `key` — a field redrawn under the same key and value keeps what was typed last

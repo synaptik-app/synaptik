@@ -167,7 +167,8 @@ test(check(F, 'In a comment, backslash then ⏎ starts a new line'), async ($, o
   await review($)
   const ui = await fullscreen($, F)
   await clickAndPress(ui, RATE_LIMIT, ['c', 'a', '\\', 'return', 'b', 'down'])
-  expect(suggested()).toContain('✎ "2. Rate-limit the login endpoint" → a\nb')
+  const lead = '✎ "2. Rate-limit the login endpoint" → '
+  expect(suggested()).toContain(`${lead}a\n${' '.repeat(lead.length)}b`)
   // ↓ staged it and moved on; Backspace on an empty comment cancels it.
   await clickAndPress(ui, RATE_LIMIT, ['c', 'backspace', 'backspace', 'backspace', 'backspace'])
   expect(suggested()).not.toContain('Rate-limit')
@@ -391,7 +392,8 @@ test('from the band\'s hint, a comment is typed in place like a clicked block\'s
   for (const key of ['home', 'down', 'down', 'right', 'right', 'return', 'n', 'o', 'space', 't', 't', 'l', '\\', 'return', 'k', 'return']) {
     await b.key({ key, in: hint })
   }
-  expect(suggested()).toBe(['"1. Cache sessions in Redis"', '    ✎ "key each entry by user" → no ttl\nk'].join('\n'))
+  const lead = '    ✎ "key each entry by user" → '
+  expect(suggested()).toBe(['"1. Cache sessions in Redis"', `${lead}no ttl`, `${' '.repeat(lead.length)}k`].join('\n'))
   // While it is typed, it shows in place under its block, with its cursor.
   await b.key({ key: 'c', in: hint })
   const reply = await fullscreen($, F)
@@ -434,6 +436,19 @@ test('the menu item under the mouse is drawn inverse, as a button under the mous
   expect((await reject())?.props.inverse).toBeUndefined()
   // Hovering marks nothing; the click does.
   expect(suggested()).toBe('')
+  await ui.pointer({ type: 'down', x: 17, y: 1, button: 'left', in: into })
+  expect(suggested()).toBe('✗ "1. Cache sessions in Redis"')
+})
+
+test('a staged comment of several lines shows as one row, so a click on the menu lands on the menu', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  const into = await clickAndPress(ui, CACHE, ['c', 'a', '\\', 'return', 'b', '\\', 'return', 'c', 'return'])
+  expect(await ui.find({ type: 'Text', text: /→ a \(\+2 lines\)/, in: into })).toBeDefined()
+  // The block's region: its text, the menu, then the comment's one row.
+  await ui.resize({ columns: 100, rows: 3, in: into })
   await ui.pointer({ type: 'down', x: 17, y: 1, button: 'left', in: into })
   expect(suggested()).toBe('✗ "1. Cache sessions in Redis"')
 })

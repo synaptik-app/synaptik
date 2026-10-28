@@ -120,3 +120,12 @@ test('reopening a comment starts from what was staged, in a fresh field', async 
   const field = await ui.find({ type: 'Input', key: 'comment-2' })
   expect(field?.props.value).toBe('too vague')
 })
+
+test('classic: the comment field grows with its lines, up to three (#16)', async ($, on) => {
+  const ui = await open($, on)
+  expect((await ui.find({ type: 'Input', key: FIELD }))?.props.rows).toBe(1)
+  await ui.input({ key: FIELD, text: 'one\ntwo', kind: 'change' })
+  expect((await ui.find({ type: 'Input', key: FIELD }))?.props.rows).toBe(2)
+  await ui.input({ key: FIELD, text: 'one\ntwo\nthree\nfour\nfive', kind: 'change' })
+  expect((await ui.find({ type: 'Input', key: FIELD }))?.props.rows).toBe(3)
+})

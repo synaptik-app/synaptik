@@ -6,6 +6,7 @@
 import type { Elements } from 'claude-code'
 
 import { chunk } from '../../src/blocks'
+import { oneLine } from '../../src/compile'
 import { BULLET, MARGIN, SELECTED_BACKGROUND, VERBS } from '../ui'
 
 export type ReplyModel = {
@@ -89,7 +90,7 @@ export function ReplyView(
             )}
             {seg.comment !== undefined && (
               <Box paddingLeft={MARGIN + seg.indent + 2}>
-                <Text dimColor>→ {seg.comment}</Text>
+                <Text dimColor wrap="truncate">→ {oneLine(seg.comment)}</Text>
               </Box>
             )}
           </Box>

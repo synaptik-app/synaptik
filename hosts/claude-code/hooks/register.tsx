@@ -123,6 +123,9 @@ let holder: 'reply' | 'band' | 'hint' | undefined
 let replyGeneration = 0
 // The band's request id (for focus moves into it) and its comment field's key.
 let bandRequestId = ''
+// The most rows classic's comment field grows to (#16); past it, it scrolls.
+const FIELD_MAX_ROWS = 3
+
 // The band's controls' generation: each end of a review draws them anew, which
 // hands the keyboard back to the prompt (ui.ts, generational).
 let bandGeneration = 0
@@ -1156,11 +1159,16 @@ export const register: Register = on => {
     }
     // The comment field — visible: only the field knows where its cursor is (its
     // events carry the text, never the cursor, and ←/→ raise none).
+    // Several lines (#16): ⏎ stages, Shift+⏎ or a backslash before ⏎ starts a
+    // new line. It grows with its lines up to FIELD_MAX_ROWS, then scrolls with
+    // its cursor; the block above gives up the rows.
+    const fieldRows = isTyping ? Math.min(FIELD_MAX_ROWS, (commented[sel] ?? seed).split('\n').length) : 1
     const field = (
       <Input
         key={commentKey(seq)}
         placeholder="comment"
         submitLabel="ok"
+        rows={fieldRows}
         value={seed}
         onInput={async value => {
           const before = (await read($, comments))[sel] ?? ''
@@ -1189,7 +1197,7 @@ export const register: Register = on => {
         else if (++k === sel) break
       }
       const width = Math.max(10, e.props.bodyColumns - 2)
-      const textRows = Math.max(1, rows - 6)
+      const textRows = Math.max(1, rows - 6 - (fieldRows - 1))
       blockTextRows = textRows
       const current = blocks[sel]
       const estimated = drawnRows(current?.text ?? '', width)

@@ -3,7 +3,7 @@
 import { expect, test } from 'claude-code/testing'
 
 import { segment } from './blocks'
-import { compile } from './compile'
+import { compile, oneLine } from './compile'
 
 const NESTING = `1. Top level, numbered
    - Second level, bullet
@@ -47,4 +47,18 @@ test('nests by parent, however deep the source indents', async () => {
   expect(compile(deep, { 2: 'reject', 3: 'accept' }, {})).toBe(
     ['"a"', '    "b"', '        ✗ "c"', '✓ "d"'].join('\n'),
   )
+})
+
+test('a comment of several lines: the rest lined up under its first character', async () => {
+  const text = compile(blocks, { 3: 'comment' }, { 3: 'too short\nalso per user\n\nnot global  ' })
+  const pad = ' '.repeat('    ✎ "Second level again" → '.length)
+  expect(text).toBe(
+    ['"1. Top level, numbered"', '    ✎ "Second level again" → too short', `${pad}also per user`, '', `${pad}not global`].join('\n'),
+  )
+})
+
+test('oneLine: the first line, and how many more', async () => {
+  expect(oneLine('just one')).toBe('just one')
+  expect(oneLine('first\nsecond')).toBe('first (+1 line)')
+  expect(oneLine('  first\nsecond\nthird \n')).toBe('first (+2 lines)')
 })

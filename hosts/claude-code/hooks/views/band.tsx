@@ -120,6 +120,8 @@ export function BandKeysView(
           key={m.comment.key}
           placeholder="comment"
           submitLabel="ok"
+          // Several lines: Shift+⏎ or a backslash before ⏎ (#16).
+          rows={3}
           value={m.comment.text}
           onInput={value => actions.type(value)}
           onSubmit={value => actions.submit(value)}
