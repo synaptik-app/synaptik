@@ -1,18 +1,18 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme-banner-dark.png">
-  <img alt="Synaptik — accept, reject or comment on any part of the agent's reply" src=".github/assets/readme-banner-light.png">
+  <img alt="Synaptik — review the agent's reply in place. Synaptik turns your review into one prompt." src=".github/assets/readme-banner-light.png">
 </picture>
 
 # Synaptik
 
-**Synaptik** (with a **k**) is a mod for Claude Code. Pick any part of the agent's reply — a
-paragraph, a step in its plan, an item in a list — and accept it, reject it, or
-comment on it. Synaptik turns your marks into a single prompt, written as if
-you'd typed it yourself.
+**Synaptik** (with a **k**) is a mod for Claude Code. Review the agent's reply
+in place: go through it block by block — a paragraph, a step in its plan, an
+item in a list — and accept it, reject it, or comment on it. Synaptik turns
+your review into one prompt, written as if you'd typed it yourself.
 
-![Synaptik: marking up a reply, then sending the marks as one prompt](.github/assets/demo.gif)
+![Synaptik: reviewing a reply in place, then sending the review as one prompt](.github/assets/demo.gif)
 
-Your marks appear in the prompt box as a dim suggestion: `Tab` takes it, `⏎`
+Your review appears in the prompt box as a dim suggestion: `Tab` takes it, `⏎`
 sends it. Nothing reaches the agent until you send, and what it receives is an ordinary
 prompt you saw first — Synaptik adds no markers or identifiers, and never
 interferes with the prompt/response flow.
