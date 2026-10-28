@@ -44,7 +44,7 @@ test(check(F, "While reviewing in the navigator, Synaptik's band stands alone"),
   const focused = await pane($, 'dock', true)
   const reviewing = await band($)
   expect(await reviewing.find({ type: 'Text', text: /neighbour · band/ })).toBeUndefined()
-  expect(await reviewing.find({ type: 'Text', text: /Block \d+ of \d+ · ↑↓ move/ })).toBeDefined()
+  expect(await reviewing.find({ type: 'Text', text: /Block \d+ of \d+ · ↑↓ blocks/ })).toBeDefined()
   await reviewing.unmount()
   await focused.unmount()
 

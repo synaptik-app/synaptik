@@ -310,13 +310,16 @@ actions · ⏎ apply · q done` (`j/k blocks` from the band). In **classic**:
 
 | State | Text |
 |---|---|
-| Not in the navigator, nothing staged | `⎿  ctrl+x tab to respond in place` |
-| Not in the navigator, something staged | `⎿  ctrl+x tab to continue responding` |
-| Suggestion showing in the prompt box | `⎿  tab to take it into the prompt · ctrl+x tab to continue responding` |
-| In the navigator | `⎿  Block 3 of 12 · ↑↓ move · tab/⇧tab choose · ⏎ apply · esc done` |
+| Not in the navigator, nothing staged | `⎿  ctrl+x tab to review the reply` |
+| Not in the navigator, something staged | `⎿  ctrl+x tab to continue reviewing` |
+| In the navigator | `⎿  Block 3 of 12 · ↑↓ blocks · tab/⇧tab actions · ⏎ apply · esc done` |
+
+The same words as fullscreen; how to send is the staged line's (above). `q` is
+done too, as in fullscreen, though only Esc is shown: the pane sees Esc, and `q`
+draws its actions under new keys so the one holding the keyboard disappears.
 
 The keys shown are Claude Code's defaults. With the recommended bindings (§10)
-the lines read `ctrl+s to respond in place` and `↑↓ move · ←→ choose`.
+the lines read `ctrl+s to review the reply` and `↑↓ blocks · ←→ actions`.
 
 **The band is shared with every mod.** A hook that answers without `next(e)`
 hides every mod beneath it. Outside review, Synaptik draws what `next(e)` returns

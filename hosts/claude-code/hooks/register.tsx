@@ -124,6 +124,8 @@ let bandRequestId = ''
 // The band's controls' generation: each end of a review draws them anew, which
 // hands the keyboard back to the prompt (ui.ts, generational).
 let bandGeneration = 0
+// The same for classic's pane: q redraws its actions (views/navigator.tsx).
+let paneGeneration = 0
 let bandCommentSeq = 0
 // Whether the navigator pane has been closed for fullscreen: closed once, from
 // a drawing, where its close hook may not write $.state.
@@ -703,7 +705,7 @@ export const register: Register = on => {
       if (!(await read($, isOn))) return { text: 'off for this session · /synaptik on turns it back on' }
       if (!(await read($, lastText))) return { text: 'nothing to respond to yet — the navigator opens on the next reply' }
       // Fullscreen has no navigator (D41): the review starts in the reply.
-      if (isFullscreen) return { text: 'click the reply to respond in place, or ctrl+x tab for the keys' }
+      if (isFullscreen) return { text: 'ctrl+x tab, or a click on the band\'s hint, to review the reply' }
       await openPane($, true)
       return {}
     }
@@ -1135,6 +1137,14 @@ export const register: Register = on => {
     const actions: NavigatorActions = {
       up: () => moveSelection($, -1),
       verb: key => runVerb($, key),
+      end: async () => {
+        // q, as Esc: the keyboard leaves the pane. A mod cannot move it, so the
+        // actions are drawn anew and the one holding it disappears.
+        await finishComment($)
+        paneGeneration += 1
+        observe(`pane q: actions redrawn as generation ${paneGeneration}`)
+        $.ui.invalidate('ui.render')
+      },
     }
     // The comment field — visible: only the field knows where its cursor is (its
     // events carry the text, never the cursor, and ←/→ raise none).
@@ -1200,6 +1210,7 @@ export const register: Register = on => {
           comment: commented[sel] && mark === 'comment' ? commented[sel] : undefined,
           counter: blockCounter(sel, blocks.length),
           canReadOn: estimated > textRows + blockOffset || blockOffset > 0,
+          generation: paneGeneration,
         },
         actions,
         isTyping ? field : undefined,
@@ -1249,10 +1260,8 @@ export const register: Register = on => {
       : isFullscreen
         ? fullscreenAction
         : reviewing
-      ? `${blockCounter(sel, blocks.length)} · ↑↓ move · ${keys.choose} choose · ⏎ apply · esc done`
-      : staged && isSuggested && box.text.trim() === ''
-        ? `tab to take it into the prompt · ${key} to continue responding`
-        : `${key} to ${staged ? 'continue responding' : 'respond in place'}`
+      ? `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ${keys.choose} actions · ⏎ apply · esc done`
+      : `${key} to ${staged ? 'continue reviewing' : 'review the reply'}`
     const boxText = box.text.trim()
     // Taken: the box holds exactly the suggestion. Edited: it holds something
     // else (what to say then is an open decision; for now, the warning).

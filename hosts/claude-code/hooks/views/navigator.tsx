@@ -5,12 +5,14 @@
 import type { Elements, RenderElement } from 'claude-code'
 
 import { chunk } from '../../src/blocks'
-import { PANE_ANCHOR, VERBS } from '../ui'
+import { END_REVIEW, generational, PANE_ANCHOR, VERBS } from '../ui'
 
 // What the navigator's buttons do; register.tsx owns them.
 export type NavigatorActions = {
   up: () => unknown
   verb: (key: string) => unknown
+  // q: done, as Esc is — not advertised, for those who use it in fullscreen.
+  end: () => unknown
 }
 
 // No reply yet: one line, no counter, no keys (#73).
@@ -29,6 +31,9 @@ export function EmptyView(
 }
 
 export type ClassicModel = {
+  // The actions' generation: q draws them under new keys, so the one holding the
+  // keyboard disappears (ui.ts, generational).
+  generation: number
   rows: number
   heading: string
   // The nearest heading above the selected block.
@@ -94,13 +99,16 @@ export function ClassicView(
             <Box flexDirection="row">
               {VERBS.map((v, n) => (
                 <Button
-                  key={v.key}
+                  key={generational(v.key, m.generation)}
                   label={v.label}
                   hotkey={v.hotkey}
                   autoFocus={n === 0 ? true : undefined}
                   onPress={() => actions.verb(v.key)}
                 />
               ))}
+              <Box display="none">
+                <Button key={generational(END_REVIEW, m.generation)} plain hotkey="q" label="done" onPress={actions.end} />
+              </Box>
             </Box>
             {field ?? (
               <Text dimColor wrap="truncate">
