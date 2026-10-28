@@ -26,6 +26,7 @@ import { keybindingsPath, shownPath } from '../src/configpath'
 import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
+import { decorate } from '../src/decorate'
 import {
   BAND_COMMENT_PREFIX,
   BULLET,
@@ -968,7 +969,10 @@ export const register: Register = on => {
     const box = await next(e)
     if (box.text === '') void suggestTray($)
     $.ui.invalidate('ui.render')
-    return box
+    // The feedback's glyphs coloured in the box (src/decorate.ts), from the first
+    // keystroke: taking the suggestion is a prompt.change, which carries none.
+    const paints = decorate(box.text)
+    return paints.length > 0 ? { ...box, decorations: [...(box.decorations ?? []), ...paints] } : box
   }).catch(($, e, next) => next(e))
 
   // The same after a clear, an undo or a recalled history entry.

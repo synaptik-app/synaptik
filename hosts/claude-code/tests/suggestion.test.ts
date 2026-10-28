@@ -5,7 +5,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { FoundElement } from 'claude-code/testing'
 
-import { focus, pane, start, submitted, suggested, suggestions } from './engine'
+import { focus, pane, promptBox, start, submitted, suggested, suggestions, typeInPrompt } from './engine'
 
 const F = 'rendering'
 const PLACEHOLDER = 'Give me a sec to read through this.'
@@ -93,4 +93,18 @@ test('nothing in the navigator sends: the person takes the suggestion and sends 
   }
   expect(suggested()).not.toBe('')
   expect(submitted).toEqual([])
+})
+
+test('feedback in the prompt box gets its glyphs coloured from the first keystroke', async ($, on) => {
+  await start($, on, F)
+  const ui = await pane($, 'inline')
+  await ui.press({ key: 'verb-accept' })
+  await ui.unmount()
+  promptBox.text = suggested() // taken with Tab: a prompt.change, which carries no decorations
+  const after = (await typeInPrompt($, ' ')) as { text: string; decorations?: { start: number; color: string }[] }
+  expect(after.decorations?.map(d => [after.text.slice(d.start, d.start + 1), d.color])).toEqual([['✓', 'success']])
+  // A prompt of the person's own is never painted.
+  promptBox.text = ''
+  const own = (await typeInPrompt($, 'x')) as { decorations?: unknown[] }
+  expect(own.decorations ?? []).toEqual([])
 })
