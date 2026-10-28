@@ -19,16 +19,14 @@ interferes with the prompt/response flow.
 
 ## Status
 
-**v0.1.0, early.** The core loop works and is used daily by its author:
-accept, reject and comment on blocks of the last reply, in the fullscreen and
-the classic renderer. What comes next is on the
+**v0.2.0, early.** Used daily by its author: accept, reject and comment on any
+block of the last reply — in fullscreen right in the reply, in the default
+renderer from the navigator above the prompt. What comes next is on the
 [roadmap](https://github.com/orgs/synaptik-app/projects/2).
 
 ## Install
 
-Claude Code **v2.1.301+** in a terminal — any terminal, including the ones in
-VS Code, Cursor and JetBrains IDEs, and over SSH or tmux. Mods are enabled by
-default; `claude --version` reports yours.
+Requires Claude Code **v2.1.301+** in a terminal; check yours with `claude --version`.
 
 ### From the marketplace
 
@@ -58,8 +56,7 @@ unzip synaptik-<version>.zip -d ~/.claude/skills/
 ```
 
 On Windows the skills folder is `%USERPROFILE%\.claude\skills\`. To update,
-replace the `synaptik` folder there with the newer zip's. Use one install or the
-other: with both, the marketplace copy loads and the unzipped one doesn't.
+replace the `synaptik` folder there with the newer zip's.
 
 ### Once it's in
 
@@ -71,7 +68,7 @@ the rest.
 
 After a reply, the band above the prompt says how to start.
 
-**Fullscreen** — no setup. Click the band's hint ("click here to review the reply")
+**Fullscreen (`/tui fullscreen`)** — no setup. Click the band's hint ("click here to review the reply")
 or press `ctrl+x tab`; then click a block, or stay on the keyboard. Outside a
 review the reply is plain text you can select.
 
@@ -87,33 +84,21 @@ review the reply is plain text you can select.
 A comment is typed right under its block; `\` then ⏎ starts a new line, and a
 paste goes into it.
 
-**Default renderer** (not fullscreen) — the navigator above the band shows the
+**Default renderer** (`/tui default`) — the navigator above the band shows the
 selected block:
 
-| | Default | With the bindings below |
+| | Default | After `/synaptik config` |
 |---|---|---|
 | Start reviewing | `ctrl+x tab` | same |
 | Move between blocks | ↑ / ↓ | same |
-| First / last block | Home / End (`Fn+←` / `Fn+→` on a MacBook) | same |
+| First / last block | Home / End | same |
 | Choose an action | Tab / ⇧Tab | ← / → |
 | Apply it | ⏎ | same |
 | Apply directly | `a` accept · `x` reject · `c` comment | same |
 | Done | Esc | same |
 
 In the default renderer's pane, Claude Code binds only Tab / ⇧Tab to move between
-actions. A mod cannot ship key bindings, so ← / → go in your own
-`~/.claude/keybindings.json`. **`/synaptik config` sets them for you** there: it
-shows exactly what it will add and what it gives up, and saves only when you
-choose Save. Fullscreen needs no setup — ← / → already work there. By hand, the
-entry is:
-
-```json
-{
-  "bindings": [
-    { "context": "Pane", "bindings": { "left": "abovePrompt:previous", "right": "abovePrompt:next" } }
-  ]
-}
-```
+actions. Use `/synaptik config` to change it to ← / →.
 
 ### Known limits
 
@@ -127,13 +112,6 @@ entry is:
   mouse. Outside a review it can.
 - **Only the last reply** can be marked, and marks last for the session — they
   are not saved, and nothing is written into the conversation.
-- **One mod redraws a reply.** In classic, another mod that changes how replies
-  are drawn may be bypassed while you review; outside review Synaptik leaves
-  replies alone unless they carry marks.
-- **Code blocks and tables** are one block each, marked as a whole for now;
-  stepping into them is planned (#105).
-- **No key clears a mark yet.** Pressing the same verb again unmarks ✓ and ✗; a
-  ✎ goes when its text is deleted or another verb replaces it (#100).
 - **A Claude Code update can break Synaptik:** it is built on the young mods
   API. [An issue](https://github.com/synaptik-app/synaptik/issues/new/choose)
   with your `claude --version` helps.
