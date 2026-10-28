@@ -2,6 +2,7 @@
 // with the box, the key legend, and its place among other mods' lines.
 
 import { expect, test } from 'claude-code/testing'
+import type { FoundElement } from 'claude-code/testing'
 
 import { arrow, band, ENGINE_DRAWING, keybindings, pane, placement, position, promptBox, start, suggested } from './engine'
 
@@ -10,31 +11,31 @@ type Dollar = any
 
 async function legend($: Dollar) {
   await pane($, 'dock') // the navigator holds the keyboard
-  const found = await (await band($)).find({ type: 'Text', text: /choose/ })
+  const found = await (await band($)).find({ type: 'Text', text: /actions/ })
   return String(found?.text ?? '')
 }
 
 test('no keybindings file: the band names tab/⇧tab, Claude Code’s default', async ($, on) => {
   await start($, on, 'rendering')
-  expect(await legend($)).toContain('· tab/⇧tab choose ·')
+  expect(await legend($)).toContain('· tab/⇧tab actions ·')
 })
 
 test('the recommended Pane bindings: the band names ←→', async ($, on) => {
   keybindings(on, { bindings: [{ context: 'Pane', bindings: { left: 'abovePrompt:previous', right: 'abovePrompt:next' } }] })
   await start($, on, 'rendering')
-  expect(await legend($)).toContain('· ←→ choose ·')
+  expect(await legend($)).toContain('· ←→ actions ·')
 })
 
 test('other keys: the band names them as bound', async ($, on) => {
   keybindings(on, { bindings: [{ context: 'Pane', bindings: { h: 'abovePrompt:previous', l: 'abovePrompt:next' } }] })
   await start($, on, 'rendering')
-  expect(await legend($)).toContain('· h/l choose ·')
+  expect(await legend($)).toContain('· h/l actions ·')
 })
 
 test('outside the navigator: the entry key is the person’s own binding', async ($, on) => {
   keybindings(on, { bindings: [{ context: 'Chat', bindings: { 'ctrl+s': 'abovePrompt:focus' } }] })
   await start($, on, 'rendering')
-  const found = await (await band($)).find({ type: 'Text', text: /to respond in place/ })
+  const found = await (await band($)).find({ type: 'Text', text: /to review the reply/ })
   expect(String(found?.text ?? '')).toContain('ctrl+s')
 })
 
@@ -76,21 +77,23 @@ test('the box holding exactly the taken suggestion: ⏎ sends your feedback', as
   expect(await (await band($)).find({ type: 'Text', text: /✓1 · ⏎ sends your feedback/ })).toBeDefined()
 })
 
-test('the suggestion showing in an empty box: tab takes it', async ($, on) => {
+test('the suggestion showing in an empty box: tab, then ⏎ to send; the action line offers to continue', async ($, on) => {
   await start($, on, 'rendering')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await ui.unmount()
   await pane($, 'inline', false)
-  expect(await (await band($)).find({ type: 'Text', text: /tab to take it into the prompt · ctrl\+x tab to continue responding/ })).toBeDefined()
+  const b = await band($)
+  expect(await b.find({ type: 'Text', text: /✓1 · tab, then ⏎ to send/ })).toBeDefined()
+  expect(await b.find({ type: 'Text', text: /ctrl\+x tab to continue reviewing/ })).toBeDefined()
 })
 
 test('the legend while reviewing names the position and every key', async ($, on) => {
   await start($, on, 'rendering')
   const ui = await pane($, 'dock')
   const { at, of } = await position(ui)
-  const found = await (await band($)).find({ type: 'Text', text: /choose/ })
-  expect(found?.text).toBe(`⎿  Block ${at} of ${of} · ↑↓ move · tab/⇧tab choose · ⏎ apply · esc done`)
+  const found = await (await band($)).find({ type: 'Text', text: /actions/ })
+  expect(found?.text).toBe(`⎿  Block ${at} of ${of} · ↑↓ blocks · tab/⇧tab actions · ⏎ apply · esc done`)
 })
 
 test('outside review the band adds its lines under what lies beneath', async ($, on) => {
@@ -119,4 +122,20 @@ test('the navigator not on screen: the band offers the press that opens it', asy
   await drawn.press({ key: 'open-pane' })
   const again = await band($)
   expect(await again.find({ type: 'Button', key: 'open-pane' })).toBeUndefined()
+})
+
+test('classic: q is done too, unadvertised — the pane draws its actions anew', async ($, on) => {
+  await start($, on, 'rendering')
+  const ui = await pane($, 'inline')
+  const before = await ui.findAll({ type: 'Button' })
+  expect(before.some((b: FoundElement) => b.key === 'verb-accept')).toBe(true)
+  await ui.press({ key: 'review-end' })
+  await ui.unmount()
+  const after = await pane($, 'inline')
+  const keys = (await after.findAll({ type: 'Button' })).map((b: FoundElement) => String(b.key))
+  // The action that held the keyboard is gone: the same actions, under new keys.
+  expect(keys).not.toContain('verb-accept')
+  expect(keys.some((k: string) => k.startsWith('verb-accept@'))).toBe(true)
+  // Not advertised: the legend still says esc.
+  expect(await (await band($)).find({ type: 'Text', text: /q done/ })).toBeUndefined()
 })

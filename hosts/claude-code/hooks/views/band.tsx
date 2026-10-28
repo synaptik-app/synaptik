@@ -76,7 +76,7 @@ export function BandView(
               {NEST}
               {m.entryKey}, then{' '}
             </Text>
-            <Button key="open-pane" plain autoFocus label="⏎ to respond in place" onPress={onOpen} />
+            <Button key="open-pane" plain autoFocus label="⏎ to review the reply" onPress={onOpen} />
           </Box>
         )}
       </Box>

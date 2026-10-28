@@ -269,7 +269,7 @@ test('/synaptik in fullscreen says how to start: there is no navigator to open',
   await fullscreen($, F)
   const before = opened.length
   const answer = await synaptik($, '')
-  expect(JSON.stringify(answer)).toContain('click the reply to respond in place')
+  expect(JSON.stringify(answer)).toContain('to review the reply')
   expect(opened.length).toBe(before)
 })
 

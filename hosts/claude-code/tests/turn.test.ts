@@ -61,7 +61,7 @@ test('after the turn the band is Synaptik’s again', async ($, on) => {
   const rows = await start($, on, F)
   await turn($, rows, [ask('and then?'), answer(NEW_REPLY)])
   const drawn = await band($)
-  expect(await drawn.find({ type: 'Text', text: /to respond in place/ })).toBeDefined()
+  expect(await drawn.find({ type: 'Text', text: /to review the reply/ })).toBeDefined()
 })
 
 test('resuming adopts the reply, skipping the “No response requested.” row Claude Code adds', async ($, on) => {
