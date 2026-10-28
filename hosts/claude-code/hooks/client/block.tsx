@@ -8,7 +8,7 @@
 import type { ClientModule } from 'claude-code'
 
 import { chunk } from '../../src/blocks'
-import { click, current, MENU, press, queue } from '../../src/review'
+import { click, current, itemAt, MENU, press, queue } from '../../src/review'
 import type { Editing, Local, Review, Step } from '../../src/review'
 
 export type BlockProps = {
@@ -34,9 +34,11 @@ const LABELS: Record<(typeof MENU)[number], string> = {
   comment: '✎ comment',
   discuss: '💬 discuss',
 }
+// The menu's items as drawn, in order: what a click is matched against.
+const ITEMS = MENU.map(verb => `[ ${LABELS[verb]} ]`)
 
 const Block: ClientModule<BlockProps, Local> = (props, surface) => {
-  const { Box, Text, Markdown, Button } = surface.elements
+  const { Box, Text, Markdown } = surface.elements
   const review = current(surface.state, props.review)
   const scope = { first: props.first, last: props.last, comments: props.comments }
 
@@ -48,13 +50,23 @@ const Block: ClientModule<BlockProps, Local> = (props, surface) => {
   }
 
   surface.onKey(key => take(press(review, key, scope)))
+  // A click on the menu applies the action under it; anywhere else selects the
+  // block. The menu is the module's own drawing, not Buttons: a Button takes the
+  // keyboard when clicked, and in the reply that hands it back to the prompt.
   surface.onPointer(event => {
-    if (event.type === 'down') take(click(review, props.index, scope))
+    if (event.type !== 'down') return
+    const n = isSelected && !editing && event.y === menuRow() ? itemAt(event.x - menuStart, ITEMS) : -1
+    if (n >= 0) take(press({ ...review, selected: props.index, verb: n }, { key: 'return' }, scope))
+    else take(click(review, props.index, scope))
   })
 
   const isSelected = review.isActive && review.selected === props.index
   const editing = review.editing?.index === props.index ? review.editing : undefined
   const staged = !editing && props.glyph === '✎' ? props.comments[String(props.index)] : undefined
+  // Where the menu sits in the region: its last row, or the one above a staged
+  // comment's (a single row: it is truncated), after the margin, indent and "└ ".
+  const menuRow = () => surface.rows - 1 - (staged ? 1 : 0)
+  const menuStart = MARGIN + props.indent + 2
 
   // The comment being typed, dim like a staged one, its cursor an inverse cell.
   const field = (e: Editing) => {
@@ -78,21 +90,15 @@ const Block: ClientModule<BlockProps, Local> = (props, surface) => {
     })
   }
 
-  // The menu under the selected block: Claude Code's own buttons, the one under
-  // the cursor primary. A click on one applies it.
+  // The menu under the selected block, drawn as Claude Code draws its buttons;
+  // the item under the cursor bold, the others dim.
   const menu = Box({
     flexDirection: 'row',
     paddingLeft: MARGIN + props.indent,
     children: [
       Text({ dimColor: true, children: ['└ '] }),
-      ...MENU.map((verb, n) =>
-        Button({
-          key: `verb-${verb}`,
-          label: LABELS[verb],
-          variant: n === review.verb ? 'primary' : undefined,
-          dimColor: n !== review.verb,
-          onPress: () => take(press({ ...review, selected: props.index, verb: n }, { key: 'return' }, scope)),
-        }),
+      ...ITEMS.map((item, n) =>
+        Text(n === review.verb ? { weight: 'bold', color: 'suggestion', children: [item] } : { dimColor: true, children: [item] }),
       ),
     ],
   })
@@ -117,7 +123,7 @@ const Block: ClientModule<BlockProps, Local> = (props, surface) => {
       ...(isSelected && !editing ? [menu] : []),
       ...(editing ? [field(editing)] : []),
       ...(staged
-        ? [Box({ paddingLeft: MARGIN + props.indent + 2, children: [Text({ dimColor: true, children: [`→ ${staged}`] })] })]
+        ? [Box({ paddingLeft: MARGIN + props.indent + 2, children: [Text({ dimColor: true, wrap: 'truncate', children: [`→ ${staged}`] })] })]
         : []),
     ],
   })

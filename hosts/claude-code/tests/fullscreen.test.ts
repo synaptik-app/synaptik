@@ -398,3 +398,22 @@ test('from the band\'s hint, a comment is typed in place like a clicked block\'s
   const into = (await reply.findAll({ type: 'Client' })).find((c: FoundElement) => (c.props.props as { index: number }).index === KEY_BY_USER)
   expect((into?.props.props as { review: { editing?: { text: string } } }).review.editing?.text).toBe('no ttl\nk')
 })
+
+test('a click on an action applies it and keeps the keyboard in the reply', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  const into = await clickAndPress(ui, CACHE)
+  // The block's region: its one row of text, then the menu.
+  await ui.resize({ columns: 100, rows: 2, in: into })
+  // "└ " at 2 cells in, then "[ ✓ accept ]" (12 cells): 17 is inside "[ ✗ reject ]".
+  await ui.pointer({ type: 'down', x: 17, y: 1, button: 'left', in: into })
+  expect(suggested()).toBe('✗ "1. Cache sessions in Redis"')
+  // The same block still has the keyboard: ↓ moves, a accepts.
+  await ui.key({ key: 'down', in: into })
+  await ui.key({ key: 'a', in: into })
+  expect(suggested()).toBe(['✗ "1. Cache sessions in Redis"', '    ✓ "key each entry by user"'].join('\n'))
+  // No Buttons in the reply: a Button would take the keyboard when clicked.
+  expect(await ui.findAll({ type: 'Button' })).toEqual([])
+})
