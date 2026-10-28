@@ -91,7 +91,7 @@ paste goes into it.
 
 | | Default | With the bindings below |
 |---|---|---|
-| Start reviewing | `ctrl+x tab` | `ctrl+s` |
+| Start reviewing | `ctrl+x tab` | same |
 | Move between blocks | ↑ / ↓ | same |
 | First / last block | Home / End (`Fn+←` / `Fn+→` on a MacBook) | same |
 | Choose an action | Tab / ⇧Tab | ← / → |
@@ -99,17 +99,16 @@ paste goes into it.
 | Apply directly | `a` accept · `x` reject · `c` comment | same |
 | Done | Esc | same |
 
-A mod cannot ship key bindings, so the better ones go in your own
-`~/.claude/keybindings.json`. **`/synaptik config` sets them for you:** pick the
-key that opens Synaptik (`ctrl+x tab` or `ctrl+s`) and the keys that move
-between actions (Tab / ⇧Tab or ← / →), see exactly what it will add and what it
-gives up, and save. For other keys, edit the file by hand — `/synaptik config`
-shows them as they are:
+In classic's pane, Claude Code binds only Tab / ⇧Tab to move between actions. A
+mod cannot ship key bindings, so ← / → go in your own
+`~/.claude/keybindings.json`. **`/synaptik config` sets them for you**, in
+classic: it shows exactly what it will add and what it gives up, and saves only
+when you choose Save. Fullscreen needs no setup — ← / → already work there. By
+hand, the entry is:
 
 ```json
 {
   "bindings": [
-    { "context": "Chat", "bindings": { "ctrl+s": "abovePrompt:focus" } },
     { "context": "Pane", "bindings": { "left": "abovePrompt:previous", "right": "abovePrompt:next" } }
   ]
 }

@@ -563,10 +563,9 @@ function menuOptions(menu: KeyMenu): { value: string; label: string }[] {
   const now = currentValue(menu, setting)
   const presets =
     setting === 'entry'
-      ? [
-          { value: DEFAULT_ENTRY, label: `${DEFAULT_ENTRY} (default)` },
-          { value: 'ctrl+s', label: 'ctrl+s' },
-        ]
+      ? // ctrl+x tab only (#113): ctrl+s gave up the prompt stash. A key bound
+        // before, by hand or by an earlier menu, still shows as the person's own.
+        [{ value: DEFAULT_ENTRY, label: `${DEFAULT_ENTRY} (default)` }]
       : [
           { value: `${DEFAULT_VERBS.previous} ${DEFAULT_VERBS.next}`, label: 'tab / ⇧tab (default)' },
           { value: 'left right', label: '← / →' },
@@ -733,6 +732,14 @@ export const register: Register = on => {
     if (args === 'log') return { text: observed.join('\n') || '(nothing observed yet)' }
     if (args === 'config') {
       if (!(await read($, isOn))) return { text: 'off for this session · /synaptik on turns it back on' }
+      // Fullscreen needs no key setup (D41, #113): it is classic's.
+      if (isFullscreen) {
+        return {
+          text:
+            "fullscreen needs no key setup: ctrl+x tab, or a click on the band's hint, starts a review, and ←/→ " +
+            "already move between actions there. /synaptik config sets classic's keys — run it in classic.",
+        }
+      }
       const refused = await openKeyMenu($)
       return refused ? { text: refused } : {}
     }

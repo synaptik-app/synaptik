@@ -36,6 +36,7 @@ export function KeyMenuView(
         <Box flexDirection="row">
           <Button key={PANE_ANCHOR} plain dimColor label="" onPress={() => undefined} />
           <Text bold>Synaptik keys</Text>
+          <Text dimColor> · classic</Text>
         </Box>
         <Text dimColor>{m.view === 'rows' ? '↑↓ move · ⏎ change · esc: discard changes' : '↑↓ choose · ⏎ select'}</Text>
         <Text> </Text>

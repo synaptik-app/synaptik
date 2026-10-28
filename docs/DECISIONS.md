@@ -1280,6 +1280,10 @@ only after confirmation — updated with the change that builds the menu.
 needs none: a click, or `ctrl+x tab` into the band, where ←/→ are bound by
 default. The `ctrl+s` entry option goes (it gives up the prompt stash); the
 ←/→ preset for the pane stays.
+**Done 2026-10-28 (#113):** `/synaptik config` in fullscreen says no setup is
+needed and opens nothing. The entry key offers `ctrl+x tab` only; a key bound
+before, `ctrl+s` included, still shows as the person's own, so it can be set
+back to the default.
 
 ---
 

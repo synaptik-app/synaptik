@@ -9,6 +9,7 @@
 import { expect, test } from 'claude-code/testing'
 
 import { arrow, band, failing, keybindings, pane, position, start, synaptik, written } from './engine'
+import { FIXTURES } from './fixtures.generated'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Dollar = any
@@ -91,19 +92,21 @@ test('⏎ on a setting opens its options, the cursor on the current one', async 
   expect(shown).toContain('↑↓ choose · ⏎ select')
   expect(shown).toContain('  ‹ back')
   expect(shown).toContain('▸ ctrl+x tab (default)  (now)')
-  expect(shown).toContain('  ctrl+s')
+  // ctrl+x tab only: ctrl+s gave up the prompt stash (#113).
+  expect(shown.some(l => /ctrl\+s/.test(l))).toBe(false)
   expect(shown.some(l => /custom/.test(l))).toBe(false) // presets only (#80)
 })
 
 test('⏎ on an option takes it and returns to the rows, listing the change and its cost', async ($, on) => {
   await begin($, on)
-  await enter($)
   await down()($)
-  await enter($)
+  await enter($) // Move between actions
+  await down()($)
+  await enter($) // ← / →
   const shown = await lines($)
-  expect(shown).toContain('▸ Open Synaptik · ctrl+s')
-  expect(shown).toContain('  + Chat  ctrl+s → abovePrompt:focus')
-  expect(shown).toContain('  ctrl+s will no longer stash your prompt')
+  expect(shown).toContain('▸ Move between actions · ← / →')
+  expect(shown).toContain('  + Pane  left → abovePrompt:previous')
+  expect(shown).toContain("  ← → will also move between buttons in other mods' panes")
   expect(written).toEqual([])
 })
 
@@ -119,18 +122,10 @@ test('‹ back returns to the rows with nothing changed', async ($, on) => {
 
 test('Save writes the choice, keeps the file’s other bindings, and closes the setup', async ($, on) => {
   await begin($, on, { bindings: [{ context: 'Chat', bindings: { 'ctrl+e': 'chat:externalEditor' } }] })
-  await enter($) // Open Synaptik
-  await down()($)
-  await enter($) // ctrl+s
-  await down()($)
-  await enter($) // Move between actions
-  await down()($)
-  await enter($) // ← / →
-  await down()($)
-  await enter($) // Save
+  await saveArrows($)
   expect(written.map(w => w.path)).toEqual(['/home/test/.claude/keybindings.json'])
   expect(savedFile().bindings).toEqual([
-    { context: 'Chat', bindings: { 'ctrl+e': 'chat:externalEditor', 'ctrl+s': 'abovePrompt:focus' } },
+    { context: 'Chat', bindings: { 'ctrl+e': 'chat:externalEditor' } },
     { context: 'Pane', bindings: { left: 'abovePrompt:previous', right: 'abovePrompt:next' } },
   ])
   expect(await lines($)).not.toContain('Synaptik keys')
@@ -145,10 +140,11 @@ test('Save with nothing changed writes nothing', async ($, on) => {
 
 test('Cancel writes nothing and returns to the navigator', async ($, on) => {
   await begin($, on)
+  await down()($)
   await enter($)
   await down()($)
-  await enter($) // ctrl+s, unsaved
-  await down(3)($)
+  await enter($) // ← / →, unsaved
+  await down(2)($)
   await enter($) // Cancel
   expect(written).toEqual([])
   expect(await (await menu($)).find({ type: 'Text', text: /Block \d+ of \d+/ })).toBeDefined()
@@ -156,6 +152,7 @@ test('Cancel writes nothing and returns to the navigator', async ($, on) => {
 
 test('Esc — the pane giving the keyboard back — closes the setup unsaved', async ($, on) => {
   await begin($, on)
+  await down()($)
   await enter($)
   await down()($)
   await enter($)
@@ -169,7 +166,7 @@ test('classic draws the same setup', async ($, on) => {
   await (await menu($, 'inline')).press({ key: 'key-enter' })
   const shown = await lines($, 'inline')
   expect(shown).toContain('▸ ctrl+x tab (default)  (now)')
-  expect(shown).toContain('  ctrl+s')
+  expect(shown).toContain('  ‹ back')
 })
 
 test('a keybindings file that is not JSON is never written', async ($, on) => {
@@ -202,22 +199,24 @@ test('the setup names its keys at the top, and the band says what is going on', 
 // Where the file is (#74): Claude Code's config folder, from CLAUDE_CONFIG_DIR,
 // else HOME, else USERPROFILE (Windows without HOME).
 
-// Open Synaptik → ctrl+s → Save.
-async function saveCtrlS($: Dollar) {
+// Move between actions → ← / → → Save.
+async function saveArrows($: Dollar) {
+  await down()($)
   await enter($)
   await down()($)
   await enter($)
-  await down(2)($)
+  await down()($)
   await enter($)
 }
 
 test('Windows without HOME: the file is under USERPROFILE, and the menu shows it as ~', async ($, on) => {
   await begin($, on, DEFAULTS, { USERPROFILE: 'C:\\Users\\ada' })
+  await down()($)
   await enter($)
   await down()($)
   await enter($)
   expect(await lines($)).toContain('Save changes ~\\.claude\\keybindings.json:')
-  await down(2)($)
+  await down()($)
   await enter($)
   // Off Windows the kit reads a `C:\…` path as relative and prefixes the working
   // folder; on Windows it is absolute. The path the mod built is the tail.
@@ -226,7 +225,7 @@ test('Windows without HOME: the file is under USERPROFILE, and the menu shows it
 
 test('CLAUDE_CONFIG_DIR: the file is in that folder', async ($, on) => {
   await begin($, on, DEFAULTS, { CLAUDE_CONFIG_DIR: '/opt/claude', HOME: '/home/test' })
-  await saveCtrlS($)
+  await saveArrows($)
   expect(written.map(w => w.path)).toEqual(['/opt/claude/keybindings.json'])
 })
 
@@ -242,14 +241,35 @@ test('no folder at all: /synaptik config says so and opens nothing', async ($, o
 test('a failed write keeps the menu and the choice, and says why', async ($, on) => {
   await begin($, on)
   failing.write = 'EACCES: permission denied'
-  await saveCtrlS($)
+  await saveArrows($)
   const shown = await lines($)
   expect(shown).toContain('Synaptik keys')
   // The reason is the file system's in a session; the kit skips a test hook that
   // throws, so here it reads as the call having no answer.
   expect(shown.some(l => /^couldn't write ~\/\.claude\/keybindings\.json: /.test(l))).toBe(true)
-  expect(shown).toContain('  Open Synaptik · ctrl+s')
+  expect(shown).toContain('  Move between actions · ← / →')
   failing.write = ''
   await enter($) // the cursor is still on Save: try again
   expect(written.map(w => w.path)).toEqual(['/home/test/.claude/keybindings.json'])
+})
+
+test('a ctrl+s bound before still shows as the person\'s own, and can go back to the default', async ($, on) => {
+  await begin($, on, { bindings: [{ context: 'Chat', bindings: { 'ctrl+s': 'abovePrompt:focus' } }] })
+  await enter($)
+  expect(await lines($)).toContain('▸ ctrl+s  (now)')
+  await arrow($, -1)
+  await enter($) // ctrl+x tab (default)
+  await down(2)($)
+  await enter($) // Save
+  expect(savedFile().bindings).toEqual([])
+})
+
+test('fullscreen: /synaptik config says no setup is needed, and opens nothing', async ($, on) => {
+  drawn = undefined
+  keybindings(on, DEFAULTS)
+  await start($, on, 'rendering')
+  await $.ui.mount({ plugin: 'synaptik', surface: 'terminal', component: 'AssistantMessage',
+    props: { text: FIXTURES['rendering']!.pieces[0]!, isFirstOfReply: true }, viewport: { columns: 120, rows: 40, isFullscreen: true } })
+  expect((await synaptik($, 'config'))?.text).toMatch(/^fullscreen needs no key setup/)
+  expect(await lines($)).not.toContain('Synaptik keys')
 })

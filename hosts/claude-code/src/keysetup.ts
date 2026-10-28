@@ -21,8 +21,9 @@ const NEXT = { context: 'Pane', action: 'abovePrompt:next' } as const
 export const DEFAULT_ENTRY = 'ctrl+x tab'
 export const DEFAULT_VERBS = { previous: 'shift+tab', next: 'tab' } as const
 
-// The presets the menu offers (custom keys: #80).
-export const ENTRY_PRESETS = [DEFAULT_ENTRY, 'ctrl+s'] as const
+// The presets the menu offers (custom keys: #80). The entry key is Claude Code's
+// own only: ctrl+s, offered before, gave up the prompt stash (#113).
+export const ENTRY_PRESETS = [DEFAULT_ENTRY] as const
 export const VERB_PRESETS = [DEFAULT_VERBS, { previous: 'left', next: 'right' }] as const
 
 // What the file binds now, as a Setup.

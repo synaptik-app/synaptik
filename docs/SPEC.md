@@ -22,7 +22,7 @@ marked ⚠️ is unverified. Open design questions are listed in `DECISIONS.md` 
 ```
 Claude replies
   → ctrl+x tab, then ↑↓ to a block, tab and ⏎ to accept / reject / comment / discuss
-    (ctrl+s and ←→ with the recommended bindings, §10)
+    (←→ in classic with the recommended binding, §10)
   → marks accumulate in a tray
   → the prompt box shows the prompt they compile into, as a dim suggestion
   → tab takes it, ⏎ sends it
@@ -319,7 +319,7 @@ done too, as in fullscreen, though only Esc is shown: the pane sees Esc, and `q`
 draws its actions under new keys so the one holding the keyboard disappears.
 
 The keys shown are Claude Code's defaults. With the recommended bindings (§10)
-the lines read `ctrl+s to review the reply` and `↑↓ blocks · ←→ actions`.
+the classic legend reads `↑↓ blocks · ←→ actions`.
 
 **The band is shared with every mod.** A hook that answers without `next(e)`
 hides every mod beneath it. Outside review, Synaptik draws what `next(e)` returns
@@ -667,7 +667,7 @@ dropped. `⏎` or backspace on an empty line cancels it.
 
 | Key | Default (no setup) | With the recommended bindings |
 |---|---|---|
-| Enter the navigator | `ctrl+x tab` (`abovePrompt:focus`) | a single chord, e.g. `ctrl+s` |
+| Enter the navigator | `ctrl+x tab` (`abovePrompt:focus`) | same |
 | Move between blocks | ↑ / ↓ | same |
 | First / last block | Home / End (`Fn+←` / `Fn+→` on a MacBook) | same |
 | Walk the verbs | Tab / ⇧Tab | ← / → |
@@ -680,12 +680,11 @@ the person's own `~/.claude/keybindings.json` — set by hand, or by `/synaptik
 config` (below), which writes it after the person confirms:
 
 ```json
-{ "context": "Chat", "bindings": { "ctrl+s": "abovePrompt:focus" } },
 { "context": "Pane", "bindings": { "left": "abovePrompt:previous", "right": "abovePrompt:next" } }
 ```
 
-`ctrl+s` is Claude Code's default for `chat:stash`; binding it gives that up. The
-`Pane` arrows apply to every mod's pane.
+The `Pane` arrows apply to every mod's pane. Fullscreen needs none of this: the
+band binds ←/→ by default, and `/synaptik config` there says so (#113).
 
 Esc raises no `ui.focus` event, so whether the navigator holds the keyboard is
 read from its own drawing (`e.props.isFocused`) and passed to the band and reply
@@ -758,8 +757,8 @@ Fullscreen has no pane: the review happens in the reply itself (above, D41).
 
 A pane opened unasked waits undrawn below 144 terminal columns (110 for an id the
 person has opened before), and a module reload closes it. When it is not on
-screen, the band's action line becomes a button — `ctrl+s, then ⏎ to respond in
-place` — since an open answering the person's press is placed at any width.
+screen, the band's action line becomes a button — `ctrl+x tab, then ⏎ to review
+the reply` — since an open answering the person's press is placed at any width.
 
 ⚠️ This case is an edge case with its design deferred, as is the navigator's
 inline layout below 110 columns, where a vertical map does not fit.
@@ -794,7 +793,7 @@ Tab.)
 Synaptik keys
 ↑↓ move · ⏎ change · esc: discard changes
 
-▸ Open Synaptik · ctrl+s
+▸ Open Synaptik · ctrl+x tab
   Move between actions · ← / →
 
   Save
@@ -803,7 +802,7 @@ Synaptik keys
 
 | Setting | Writes | Choices |
 |---|---|---|
-| Open Synaptik | `Chat`: `"<key>": "abovePrompt:focus"` | `ctrl+x tab` (default) · `ctrl+s` |
+| Open Synaptik | `Chat`: `"<key>": "abovePrompt:focus"` | `ctrl+x tab` (default) only; a key bound before shows as the person's own, so it can be set back (#113) |
 | Move between actions | `Pane`: `"<prev>": "abovePrompt:previous"`, `"<next>": "abovePrompt:next"` | Tab / ⇧Tab (default) · ← / → |
 
 - **The file** is `keybindings.json` in Claude Code's config folder:
@@ -819,8 +818,7 @@ Synaptik keys
   (#80): capturing one needed a mouse click, which is not good UX for a keyboard
   tool; what was learned is recorded there.
 - **Before writing**, the exact entries to add or remove, and one short line for
-  each thing given up — `ctrl+s will no longer stash your prompt`, `← → will
-  also move between buttons in other mods' panes` — plus a dim tip where one
+  each thing given up — `← → will also move between buttons in other mods' panes` — plus a dim tip where one
   helps (← on an empty prompt opens agent view: `leftArrowOpensAgents`).
 - The write merges into the file: other contexts and bindings are left as they
   are. The band picks the new keys up at once (§7).
