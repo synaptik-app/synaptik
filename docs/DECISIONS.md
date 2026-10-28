@@ -1280,10 +1280,12 @@ only after confirmation — updated with the change that builds the menu.
 needs none: a click, or `ctrl+x tab` into the band, where ←/→ are bound by
 default. The `ctrl+s` entry option goes (it gives up the prompt stash); the
 ←/→ preset for the pane stays.
-**Done 2026-10-28 (#113):** `/synaptik config` in fullscreen says no setup is
-needed and opens nothing. The entry key offers `ctrl+x tab` only; a key bound
-before, `ctrl+s` included, still shows as the person's own, so it can be set
-back to the default.
+**Done 2026-10-28 (#113):** the key setup is the default renderer's, with one
+setting, *Move between actions*. The key that opens Synaptik is no longer
+Synaptik's to set: `ctrl+x tab` is Claude Code's, and a key the person bound —
+`ctrl+s` from the earlier menu included — stays theirs, untouched. In fullscreen,
+`/synaptik config` opens nothing and says it is for the default renderer, using
+Claude Code's own name for the non-fullscreen renderer.
 
 ---
 

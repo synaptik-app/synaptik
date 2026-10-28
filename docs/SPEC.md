@@ -663,7 +663,7 @@ dropped. `⏎` or backspace on an empty line cancels it.
 | Apply an action directly | `a` `x` `c` `d` | `a` `x` `c` `d` |
 | Leave | `q` (Esc is not seen, #23) | `q` |
 
-**Classic** (the pane):
+**The default renderer** (the pane):
 
 | Key | Default (no setup) | With the recommended bindings |
 |---|---|---|
@@ -777,9 +777,11 @@ inline layout below 110 columns, where a vertical map does not fit.
 
 ### Key setup: `/synaptik config` (D38)
 
-A mode of the navigator pane (one tab). It moves as the navigator does: the
-tree is pinned for the scroll trick, so **↑/↓ move a cursor over its rows** —
-the two settings, then Save and Cancel — and **⏎ on a setting opens its
+The default renderer's (in fullscreen it opens nothing and says: `nothing to set
+in fullscreen: /synaptik config is for the default renderer`). A mode of the
+navigator pane (one tab). It moves as the navigator does: the tree is pinned for
+the scroll trick, so **↑/↓ move a cursor over its rows** — the setting, then
+Save and Cancel — and **⏎ on a setting opens its
 options**, where ↑/↓ choose and ⏎ takes one and returns to the rows; the first
 option, `‹ back`, returns unchanged. ⏎ on Save writes; on Cancel, or Esc
 anywhere, nothing is written. Esc cannot mean "back": it gives the keyboard to
@@ -790,11 +792,10 @@ tried: they keep ↑/↓ for their own options, so moving between settings took
 Tab.)
 
 ```
-Synaptik keys
+Synaptik keys · default renderer
 ↑↓ move · ⏎ change · esc: discard changes
 
-▸ Open Synaptik · ctrl+x tab
-  Move between actions · ← / →
+▸ Move between actions · ← / →
 
   Save
   Cancel
@@ -802,7 +803,6 @@ Synaptik keys
 
 | Setting | Writes | Choices |
 |---|---|---|
-| Open Synaptik | `Chat`: `"<key>": "abovePrompt:focus"` | `ctrl+x tab` (default) only; a key bound before shows as the person's own, so it can be set back (#113) |
 | Move between actions | `Pane`: `"<prev>": "abovePrompt:previous"`, `"<next>": "abovePrompt:next"` | Tab / ⇧Tab (default) · ← / → |
 
 - **The file** is `keybindings.json` in Claude Code's config folder:
@@ -810,6 +810,9 @@ Synaptik keys
   `USERPROFILE` on Windows, where PowerShell and cmd set no `HOME` (#74). With
   none of them set there is no path, and the setup says so. The menu shows the
   path it writes, with the home folder as `~`.
+- **The key that opens Synaptik is not set here** (#113): `ctrl+x tab` is Claude
+  Code's, and a key the person bound themselves — `ctrl+s` from an earlier
+  version of this menu included — stays as it is; the setup never touches it.
 - The current bindings are read from the file and shown first.
 - **A failed write is never silent:** the menu stays open with the choice, and
   says where it couldn't write and why.

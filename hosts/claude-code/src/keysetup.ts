@@ -2,47 +2,40 @@
 // lines that change, and what a choice gives up. Plain data in and out; the
 // hooks read and write ~/.claude/keybindings.json.
 
-import { boundKey, keyLabel } from './keys'
+import { boundKey } from './keys'
 import type { KeyFile } from './keys'
 
-// The two settings. `undefined` is Claude Code's own default: nothing bound.
+// The one setting: the keys that move between the actions in the default
+// renderer's pane (`abovePrompt:previous` / `:next` in Pane), default Tab / ⇧Tab.
+// `undefined` is Claude Code's own default: nothing bound. The key that opens
+// Synaptik is not Synaptik's to set: ctrl+x tab is Claude Code's, and a key the
+// person bound themselves stays theirs (#113).
 export type Setup = {
-  // Enters the navigator: `abovePrompt:focus` in Chat. Default `ctrl+x tab`.
-  entry?: string
-  // Walk the verbs: `abovePrompt:previous` / `:next` in Pane. Default Tab / ⇧Tab.
   verbs?: { previous: string; next: string }
 }
 
-const ENTRY = { context: 'Chat', action: 'abovePrompt:focus' } as const
 const PREVIOUS = { context: 'Pane', action: 'abovePrompt:previous' } as const
 const NEXT = { context: 'Pane', action: 'abovePrompt:next' } as const
 
 // Claude Code's own keys for these actions, bound when the file binds none.
-export const DEFAULT_ENTRY = 'ctrl+x tab'
 export const DEFAULT_VERBS = { previous: 'shift+tab', next: 'tab' } as const
 
-// The presets the menu offers (custom keys: #80). The entry key is Claude Code's
-// own only: ctrl+s, offered before, gave up the prompt stash (#113).
-export const ENTRY_PRESETS = [DEFAULT_ENTRY] as const
+// The presets the menu offers (custom keys: #80).
 export const VERB_PRESETS = [DEFAULT_VERBS, { previous: 'left', next: 'right' }] as const
 
 // What the file binds now, as a Setup.
 export function currentSetup(file: KeyFile): Setup {
-  const entry = boundKey(file, ENTRY.context, ENTRY.action)
   const previous = boundKey(file, PREVIOUS.context, PREVIOUS.action)
   const next = boundKey(file, NEXT.context, NEXT.action)
-  return {
-    entry: entry === DEFAULT_ENTRY ? undefined : entry,
-    verbs: previous || next ? { previous: previous ?? DEFAULT_VERBS.previous, next: next ?? DEFAULT_VERBS.next } : undefined,
-  }
+  return previous || next ? { verbs: { previous: previous ?? DEFAULT_VERBS.previous, next: next ?? DEFAULT_VERBS.next } } : {}
 }
 
 type Bindings = Record<string, string | null>
 
-// The file with `setup` applied, and nothing else changed: the setup's actions
-// lose every key bound to them, a default's own key loses an unbinding (null),
-// and the chosen keys are added to the last block of their context (a new one
-// at the end when there is none). Blocks left empty by a removal are dropped.
+// The file with `setup` applied, and nothing else changed: the two actions lose
+// every key bound to them, a default's own key loses an unbinding (null), and
+// the chosen keys are added to the last Pane block (a new one at the end when
+// there is none). Blocks left empty by a removal are dropped.
 export function applySetup(file: KeyFile, setup: Setup): KeyFile {
   const blocks = (file.bindings ?? []).map(b => ({ ...b, bindings: { ...(b.bindings ?? {}) } as Bindings }))
   const touched = new Set<number>()
@@ -62,10 +55,8 @@ export function applySetup(file: KeyFile, setup: Setup): KeyFile {
     blocks[i]!.bindings[key] = action
   }
 
-  unbind(ENTRY.context, ENTRY.action, DEFAULT_ENTRY)
   unbind(PREVIOUS.context, PREVIOUS.action, DEFAULT_VERBS.previous)
   unbind(NEXT.context, NEXT.action, DEFAULT_VERBS.next)
-  if (setup.entry && setup.entry !== DEFAULT_ENTRY) bind(ENTRY.context, setup.entry, ENTRY.action)
   if (setup.verbs && !isDefaultVerbs(setup.verbs)) {
     bind(PREVIOUS.context, setup.verbs.previous, PREVIOUS.action)
     bind(NEXT.context, setup.verbs.next, NEXT.action)
@@ -78,7 +69,7 @@ const isDefaultVerbs = (v: { previous: string; next: string }) =>
   v.previous === DEFAULT_VERBS.previous && v.next === DEFAULT_VERBS.next
 
 // The entries that differ between two files, as the menu shows them before
-// writing: `+ Chat  ctrl+s → abovePrompt:focus`, `− Pane  left → …`.
+// writing: `+ Pane  left → abovePrompt:previous`, `− Pane  tab → …`.
 export function changes(before: KeyFile, after: KeyFile): string[] {
   const entries = (file: KeyFile) => {
     const all = new Map<string, string>()
@@ -97,20 +88,10 @@ export function changes(before: KeyFile, after: KeyFile): string[] {
   return lines
 }
 
-// Claude Code's own Chat keys a chosen entry key would take over.
-const CHAT_KEYS: Record<string, string> = {
-  'ctrl+s': 'stash your prompt',
-  'ctrl+r': 'search your prompt history',
-  'ctrl+o': 'open transcript mode',
-  'ctrl+l': 'redraw the screen',
-}
-
 // What a setup gives up, one short line each, for the menu to say before
 // writing. `tip` lines are advice, not a cost.
 export function costs(setup: Setup): { line: string; isTip?: true }[] {
   const notes: { line: string; isTip?: true }[] = []
-  const given = setup.entry ? CHAT_KEYS[setup.entry] : undefined
-  if (setup.entry && given) notes.push({ line: `${keyLabel(setup.entry)} will no longer ${given}` })
   const verbs = setup.verbs
   if (verbs && [verbs.previous, verbs.next].some(k => k === 'left' || k === 'right')) {
     notes.push({ line: "← → will also move between buttons in other mods' panes" })
