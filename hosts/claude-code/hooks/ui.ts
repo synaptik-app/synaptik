@@ -17,6 +17,10 @@ export const PREVIOUS_BLOCK = 'block-previous'
 // The band's q hotkey: ends the review (Esc would, but a mod never sees it).
 export const END_REVIEW = 'review-end'
 
+// What a comment field's Enter does, and how to start a new line: a backslash
+// before ⏎, which works in every terminal. Only that key is named.
+export const COMMENT_KEYS = 'ok · \\⏎ new line'
+
 // The band's controls are keyed per generation: ending a review draws them under
 // fresh keys, so the one holding the keyboard disappears and Claude Code hands
 // the keyboard back to the prompt (a mod cannot move it there). `@<n>` after the

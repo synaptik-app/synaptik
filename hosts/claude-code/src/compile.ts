@@ -2,6 +2,7 @@
 // under its parent, in reading order.
 
 import { quote } from './blocks'
+import { cells } from './review'
 
 export type Mark = 'accept' | 'reject' | 'comment'
 
@@ -35,10 +36,23 @@ export function compile(
       const indent = '    '.repeat(block.depth)
       if (isStaged(i)) {
         const mark = marks[i]!
-        const tail = mark === 'comment' ? ` → ${comments[i]!.trim()}` : ''
-        return [`${indent}${GLYPH[mark]} "${quote(block.text)}"${tail}`]
+        const head = `${indent}${GLYPH[mark]} "${quote(block.text)}"`
+        if (mark !== 'comment') return [head]
+        // A comment of several lines: the rest lined up under its first
+        // character, so every line stays with its block in the nesting.
+        const [first, ...rest] = comments[i]!.trim().split('\n')
+        const lead = `${head} → `
+        const pad = ' '.repeat(cells(lead))
+        return [`${lead}${first}`, ...rest.map(line => (line.trim() ? `${pad}${line.trimEnd()}` : ''))]
       }
       return context.has(i) ? [`${indent}"${quote(block.text)}"`] : []
     })
     .join('\n')
+}
+
+// A comment in one row, where only one fits (under a block, in classic's
+// viewer): its first line, and how many more there are.
+export function oneLine(comment: string): string {
+  const [first = '', ...rest] = comment.trim().split('\n')
+  return rest.length === 0 ? first : `${first} (+${rest.length} line${rest.length === 1 ? '' : 's'})`
 }

@@ -9,6 +9,8 @@ export type Verb = 'accept' | 'reject' | 'comment' | 'discuss'
 // The menu under the selected block, in order: ←/→ walk it.
 export const MENU: readonly Verb[] = ['accept', 'reject', 'comment', 'discuss']
 
+// The comment being typed: its block, its text, and the cursor — -1 when the
+// cursor is not known (typed in the band's field, which never reports it).
 export type Editing = { index: number; text: string; cursor: number }
 
 export type Review = {
@@ -110,12 +112,29 @@ function edit(review: Review, e: Editing, key: Key, scope: Scope): Step | undefi
   if (key.key === 'right') return put(text, Math.min(text.length, cursor + 1))
   if (key.key === 'home') return put(text, 0)
   if (key.key === 'end') return put(text, text.length)
-  if (key.key === 'up') return select(review, review.selected - 1, scope)
-  if (key.key === 'down') return select(review, review.selected + 1, scope)
+  // ↑/↓ move between the comment's lines, keeping the column; past its first or
+  // last line they do nothing — the comment stays open, unstaged, until ⏎.
+  if (key.key === 'up' || key.key === 'down') {
+    const to = lineMove(text, cursor, key.key === 'up' ? -1 : 1)
+    return to === undefined ? undefined : put(text, to)
+  }
   const typed = key.key === 'space' ? ' ' : key.key
   if (key.ctrl || key.meta || typed === '' || NAMED.has(typed)) return undefined
   // A character, or a burst of them (a paste the terminal hands over as keys).
   return put(text.slice(0, cursor) + typed + text.slice(cursor), cursor + typed.length)
+}
+
+// The cursor one line up or down in `text`, at the same column or the line's
+// end; undefined from the first line up, or the last down.
+export function lineMove(text: string, cursor: number, by: -1 | 1): number | undefined {
+  const lines = text.split('\n')
+  const before = text.slice(0, cursor).split('\n')
+  const line = before.length - 1
+  const column = before[before.length - 1]!.length
+  const to = line + by
+  if (to < 0 || to >= lines.length) return undefined
+  const start = lines.slice(0, to).reduce((n, l) => n + l.length + 1, 0)
+  return start + Math.min(column, lines[to]!.length)
 }
 
 // One key pressed while the reply has the keyboard; undefined when the key does

@@ -120,3 +120,13 @@ test('reopening a comment starts from what was staged, in a fresh field', async 
   const field = await ui.find({ type: 'Input', key: 'comment-2' })
   expect(field?.props.value).toBe('too vague')
 })
+
+test('classic: the comment field takes several lines: two rows, growing to three (#16)', async ($, on) => {
+  const ui = await open($, on)
+  // Never one row: that is Claude Code's single-line field, where ⏎ always submits.
+  expect((await ui.find({ type: 'Input', key: FIELD }))?.props.rows).toBe(2)
+  await ui.input({ key: FIELD, text: 'one\ntwo', kind: 'change' })
+  expect((await ui.find({ type: 'Input', key: FIELD }))?.props.rows).toBe(2)
+  await ui.input({ key: FIELD, text: 'one\ntwo\nthree\nfour\nfive', kind: 'change' })
+  expect((await ui.find({ type: 'Input', key: FIELD }))?.props.rows).toBe(3)
+})

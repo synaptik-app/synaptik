@@ -5,6 +5,7 @@
 import type { Elements, RenderElement } from 'claude-code'
 
 import { chunk } from '../../src/blocks'
+import { oneLine } from '../../src/compile'
 import { END_REVIEW, generational, PANE_ANCHOR, VERBS } from '../ui'
 
 // What the navigator's buttons do; register.tsx owns them.
@@ -112,7 +113,7 @@ export function ClassicView(
             </Box>
             {field ?? (
               <Text dimColor wrap="truncate">
-                {m.comment ? `→ ${m.comment}` : '→'}
+                {m.comment ? `→ ${oneLine(m.comment)}` : '→'}
               </Text>
             )}
             <Text dimColor wrap="truncate">

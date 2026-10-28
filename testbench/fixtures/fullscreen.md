@@ -27,7 +27,7 @@ A closing paragraph, long enough to wrap onto a second line in a typical termina
 - ←/→ walk the menu under the selected block, ⏎ applies the action under the cursor, and a click on an action applies it
 - a / x / c / d act directly on the selected block
 - c opens a comment under the block, dim, with a cursor: type, move with ←/→ and Home/End, Backspace, Delete, then ⏎ stages it
-- In a comment, backslash then ⏎ starts a new line; ↑/↓ stage it and move on; Backspace on an empty comment cancels it
+- In a comment, backslash then ⏎ starts a new line (the hint after it says so); ↑/↓ move between its lines and nothing more — ⏎ stages it; Backspace on an empty comment cancels it
 - A paste while a comment is open goes into the comment, not the prompt box
 - c on a commented block reopens its text
 - q ends the review — from the reply, the band or its hint — and the band's legend says "q done"; in a comment, q types a q
