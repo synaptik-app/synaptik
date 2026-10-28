@@ -37,16 +37,26 @@ const LABELS: Record<(typeof MENU)[number], string> = {
 // The menu's items as drawn, in order: what a click is matched against.
 const ITEMS = MENU.map(verb => `[ ${LABELS[verb]} ]`)
 
-const Block: ClientModule<BlockProps, Local> = (props, surface) => {
+// What a block keeps: the review steps not yet echoed (src/review.ts), and the
+// menu item the pointer is over, drawn as a button under the mouse is.
+type BlockState = Local & { hovered?: number }
+
+const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
   const { Box, Text, Markdown } = surface.elements
   const review = current(surface.state, props.review)
   const scope = { first: props.first, last: props.last, comments: props.comments }
 
+  const hovered = surface.state?.hovered
   const take = (s: Step | undefined) => {
     if (!s) return
     const { local, post } = queue(surface.state, props.acked, s)
-    surface.setState(local)
+    surface.setState({ ...local, ...(hovered === undefined ? {} : { hovered }) })
     surface.post(post)
+  }
+  const hover = (n: number | undefined) => {
+    if (n === hovered) return
+    const { hovered: _, ...rest } = surface.state ?? { queued: [], nextId: props.acked + 1 }
+    surface.setState(n === undefined ? rest : { ...rest, hovered: n })
   }
 
   surface.onKey(key => take(press(review, key, scope)))
@@ -54,8 +64,10 @@ const Block: ClientModule<BlockProps, Local> = (props, surface) => {
   // block. The menu is the module's own drawing, not Buttons: a Button takes the
   // keyboard when clicked, and in the reply that hands it back to the prompt.
   surface.onPointer(event => {
-    if (event.type !== 'down') return
     const n = isSelected && !editing && event.y === menuRow() ? itemAt(event.x - menuStart, ITEMS) : -1
+    if (event.type === 'move' || event.type === 'enter') return hover(n >= 0 ? n : undefined)
+    if (event.type === 'leave') return hover(undefined)
+    if (event.type !== 'down') return
     if (n >= 0) take(press({ ...review, selected: props.index, verb: n }, { key: 'return' }, scope))
     else take(click(review, props.index, scope))
   })
@@ -90,15 +102,20 @@ const Block: ClientModule<BlockProps, Local> = (props, surface) => {
     })
   }
 
-  // The menu under the selected block, drawn as Claude Code draws its buttons;
-  // the item under the cursor bold, the others dim.
+  // The menu under the selected block, drawn as Claude Code draws its buttons:
+  // the item under the keyboard's cursor bold, the one under the mouse inverse,
+  // the others dim.
   const menu = Box({
     flexDirection: 'row',
     paddingLeft: MARGIN + props.indent,
     children: [
       Text({ dimColor: true, children: ['└ '] }),
       ...ITEMS.map((item, n) =>
-        Text(n === review.verb ? { weight: 'bold', color: 'suggestion', children: [item] } : { dimColor: true, children: [item] }),
+        Text({
+          ...(n === review.verb ? { weight: 'bold' as const, color: 'suggestion' as const } : { dimColor: true }),
+          ...(n === hovered ? { inverse: true } : {}),
+          children: [item],
+        }),
       ),
     ],
   })
