@@ -4,7 +4,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { band, ENGINE_DRAWING, pane, position, reply, start, transcriptOf, turn } from './engine'
+import { arrow, band, ENGINE_DRAWING, log, pane, position, reply, start, transcriptOf, turn } from './engine'
 import type { Row } from './engine'
 import { FIXTURES } from './fixtures.generated'
 import { segment } from '../src/blocks'
@@ -103,4 +103,21 @@ test('a subagent’s turn completing does not adopt anything, nor end the main t
   const ui = await pane($, 'inline')
   // Still the main turn's: waiting, nothing adopted yet.
   expect(await ui.find({ type: 'Text', text: /Waiting for the reply/ })).toBeDefined()
+})
+
+test('the newest turn row is the one first seen last, however the rows redraw in turn', async ($, on) => {
+  await start($, on, F)
+  const row = (requestId: string) =>
+    $.ui.mount({ plugin: 'synaptik', surface: 'terminal', component: 'TurnDuration', requestId, props: { word: 'Baked', durationMs: 1000 } })
+  // Two turns on screen: drawn in order, then the older redrawn after the newer.
+  for (const id of ['turn-older', 'turn-newer', 'turn-older', 'turn-newer', 'turn-older']) await (await row(id)).unmount()
+  const lines = (await log($)).split('\n').filter(l => l.startsWith('turn row'))
+  expect(lines).toEqual(['turn row turn-older', 'turn row turn-newer'])
+  // The reply's end is revealed by the newest row: move from the top into the last third.
+  const ui = await pane($, 'inline')
+  for (let i = 0; i < 40; i += 1) await arrow($, -1)
+  for (let i = 0; i < 40; i += 1) await arrow($, 1)
+  expect(await log($)).toContain('reveal reply end via turn-newer')
+  expect(await log($)).not.toContain('reveal reply end via turn-older')
+  await ui.unmount()
 })
