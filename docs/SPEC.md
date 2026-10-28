@@ -1,7 +1,7 @@
 # Synaptik — Build Spec
 
-**What it is:** mark up an agent's last response in place — accept, reject,
-comment, discuss — and turn those marks into one prompt.
+**What it is:** review an agent's last reply in place — accept, reject,
+comment, discuss — and turn that review into one prompt.
 
 **This spec covers the Claude Code host**, the only one that exists. Sections
 2–5 and 9 describe host-neutral behaviour; 6, 7, 10 and 11 are Claude Code

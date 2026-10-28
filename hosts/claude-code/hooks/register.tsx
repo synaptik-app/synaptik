@@ -681,7 +681,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'synaptik',
-      description: "Mark up the agent's reply in place · help for more",
+      description: "Review the agent's reply in place · help for more",
       argumentHint: '[help|on|off|config|log]',
       // So `off` works while a turn runs, when a drawing gone wrong hurts most.
       immediate: true,

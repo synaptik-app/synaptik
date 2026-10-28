@@ -1,7 +1,7 @@
 # Synaptik
 
-A Claude Code mod: mark up the agent's last response in place — accept, reject,
-comment, discuss — and compile those marks into one prompt.
+A Claude Code mod: review the agent's last reply in place — accept, reject,
+comment, discuss — and compile that review into one prompt.
 
 ## Read first
 
