@@ -7,44 +7,52 @@ import type { KeyFile } from './keys'
 
 const chat = (bindings: Record<string, string | null>) => ({ context: 'Chat', bindings })
 const pane = (bindings: Record<string, string | null>) => ({ context: 'Pane', bindings })
+const ARROWS = { previous: 'left', next: 'right' }
 
 test('no file: Claude Code’s defaults', async () => {
-  expect(currentSetup({})).toEqual({ entry: undefined, verbs: undefined })
+  expect(currentSetup({})).toEqual({})
 })
 
 test('the current setup is read from the file', async () => {
-  const file: KeyFile = { bindings: [chat({ 'ctrl+s': 'abovePrompt:focus' }), pane({ left: 'abovePrompt:previous', right: 'abovePrompt:next' })] }
-  expect(currentSetup(file)).toEqual({ entry: 'ctrl+s', verbs: { previous: 'left', next: 'right' } })
+  const file: KeyFile = { bindings: [pane({ left: 'abovePrompt:previous', right: 'abovePrompt:next' })] }
+  expect(currentSetup(file)).toEqual({ verbs: ARROWS })
 })
 
-test('choosing keys adds them to the context’s block, keeping everything else', async () => {
+test('choosing keys adds them to the Pane block, keeping everything else', async () => {
   const before: KeyFile = { bindings: [chat({ 'ctrl+e': 'chat:externalEditor' })] }
-  const after = applySetup(before, { entry: 'ctrl+s', verbs: { previous: 'left', next: 'right' } })
-  expect(after.bindings).toEqual([
-    chat({ 'ctrl+e': 'chat:externalEditor', 'ctrl+s': 'abovePrompt:focus' }),
+  expect(applySetup(before, { verbs: ARROWS }).bindings).toEqual([
+    chat({ 'ctrl+e': 'chat:externalEditor' }),
     pane({ left: 'abovePrompt:previous', right: 'abovePrompt:next' }),
   ])
 })
 
-test('other top-level fields of the file are kept', async () => {
-  const before = { $schema: 'https://example.com/schema.json', bindings: [] } as KeyFile
-  expect(applySetup(before, { entry: 'ctrl+s' })).toMatchObject({ $schema: 'https://example.com/schema.json' })
+test('the key that opens Synaptik is never touched — a ctrl+s the person bound stays (#113)', async () => {
+  const before: KeyFile = { bindings: [chat({ 'ctrl+s': 'abovePrompt:focus' })] }
+  expect(currentSetup(before)).toEqual({})
+  expect(applySetup(before, { verbs: ARROWS }).bindings?.[0]).toEqual(chat({ 'ctrl+s': 'abovePrompt:focus' }))
+  expect(applySetup(before, {}).bindings).toEqual([chat({ 'ctrl+s': 'abovePrompt:focus' })])
 })
 
-test('choosing again replaces the earlier key, never adds a second', async () => {
-  const before = applySetup({}, { entry: 'ctrl+s' })
-  const after = applySetup(before, { entry: 'ctrl+g' })
-  expect(after.bindings).toEqual([chat({ 'ctrl+g': 'abovePrompt:focus' })])
+test('other top-level fields of the file are kept', async () => {
+  const before = { $schema: 'https://example.com/schema.json', bindings: [] } as KeyFile
+  expect(applySetup(before, { verbs: ARROWS })).toMatchObject({ $schema: 'https://example.com/schema.json' })
+})
+
+test('choosing again replaces the earlier keys, never adds second ones', async () => {
+  const before = applySetup({}, { verbs: ARROWS })
+  expect(applySetup(before, { verbs: { previous: 'h', next: 'l' } }).bindings).toEqual([
+    pane({ h: 'abovePrompt:previous', l: 'abovePrompt:next' }),
+  ])
 })
 
 test('back to the defaults removes Synaptik’s entries, and a block left empty', async () => {
-  const before: KeyFile = { bindings: [chat({ 'ctrl+s': 'abovePrompt:focus' }), pane({ left: 'abovePrompt:previous', right: 'abovePrompt:next' })] }
+  const before: KeyFile = { bindings: [pane({ left: 'abovePrompt:previous', right: 'abovePrompt:next' })] }
   expect(applySetup(before, {}).bindings).toEqual([])
 })
 
-test('the defaults also lift an unbinding of the default key', async () => {
-  const before: KeyFile = { bindings: [chat({ 'ctrl+x tab': null, 'ctrl+e': 'chat:externalEditor' })] }
-  expect(applySetup(before, {}).bindings).toEqual([chat({ 'ctrl+e': 'chat:externalEditor' })])
+test('the defaults also lift an unbinding of a default key', async () => {
+  const before: KeyFile = { bindings: [pane({ tab: null, 'ctrl+x x': 'pane:close' })] }
+  expect(applySetup(before, {}).bindings).toEqual([pane({ 'ctrl+x x': 'pane:close' })])
 })
 
 test('a block that was empty already is left alone', async () => {
@@ -53,17 +61,21 @@ test('a block that was empty already is left alone', async () => {
 })
 
 test('the changes, as the menu lists them before writing', async () => {
-  const before: KeyFile = { bindings: [chat({ 'ctrl+g': 'abovePrompt:focus' })] }
-  const after = applySetup(before, { entry: 'ctrl+s' })
-  expect(changes(before, after)).toEqual(['− Chat  ctrl+g → abovePrompt:focus', '+ Chat  ctrl+s → abovePrompt:focus'])
+  const before: KeyFile = { bindings: [pane({ h: 'abovePrompt:previous', l: 'abovePrompt:next' })] }
+  const after = applySetup(before, { verbs: ARROWS })
+  expect(changes(before, after)).toEqual([
+    '− Pane  h → abovePrompt:previous',
+    '− Pane  l → abovePrompt:next',
+    '+ Pane  left → abovePrompt:previous',
+    '+ Pane  right → abovePrompt:next',
+  ])
   expect(changes(after, after)).toEqual([])
 })
 
 test('what a choice gives up', async () => {
-  expect(costs({ entry: 'ctrl+s' })).toEqual([{ line: 'ctrl+s will no longer stash your prompt' }])
-  expect(costs({ verbs: { previous: 'left', next: 'right' } })).toEqual([
+  expect(costs({ verbs: ARROWS })).toEqual([
     { line: "← → will also move between buttons in other mods' panes" },
     { line: 'Tip: ← on an empty prompt opens agent view (/config → leftArrowOpensAgents)', isTip: true },
   ])
-  expect(costs({ entry: 'ctrl+g' })).toEqual([])
+  expect(costs({})).toEqual([])
 })

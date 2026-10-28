@@ -20,7 +20,7 @@ import { apply as applyMenu, closed, letGo, paste, press, receive, START } from 
 import type { Action, Held, Key, Numbered, Review } from '../src/review'
 import { DEFAULT_KEYS, keyLabel, keysFrom, parseKeyFile } from '../src/keys'
 import type { KeyFile, Keys } from '../src/keys'
-import { applySetup, changes, costs, currentSetup, DEFAULT_ENTRY, DEFAULT_VERBS } from '../src/keysetup'
+import { applySetup, changes, costs, currentSetup, DEFAULT_VERBS } from '../src/keysetup'
 import type { Setup } from '../src/keysetup'
 import { keybindingsPath, shownPath } from '../src/configpath'
 import { blockCounter } from '../src/counter'
@@ -524,59 +524,45 @@ type KeyMenu = {
   view: 'rows' | 'options'
   row: number
   option: number
-  editing?: 'entry' | 'verbs'
+  editing?: 'verbs'
 }
 let keyMenu: KeyMenu | undefined
 
-type MenuRow = 'entry' | 'verbs' | 'save' | 'cancel'
-const MENU_ROWS: readonly MenuRow[] = ['entry', 'verbs', 'save', 'cancel']
+type MenuRow = 'verbs' | 'save' | 'cancel'
+const MENU_ROWS: readonly MenuRow[] = ['verbs', 'save', 'cancel']
 const MENU_LABEL: Record<MenuRow, string> = {
-  entry: 'Open Synaptik',
   verbs: 'Move between actions',
   save: 'Save',
   cancel: 'Cancel',
 }
 
-// One setting's choice as an option's value: the entry key, or the two
-// action keys as `previous next`.
-function currentValue(menu: KeyMenu, setting: 'entry' | 'verbs') {
-  if (setting === 'entry') return menu.choice.entry ?? DEFAULT_ENTRY
+// The setting's choice as an option's value: the two action keys as
+// `previous next`.
+function currentValue(menu: KeyMenu) {
   const verbs = menu.choice.verbs ?? DEFAULT_VERBS
   return `${verbs.previous} ${verbs.next}`
 }
 
-// One setting's choice as the row shows it.
-function menuValue(menu: KeyMenu, setting: 'entry' | 'verbs') {
-  if (setting === 'entry') return keyLabel(currentValue(menu, 'entry'))
+// The setting's choice as the row shows it.
+function menuValue(menu: KeyMenu) {
   const verbs = menu.choice.verbs
   // The default as its option names it; otherwise previous / next.
   return verbs ? `${keyLabel(verbs.previous)} / ${keyLabel(verbs.next)}` : 'tab / ⇧tab'
 }
 
-// The options of the setting being edited: back to the rows (Esc cannot be
-// that: it gives the keyboard to the prompt, and a mod cannot take it back),
-// the presets, and the person's own key when the file binds one that is none
-// of them, so a hand-made binding is never lost by opening the menu. Custom
-// keys are a feature request: the presets only, for now (#80).
+// The setting's options: back to the rows (Esc cannot be that: it gives the
+// keyboard to the prompt, and a mod cannot take it back), the presets, and the
+// person's own keys when the file binds others, so a hand-made binding is never
+// lost by opening the menu. Custom keys are a feature request: the presets only,
+// for now (#80).
 function menuOptions(menu: KeyMenu): { value: string; label: string }[] {
-  const setting = menu.editing ?? 'entry'
-  const now = currentValue(menu, setting)
-  const presets =
-    setting === 'entry'
-      ? [
-          { value: DEFAULT_ENTRY, label: `${DEFAULT_ENTRY} (default)` },
-          { value: 'ctrl+s', label: 'ctrl+s' },
-        ]
-      : [
-          { value: `${DEFAULT_VERBS.previous} ${DEFAULT_VERBS.next}`, label: 'tab / ⇧tab (default)' },
-          { value: 'left right', label: '← / →' },
-        ]
-  const own = presets.some(p => p.value === now) ? [] : [{ value: now, label: menuValue(menu, setting) }]
-  return [
-    { value: 'back', label: '‹ back' },
-    ...presets,
-    ...own,
+  const now = currentValue(menu)
+  const presets = [
+    { value: `${DEFAULT_VERBS.previous} ${DEFAULT_VERBS.next}`, label: 'tab / ⇧tab (default)' },
+    { value: 'left right', label: '← / →' },
   ]
+  const own = presets.some(p => p.value === now) ? [] : [{ value: now, label: menuValue(menu) }]
+  return [{ value: 'back', label: '‹ back' }, ...presets, ...own]
 }
 
 // ↑/↓ in the menu: the cursor, over the rows or the open setting's options.
@@ -598,19 +584,16 @@ async function enterMenu($: EngineInterface) {
     if (row === 'cancel') return closeKeyMenu($)
     menu.editing = row
     menu.view = 'options'
-    menu.option = Math.max(0, menuOptions(menu).findIndex(o => o.value === currentValue(menu, row)))
+    menu.option = Math.max(0, menuOptions(menu).findIndex(o => o.value === currentValue(menu)))
     observe(`key menu: options of ${row}`)
     return $.ui.invalidate('ui.render')
   }
-  const setting = menu.editing!
   const picked = menuOptions(menu)[menu.option]!
-  observe(`key menu: ${setting} picked ${picked.value}`)
+  observe(`key menu: picked ${picked.value}`)
   menu.view = 'rows'
   menu.note = undefined
   if (picked.value === 'back') {
     // Nothing chosen: the setting stays as it was.
-  } else if (setting === 'entry') {
-    menu.choice = { ...menu.choice, entry: picked.value === DEFAULT_ENTRY ? undefined : picked.value }
   } else {
     const [previous, nextKey] = picked.value.split(' ') as [string, string]
     const isDefault = previous === DEFAULT_VERBS.previous && nextKey === DEFAULT_VERBS.next
@@ -676,7 +659,7 @@ function keyMenuModel(menu: KeyMenu, bodyRows: number): KeyMenuModel {
   return {
     view: menu.view,
     rows: MENU_ROWS.map((row, i) => ({
-      text: `${MENU_LABEL[row]}${row === 'entry' || row === 'verbs' ? ` · ${menuValue(menu, row)}` : ''}`,
+      text: `${MENU_LABEL[row]}${row === 'verbs' ? ` · ${menuValue(menu)}` : ''}`,
       isAt: i === menu.row,
       hasGapAfter: row === 'verbs',
     })),
@@ -684,7 +667,7 @@ function keyMenuModel(menu: KeyMenu, bodyRows: number): KeyMenuModel {
     options: menuOptions(menu).map((option, i) => ({
       text: option.label,
       isAt: i === menu.option,
-      isNow: option.value === currentValue(menu, menu.editing ?? 'entry'),
+      isNow: option.value === currentValue(menu),
     })),
     note: menu.note,
     changed: changes(menu.file, after),
@@ -733,6 +716,8 @@ export const register: Register = on => {
     if (args === 'log') return { text: observed.join('\n') || '(nothing observed yet)' }
     if (args === 'config') {
       if (!(await read($, isOn))) return { text: 'off for this session · /synaptik on turns it back on' }
+      // Fullscreen needs no key setup (D41, #113): it is classic's.
+      if (isFullscreen) return { text: 'nothing to set in fullscreen: /synaptik config is for the default renderer' }
       const refused = await openKeyMenu($)
       return refused ? { text: refused } : {}
     }

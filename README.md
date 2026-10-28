@@ -87,11 +87,12 @@ review the reply is plain text you can select.
 A comment is typed right under its block; `\` then ⏎ starts a new line, and a
 paste goes into it.
 
-**Classic** — the navigator above the band shows the selected block:
+**Default renderer** (not fullscreen) — the navigator above the band shows the
+selected block:
 
 | | Default | With the bindings below |
 |---|---|---|
-| Start reviewing | `ctrl+x tab` | `ctrl+s` |
+| Start reviewing | `ctrl+x tab` | same |
 | Move between blocks | ↑ / ↓ | same |
 | First / last block | Home / End (`Fn+←` / `Fn+→` on a MacBook) | same |
 | Choose an action | Tab / ⇧Tab | ← / → |
@@ -99,17 +100,16 @@ paste goes into it.
 | Apply directly | `a` accept · `x` reject · `c` comment | same |
 | Done | Esc | same |
 
-A mod cannot ship key bindings, so the better ones go in your own
-`~/.claude/keybindings.json`. **`/synaptik config` sets them for you:** pick the
-key that opens Synaptik (`ctrl+x tab` or `ctrl+s`) and the keys that move
-between actions (Tab / ⇧Tab or ← / →), see exactly what it will add and what it
-gives up, and save. For other keys, edit the file by hand — `/synaptik config`
-shows them as they are:
+In the default renderer's pane, Claude Code binds only Tab / ⇧Tab to move between
+actions. A mod cannot ship key bindings, so ← / → go in your own
+`~/.claude/keybindings.json`. **`/synaptik config` sets them for you** there: it
+shows exactly what it will add and what it gives up, and saves only when you
+choose Save. Fullscreen needs no setup — ← / → already work there. By hand, the
+entry is:
 
 ```json
 {
   "bindings": [
-    { "context": "Chat", "bindings": { "ctrl+s": "abovePrompt:focus" } },
     { "context": "Pane", "bindings": { "left": "abovePrompt:previous", "right": "abovePrompt:next" } }
   ]
 }
@@ -117,7 +117,7 @@ shows them as they are:
 
 ### Known limits
 
-- **Fullscreen** reviews the reply in place. **Classic** cannot redraw what has
+- **Fullscreen** reviews the reply in place. **The default renderer** cannot redraw what has
   scrolled off, so its navigator shows the selected block itself, above the
   prompt — and may not appear on narrow terminals: Claude Code holds back a pane
   opened unasked below about 144 columns. The band then offers to open it.
