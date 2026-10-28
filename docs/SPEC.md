@@ -357,6 +357,12 @@ suggestion showing sends nothing (checked 2026-10-28); `ctrl+c` clears it.
 - The text is proposed **as compiled**, with no leading space. The box draws its
   cursor over a suggestion's first cell, so the first mark glyph hides under it
   until the suggestion is taken; a leading space to avoid that looked worse.
+- **Once taken, the feedback's glyphs are coloured** in the box — ✓ green, ✗
+  red, ✎ in the suggestion colour — as prompt decorations, which never change the
+  draft. From the first keystroke only: taking the suggestion is a
+  `prompt.change`, which carries no decorations, and Synaptik never writes the
+  box to add them. A line not led by a glyph, and any prompt of the person's own,
+  is left alone.
 - **A suggestion cannot be withdrawn**: there is no call for it, a blank one
   cannot show, and writing to the box does not dismiss it. When the last mark is
   cleared, the mod proposes a harmless placeholder instead — currently `Give me a
