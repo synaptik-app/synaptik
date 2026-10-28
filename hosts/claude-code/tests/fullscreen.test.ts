@@ -166,7 +166,7 @@ test(check(F, 'In a comment, backslash then ⏎ starts a new line'), async ($, o
   await fullscreen($, F)
   await review($)
   const ui = await fullscreen($, F)
-  await clickAndPress(ui, RATE_LIMIT, ['c', 'a', '\\', 'return', 'b', 'down'])
+  await clickAndPress(ui, RATE_LIMIT, ['c', 'a', '\\', 'return', 'b', 'up', 'down', 'return'])
   const lead = '✎ "2. Rate-limit the login endpoint" → '
   expect(suggested()).toContain(`${lead}a\n${' '.repeat(lead.length)}b`)
   // ↓ staged it and moved on; Backspace on an empty comment cancels it.
@@ -451,4 +451,13 @@ test('a staged comment of several lines shows as one row, so a click on the menu
   await ui.resize({ columns: 100, rows: 3, in: into })
   await ui.pointer({ type: 'down', x: 17, y: 1, button: 'left', in: into })
   expect(suggested()).toBe('✗ "1. Cache sessions in Redis"')
+})
+
+test('a comment typed in place names its keys after the text, as the fields do', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  const into = await clickAndPress(ui, CACHE, ['c', 'h', 'i'])
+  expect(await ui.find({ type: 'Text', text: /⏎ ok · \\⏎ new line/, in: into })).toBeDefined()
 })

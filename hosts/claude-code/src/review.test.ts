@@ -73,13 +73,12 @@ test('a new line: backslash then ⏎, Shift+⏎, Alt+⏎ or ctrl+j — plain ⏎
   expect(keys(active, ['c', 'a', { key: 'j', ctrl: true }, 'b']).review.editing?.text).toBe('a\nb')
 })
 
-test('↑/↓ in a one-line comment stage it and move on — they never drop it', async () => {
-  const { review, actions } = keys(active, ['c', 'o', 'k', 'down'])
-  expect(review.selected).toBe(3)
-  expect(review.editing).toBeUndefined()
-  expect(actions).toEqual([{ kind: 'comment', index: 2, text: 'ok' }])
+test('↑/↓ in a one-line comment do nothing: it stays open, unstaged', async () => {
+  const { review, actions } = keys(active, ['c', 'o', 'k', 'down', 'up'])
+  expect(review.selected).toBe(2)
+  expect(review.editing).toEqual({ index: 2, text: 'ok', cursor: 2 })
+  expect(actions).toEqual([])
 })
-
 test('backspace on an empty comment cancels it', async () => {
   expect(keys(active, ['c', 'x', 'backspace', 'backspace']).actions).toEqual([{ kind: 'cancel', index: 2 }])
 })
@@ -174,12 +173,11 @@ test('the menu, clicked: each item by its cells, 💬 taking two', async () => {
 test('↑/↓ in a comment of several lines move between its lines, keeping the column', async () => {
   const { review } = keys(active, ['c', 'a', 'b', 'c', '\\', 'return', 'd', 'up'])
   expect(review.editing).toEqual({ index: 2, text: 'abc\nd', cursor: 1 })
+  // ↓ to the last line, then ↓ again: nothing — still open, unstaged.
   const down = keys(review, ['down', 'down'])
-  // ↓ to the last line, then ↓ again leaves: staged, and the next block selected.
-  expect(down.actions).toEqual([{ kind: 'comment', index: 2, text: 'abc\nd' }])
-  expect(down.review.selected).toBe(3)
+  expect(down.actions).toEqual([])
+  expect(down.review.editing).toEqual({ index: 2, text: 'abc\nd', cursor: 5 })
 })
-
 test('lineMove: to the same column, or the end of a shorter line', async () => {
   expect(lineMove('abcd\nef', 3, 1)).toBe(7)
   expect(lineMove('abcd\nef', 6, -1)).toBe(1)

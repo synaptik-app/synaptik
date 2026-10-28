@@ -9,6 +9,7 @@ import type { ClientModule } from 'claude-code'
 
 import { chunk } from '../../src/blocks'
 import { oneLine } from '../../src/compile'
+import { COMMENT_KEYS } from '../ui'
 import { click, current, itemAt, MENU, press, queue } from '../../src/review'
 import type { Editing, Local, Review, Step } from '../../src/review'
 
@@ -82,15 +83,17 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
   const menuRow = () => surface.rows - 1 - (staged ? 1 : 0)
   const menuStart = MARGIN + props.indent + 2
 
-  // The comment being typed, dim like a staged one, its cursor an inverse cell.
+  // The comment being typed, dim like a staged one, its cursor an inverse cell,
+  // and after it the keys, as Claude Code's own fields name theirs.
   const field = (e: Editing) => {
     const before = e.text.slice(0, e.cursor)
     const atLine = before.split('\n').length - 1
     const atColumn = before.length - before.lastIndexOf('\n') - 1
+    const lines = e.text.split('\n')
     return Box({
       flexDirection: 'column',
       paddingLeft: MARGIN + props.indent,
-      children: e.text.split('\n').map((line, n) =>
+      children: lines.map((line, n) =>
         Text({
           dimColor: true,
           children: [
@@ -98,6 +101,7 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
             ...(n === atLine && e.cursor >= 0
               ? [line.slice(0, atColumn), Text({ inverse: true, children: [line[atColumn] ?? ' '] }), line.slice(atColumn + 1)]
               : [line]),
+            ...(n === lines.length - 1 ? [Text({ dimColor: true, children: [`   ⏎ ${COMMENT_KEYS}`] })] : []),
           ],
         }),
       ),

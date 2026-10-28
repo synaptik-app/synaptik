@@ -112,12 +112,11 @@ function edit(review: Review, e: Editing, key: Key, scope: Scope): Step | undefi
   if (key.key === 'right') return put(text, Math.min(text.length, cursor + 1))
   if (key.key === 'home') return put(text, 0)
   if (key.key === 'end') return put(text, text.length)
-  // ↑/↓ move between the comment's lines, keeping the column; from its first
-  // line ↑, from its last ↓, stage it and move on to the next block.
+  // ↑/↓ move between the comment's lines, keeping the column; past its first or
+  // last line they do nothing — the comment stays open, unstaged, until ⏎.
   if (key.key === 'up' || key.key === 'down') {
     const to = lineMove(text, cursor, key.key === 'up' ? -1 : 1)
-    if (to !== undefined) return put(text, to)
-    return select(review, review.selected + (key.key === 'up' ? -1 : 1), scope)
+    return to === undefined ? undefined : put(text, to)
   }
   const typed = key.key === 'space' ? ' ' : key.key
   if (key.ctrl || key.meta || typed === '' || NAMED.has(typed)) return undefined

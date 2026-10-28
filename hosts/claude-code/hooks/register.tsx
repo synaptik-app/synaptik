@@ -30,6 +30,7 @@ import { decorate } from '../src/decorate'
 import {
   BAND_COMMENT_PREFIX,
   BULLET,
+  COMMENT_KEYS,
   COMMENT_PREFIX,
   commentKey,
   MARGIN,
@@ -1176,7 +1177,7 @@ export const register: Register = on => {
       <Input
         key={commentKey(seq)}
         placeholder="comment"
-        submitLabel="ok"
+        submitLabel={COMMENT_KEYS}
         rows={fieldRows}
         value={seed}
         onInput={async value => {
