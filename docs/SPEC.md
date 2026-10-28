@@ -567,10 +567,10 @@ selects nothing inside one.
   directly.
 - **A comment is typed in place**, under its block, dim, with a cursor (an
   inverse cell): characters, Space, ←/→, Home/End, Backspace, Delete. `⏎`
-  stages it; `\` then `⏎` (or Shift/Alt+`⏎` where the terminal tells them
-  apart, or `ctrl+j`) starts a new line; ↑/↓ move between its lines and nothing
-  more — past the first or last they leave it open, unstaged; Backspace on an empty comment
-  cancels it; `c` on a commented block reopens its text.
+  stages it; `\` then `⏎` starts a new line, in every terminal, and the hint
+  after the text says so (`⏎ ok · \⏎ new line`); ↑/↓ move between its lines and
+  nothing more — past the first or last they leave it open, unstaged; Backspace
+  on an empty comment cancels it; `c` on a commented block reopens its text.
 - **A paste** while a comment is open goes into the comment: Claude Code hands
   every paste to the prompt box, and a `prompt.edit` hook moves it.
 
@@ -640,8 +640,8 @@ lets the ring stop on verbs and the comment field only. The menu under the
 selected block in the reply shows which verb holds the ring.
 
 **Comments** are typed into an `Input` shown in the pane — of several lines
-(`rows`, #16: ⏎ stages, `\` then ⏎ — or Shift+⏎ where the terminal tells it
-apart — starts a new line; the field says `⏎ ok · \⏎ new line`), growing with
+(`rows`, #16: ⏎ stages, `\` then ⏎ starts a new line; the field says
+`⏎ ok · \⏎ new line`), growing with
 them to 3 rows and then scrolling with its cursor; the block viewer gives up the
 rows. Visible, because only the field knows where its cursor is: its events carry the text, never the cursor,
 and moving the cursor raises none. The text also shows under the block in the
