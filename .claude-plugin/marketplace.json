@@ -1,6 +1,6 @@
 {
   "name": "synaptik-app",
-  "description": "The Synaptik plugin: accept, reject or comment on any part of the agent's reply — Synaptik turns your marks into one prompt.",
+  "description": "The Synaptik plugin: review the agent’s reply in place. Synaptik turns your review into one prompt.",
   "owner": {
     "name": "Synaptik",
     "email": "hello@synaptik.app",
@@ -10,7 +10,7 @@
     {
       "name": "synaptik",
       "source": "./hosts/claude-code",
-      "description": "Accept, reject or comment on any part of the agent's reply — Synaptik turns your marks into one prompt.",
+      "description": "Review the agent’s reply in place. Synaptik turns your review into one prompt.",
       "category": "productivity",
       "tags": [
         "review",
