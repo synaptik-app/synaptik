@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { click, closed, current, letGo, paste, press, queue, receive, START } from './review'
+import { cells, click, closed, current, itemAt, letGo, paste, press, queue, receive, START } from './review'
 import type { Key, Review, Scope } from './review'
 
 const SCOPE: Scope = { first: 0, last: 4, comments: {} }
@@ -156,4 +156,17 @@ test('a block posts every action not yet confirmed, numbered once', async () => 
 
 test('closed() leaves the key out instead of setting it undefined', async () => {
   expect(Object.keys(closed({ ...active, editing: { index: 1, text: '', cursor: 0 } }))).not.toContain('editing')
+})
+
+test('the menu, clicked: each item by its cells, 💬 taking two', async () => {
+  const items = ['[ ✓ accept ]', '[ ✗ reject ]', '[ ✎ comment ]', '[ 💬 discuss ]']
+  expect(cells('[ 💬 discuss ]')).toBe(14)
+  expect(itemAt(0, items)).toBe(0)
+  expect(itemAt(11, items)).toBe(0)
+  expect(itemAt(12, items)).toBe(1)
+  expect(itemAt(24, items)).toBe(2)
+  expect(itemAt(37, items)).toBe(3)
+  expect(itemAt(50, items)).toBe(3)
+  expect(itemAt(51, items)).toBe(-1)
+  expect(itemAt(-1, items)).toBe(-1)
 })

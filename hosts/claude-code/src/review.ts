@@ -219,3 +219,25 @@ export function queue(local: Local | undefined, acked: number, s: Step): { local
   const queued = [...(local?.queued ?? []).filter(a => a.id > acked), ...s.actions.map(a => ({ ...a, id: nextId++ }))]
   return { local: { pending: s.review, queued, nextId }, post: { review: s.review, actions: queued } }
 }
+
+// --- The menu, clicked -------------------------------------------------------
+
+// Cells a string takes in the terminal: one per character, two for an emoji
+// (💬) and other wide pictographs.
+export function cells(text: string): number {
+  let n = 0
+  for (const ch of text) n += (ch.codePointAt(0) ?? 0) >= 0x1f000 ? 2 : 1
+  return n
+}
+
+// Which menu item a click `x` cells into the menu row lands on, given each
+// item's drawn text in order; -1 between or past them.
+export function itemAt(x: number, items: readonly string[]): number {
+  let at = 0
+  for (const [n, item] of items.entries()) {
+    const width = cells(item)
+    if (x >= at && x < at + width) return n
+    at += width
+  }
+  return -1
+}
