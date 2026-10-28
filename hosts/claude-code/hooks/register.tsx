@@ -89,6 +89,7 @@ let replyRequestId = ''
 // reply above it into view — the reply itself, taller than the window, can only
 // be scrolled to its top. Lost on reload.
 let turnRowId = ''
+const turnRowsSeen = new Set<string>()
 
 // Whether the navigator holds the keyboard. Esc raises no ui.focus event, so
 // the only reliable source is the navigator's own drawing (Pane isFocused);
@@ -751,8 +752,11 @@ export const register: Register = on => {
 
   // The row after a turn, remembered so the reply's end can be scrolled into
   // view. Drawn by Claude Code unchanged.
+  // Every turn row on screen is redrawn, older ones too: the newest is the one
+  // first seen last, not the one drawn last.
   on('ui.render', { component: 'TurnDuration' }, ($, e, next) => {
-    if (e.requestId !== turnRowId) {
+    if (!turnRowsSeen.has(e.requestId)) {
+      turnRowsSeen.add(e.requestId)
       turnRowId = e.requestId
       observe(`turn row ${e.requestId.slice(0, 12)}`)
     }
