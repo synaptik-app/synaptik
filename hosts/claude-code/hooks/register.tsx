@@ -424,7 +424,10 @@ async function bandVerb($: EngineInterface, n: number) {
   const scope = { first: 0, last: (await blockCount($)) - 1, comments: (await read($, comments)) as Record<string, string> }
   const s = applyMenu({ ...held.review, selected: await read($, selected) }, n, scope)
   holder = 'band'
-  held = { ...held, review: s.review }
+  // A comment opened from the band is typed in its field, which draws its own
+  // cursor: none in place.
+  const editing = s.review.editing ? { editing: { ...s.review.editing, cursor: -1 } } : {}
+  held = { ...held, review: { ...s.review, ...editing } }
   for (const a of s.actions) await applyAction($, a)
   $.ui.invalidate('ui.render')
   if (!s.review.editing) return
@@ -439,7 +442,8 @@ async function bandComment($: EngineInterface, text: string, isDone: boolean) {
   const open = held.review.editing
   if (!open) return
   if (!isDone) {
-    held = { ...held, review: { ...held.review, editing: { ...open, text, cursor: text.length } } }
+    // Typed in the band's field, which shows its own cursor: none in place.
+    held = { ...held, review: { ...held.review, editing: { ...open, text, cursor: -1 } } }
     return $.ui.invalidate('ui.render')
   }
   held = { ...held, review: { ...closed(held.review), seq: held.review.seq + 1 } }
@@ -964,6 +968,9 @@ export const register: Register = on => {
   // edit means the person is typing there, so the reply lets go.
   on('prompt.edit', async ($, e, next) => {
     const pasted = (holder === 'reply' || holder === 'hint') && !e.key ? paste(held.review, e.inputText) : undefined
+    if (!e.key && e.inputText.length > 1) {
+      observe(`paste of ${e.inputText.length} chars: holder=${holder ?? '-'} comment open=${held.review.editing ? 'yes' : 'no'} → ${pasted ? 'into the comment' : 'the prompt box'}`)
+    }
     if (pasted) {
       held = { ...held, review: pasted }
       $.ui.invalidate('ui.render')
@@ -1162,7 +1169,9 @@ export const register: Register = on => {
     // Several lines (#16): ⏎ stages, Shift+⏎ or a backslash before ⏎ starts a
     // new line. It grows with its lines up to FIELD_MAX_ROWS, then scrolls with
     // its cursor; the block above gives up the rows.
-    const fieldRows = isTyping ? Math.min(FIELD_MAX_ROWS, (commented[sel] ?? seed).split('\n').length) : 1
+    // At least two rows: a one-row Input is Claude Code's single-line field, where
+    // ⏎ always submits.
+    const fieldRows = isTyping ? Math.max(2, Math.min(FIELD_MAX_ROWS, (commented[sel] ?? seed).split('\n').length)) : 1
     const field = (
       <Input
         key={commentKey(seq)}

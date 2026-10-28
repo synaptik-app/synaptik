@@ -568,8 +568,9 @@ selects nothing inside one.
 - **A comment is typed in place**, under its block, dim, with a cursor (an
   inverse cell): characters, Space, ←/→, Home/End, Backspace, Delete. `⏎`
   stages it; `\` then `⏎` (or Shift/Alt+`⏎` where the terminal tells them
-  apart, or `ctrl+j`) starts a new line; ↑/↓ stage it and move on; Backspace on
-  an empty comment cancels it; `c` on a commented block reopens its text.
+  apart, or `ctrl+j`) starts a new line; ↑/↓ move between its lines, and from its
+  first or last line stage it and move on; Backspace on an empty comment
+  cancels it; `c` on a commented block reopens its text.
 - **A paste** while a comment is open goes into the comment: Claude Code hands
   every paste to the prompt box, and a `prompt.edit` hook moves it.
 

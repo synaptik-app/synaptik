@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { cells, click, closed, current, itemAt, letGo, paste, press, queue, receive, START } from './review'
+import { cells, click, closed, current, itemAt, letGo, lineMove, paste, press, queue, receive, START } from './review'
 import type { Key, Review, Scope } from './review'
 
 const SCOPE: Scope = { first: 0, last: 4, comments: {} }
@@ -73,7 +73,7 @@ test('a new line: backslash then ⏎, Shift+⏎, Alt+⏎ or ctrl+j — plain ⏎
   expect(keys(active, ['c', 'a', { key: 'j', ctrl: true }, 'b']).review.editing?.text).toBe('a\nb')
 })
 
-test('↑/↓ in a comment stage it and move on — they never drop it', async () => {
+test('↑/↓ in a one-line comment stage it and move on — they never drop it', async () => {
   const { review, actions } = keys(active, ['c', 'o', 'k', 'down'])
   expect(review.selected).toBe(3)
   expect(review.editing).toBeUndefined()
@@ -169,4 +169,20 @@ test('the menu, clicked: each item by its cells, 💬 taking two', async () => {
   expect(itemAt(50, items)).toBe(3)
   expect(itemAt(51, items)).toBe(-1)
   expect(itemAt(-1, items)).toBe(-1)
+})
+
+test('↑/↓ in a comment of several lines move between its lines, keeping the column', async () => {
+  const { review } = keys(active, ['c', 'a', 'b', 'c', '\\', 'return', 'd', 'up'])
+  expect(review.editing).toEqual({ index: 2, text: 'abc\nd', cursor: 1 })
+  const down = keys(review, ['down', 'down'])
+  // ↓ to the last line, then ↓ again leaves: staged, and the next block selected.
+  expect(down.actions).toEqual([{ kind: 'comment', index: 2, text: 'abc\nd' }])
+  expect(down.review.selected).toBe(3)
+})
+
+test('lineMove: to the same column, or the end of a shorter line', async () => {
+  expect(lineMove('abcd\nef', 3, 1)).toBe(7)
+  expect(lineMove('abcd\nef', 6, -1)).toBe(1)
+  expect(lineMove('abcd\nef', 2, -1)).toBeUndefined()
+  expect(lineMove('abcd\nef', 6, 1)).toBeUndefined()
 })

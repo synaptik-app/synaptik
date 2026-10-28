@@ -95,7 +95,7 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
           dimColor: true,
           children: [
             n === 0 ? '→ ' : '  ',
-            ...(n === atLine
+            ...(n === atLine && e.cursor >= 0
               ? [line.slice(0, atColumn), Text({ inverse: true, children: [line[atColumn] ?? ' '] }), line.slice(atColumn + 1)]
               : [line]),
           ],

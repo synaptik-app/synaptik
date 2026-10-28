@@ -113,9 +113,9 @@ export function BandKeysView(
     <Box flexDirection="column">
       {band}
       {m.comment && (
-        // Hidden: it takes the typing, and the comment shows in place, under its
-        // block in the reply.
-        <Box display="none">
+        // Shown: only the field draws its own cursor (it never reports it), and
+        // the comment also shows in place, under its block, without one.
+        <Box>
           <Input
           key={m.comment.key}
           placeholder="comment"
