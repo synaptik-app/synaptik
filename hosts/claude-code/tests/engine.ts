@@ -73,6 +73,9 @@ export const closed: string[] = []
 // Reset by `engine`.
 export const opened: { focus: boolean }[] = []
 
+// Every slash command Synaptik registered. Reset by `engine`.
+export const registered: string[] = []
+
 // Every file Synaptik wrote, in order, path and whole text. Reset by `engine`.
 export const written: { path: string; text: string }[] = []
 
@@ -92,6 +95,7 @@ export function engine(on: On, rows: Row[]) {
   promptBox.text = ''
   placement.isPlaced = true
   opened.length = 0
+  registered.length = 0
   closed.length = 0
   written.length = 0
   failing.write = ''
@@ -101,7 +105,10 @@ export function engine(on: On, rows: Row[]) {
     on(name as never, ((_$: unknown, e: never) => ({ value: value(e) })) as never)
 
   call('session.messages', () => rows)
-  call('command.register', (e: { name: string }) => ({ command: e.name }))
+  call('command.register', (e: { name: string }) => {
+    registered.push(e.name)
+    return { command: e.name }
+  })
   call('ui.open', (e: { focus?: boolean }) => {
     opened.push({ focus: e.focus === true })
     return { isPlaced: placement.isPlaced }

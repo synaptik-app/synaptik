@@ -190,9 +190,15 @@ async function suggestTray($: EngineInterface) {
 }
 
 
+// Set by session.start in a non-interactive session (claude -p, the SDK).
+let isHeadless = false
+
 // Reads the last assistant reply from the transcript. A different reply than
 // the one marked so far starts a fresh tray; the same one (a reload) keeps it.
 async function adoptLastReply($: EngineInterface) {
+  // `claude -p` and the SDK have no one to review: nothing is adopted, so the
+  // hooks find no reply and fall through as with Synaptik off.
+  if (isHeadless) return
   // The whole last turn, not its last message: text before a tool call is a
   // separate message and was left unmarkable.
   const messages = await $.session.messages()
@@ -679,6 +685,8 @@ function keyMenuModel(menu: KeyMenu, bodyRows: number): KeyMenuModel {
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
+    isHeadless = !e.isInteractive
+    if (isHeadless) return next(e)
     await $.command.register({
       name: 'synaptik',
       description: "Review the agent's reply in place · help for more",
