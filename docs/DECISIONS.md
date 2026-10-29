@@ -1309,7 +1309,7 @@ person typing the mod's name most likely wants. `on`/`off` are explicit.
 ---
 
 ### D40 — Target surfaces: the terminal only
-**Status:** settled · added 2026-10-21
+**Status:** settled · added 2026-10-21 · revised 2026-10-29 (non-interactive row)
 
 **Synaptik draws only in Claude Code's terminal renderer** (`e.surface ===
 'terminal'`): standalone terminals, IDE-integrated terminals (VS Code, Cursor,
@@ -1322,7 +1322,16 @@ screen, SSH and WSL. Everywhere else every hook passes through with `next(e)`.
 | `vscode` | the Claude Code VS Code extension panel | not yet — **the next surface** (#76) |
 | `desktop` | the Claude app's Code tab | **stays out** |
 | `mobile` | the Claude mobile app (e.g. steering via Remote Control) | **stays out** |
-| — | `claude -p`, the Agent SDK, GitHub Actions, cloud sessions | hooks run, nothing draws: pass through silently |
+| — | `claude -p`, the Agent SDK, GitHub Actions, cloud sessions (`!e.isInteractive`) | no `/synaptik` command, nothing adopted; the other hooks still run and pass through silently (revised 2026-10-29, #127) |
+
+**Revision (#127) — non-interactive sessions.** The row used to read "hooks run,
+nothing draws: pass through silently". Now `session.start` checks
+`!e.isInteractive` and, in such a session, skips registering the `/synaptik`
+command and adopting the last reply (`adoptLastReply`, so `turn.complete`
+stays out too). Only the command is skipped: the other hooks are still
+registered and pass through, and find no reply to draw. Nobody is there to
+review, so a command and a tray would be dead weight. The check is
+`!e.isInteractive`, not `=== false`: 2.1.301 sends the field.
 
 **Why the Desktop app and the mobile app are out:** they already ship review of
 their own. Tried in the Desktop Code tab on 2026-10-21: a reply on a selected

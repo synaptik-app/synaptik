@@ -4,7 +4,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { arrow, band, ENGINE_DRAWING, log, pane, position, reply, start, transcriptOf, turn } from './engine'
+import { arrow, band, ENGINE_DRAWING, engine, log, opened, pane, position, registered, reply, start, transcriptOf, turn } from './engine'
 import type { Row } from './engine'
 import { FIXTURES } from './fixtures.generated'
 import { segment } from '../src/blocks'
@@ -73,6 +73,18 @@ test('resuming adopts the reply, skipping the “No response requested.” row C
   const blocks = segment(FIXTURES[F]!.pieces.join('\n\n')).filter(b => b.isBlock)
   expect(await position(ui)).toEqual({ at: blocks.length, of: blocks.length })
   expect((await ui.find({ type: 'Markdown' }))?.props.text).toBe(blocks.at(-1)!.text)
+})
+
+test('a non-interactive session (claude -p, the SDK): no command, nothing adopted or drawn', async ($, on) => {
+  const rows = transcriptOf(F)
+  engine(on, rows)
+  await $.session.start({ cwd: '/tmp/synaptik-test', surface: null, isInteractive: false } as never)
+  await turn($, rows, [ask('and then?'), answer(NEW_REPLY)])
+  expect(registered).toEqual([])
+  expect(opened).toEqual([])
+  const drawn = await band($)
+  expect(await drawn.find({ type: 'Text', text: ENGINE_DRAWING })).toBeDefined()
+  expect(await drawn.find({ type: 'Text', text: /to review the reply/ })).toBeUndefined()
 })
 
 test('the same reply adopted again (a reload) keeps the tray', async ($, on) => {
