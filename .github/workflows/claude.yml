@@ -11,8 +11,12 @@ on:
 
 jobs:
   claude:
-    # Only on a mention: no runner starts for other comments.
-    if: contains(github.event.comment.body, '@claude')
+    # Only on the maintainer's mention: no runner starts for anyone else's
+    # comment. The action also refuses users without write access; this keeps
+    # holding if a collaborator is added later.
+    if: >-
+      contains(github.event.comment.body, '@claude') &&
+      github.event.comment.user.login == 'mgundogan'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # One run per issue or PR, so a double comment does not fan out.
