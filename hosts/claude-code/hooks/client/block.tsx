@@ -101,7 +101,7 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
             ...(n === atLine && e.cursor >= 0
               ? [line.slice(0, atColumn), Text({ inverse: true, children: [line[atColumn] ?? ' '] }), line.slice(atColumn + 1)]
               : [line]),
-            ...(n === lines.length - 1 ? [Text({ dimColor: true, children: [`   ⏎ ${COMMENT_KEYS}`] })] : []),
+            ...(n === lines.length - 1 ? [Text({ dimColor: true, children: [`   ⏎ ${COMMENT_KEYS}${e.text === '' ? '' : ' · ctrl+u clear'}`] })] : []),
           ],
         }),
       ),

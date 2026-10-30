@@ -571,7 +571,8 @@ selects nothing inside one.
   stages it; `\` then `⏎` starts a new line, in every terminal, and the hint
   after the text says so (`⏎ ok · \⏎ new line`); ↑/↓ move between its lines and
   nothing more — past the first or last they leave it open, unstaged; Backspace
-  on an empty comment cancels it; `c` on a commented block reopens its text.
+  on an empty comment cancels it; `ctrl+u` empties it, every line, and the hint
+  names that once there is text; `c` on a commented block reopens its text.
 - **A paste** while a comment is open goes into the comment: Claude Code hands
   every paste to the prompt box, and a `prompt.edit` hook moves it.
 

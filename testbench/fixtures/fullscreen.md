@@ -91,6 +91,7 @@ x()
 - **Comments**
   - c opens a comment under the block, dim, with a cursor: type, move with ←/→ and Home/End, Backspace, Delete, then ⏎ stages it
   - In a comment, backslash then ⏎ starts a new line (the hint after it says so); ↑/↓ move between its lines and nothing more — ⏎ stages it; Backspace on an empty comment cancels it
+  - ctrl+u empties the comment being typed, every line, and it stays open; ⏎ then drops it, ✎ included (the hint names it once there is text); after ctrl+x tab the field is Claude Code's, and ctrl+u empties only the current line
   - A paste while a comment is open goes into the comment, not the prompt box
   - c on a commented block reopens its text
 - **Ending a review**

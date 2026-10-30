@@ -194,3 +194,12 @@ test('Backspace on a block unmarks it; in a comment it deletes a character', asy
   expect(s?.actions).toEqual([])
   expect(s?.review.editing?.text).toBe('h')
 })
+
+test('ctrl+u empties a comment of every line and leaves it open; u alone types a u', async () => {
+  const scope = { first: 0, last: 3, comments: {} }
+  const on = { ...START, isActive: true, editing: { index: 1, text: 'one\ntwo', cursor: 5 } }
+  const s = press(on, { key: 'u', ctrl: true }, scope)
+  expect(s?.review.editing).toEqual({ index: 1, text: '', cursor: 0 })
+  expect(s?.actions).toEqual([])
+  expect(press(on, { key: 'u' }, scope)?.review.editing?.text).toBe('one\ntuwo')
+})

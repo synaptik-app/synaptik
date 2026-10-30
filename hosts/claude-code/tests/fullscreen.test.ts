@@ -493,3 +493,16 @@ test('from the band Backspace is not offered: the legend does not name it', asyn
   await review($)
   expect((await hintLines(await band($)))[0]).not.toContain('unmark')
 })
+
+test(check(F, 'ctrl+u empties the comment being typed'), async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  const into = await clickAndPress(ui, CACHE, ['c', 'h', 'i', { key: 'u', ctrl: true }, 'o', 'k', 'return'])
+  expect(suggested()).toBe('✎ "1. Cache sessions in Redis" → ok')
+  await ui.key({ key: 'c', in: into })
+  await ui.key({ key: 'u', ctrl: true, in: into })
+  await ui.key({ key: 'return', in: into })
+  expect(suggested()).not.toContain('✎')
+})
