@@ -941,10 +941,6 @@ export const register: Register = on => {
     const element = baseKey(e.element ?? '')
     observe(`band focus → ${element || '(off)'} by ${e.origin.kind}`)
     if (element === NEXT_BLOCK || element === PREVIOUS_BLOCK || element === END_REVIEW) return { deny: 'synaptik: not a stop' }
-    // During a review from the band, ←/→ walk Synaptik's actions: the ring is the
-    // band's, shared, so another mod's button would be a stop among them, and
-    // landing there would end the review. Its hotkey and a click on it still work.
-    if (holder === 'band' && e.plugin && e.plugin !== 'synaptik') return { deny: 'synaptik: reviewing' }
     const verb = VERBS.findIndex(v => v.key === element)
     if (verb >= 0 || element.startsWith(BAND_COMMENT_PREFIX)) {
       holder = 'band'

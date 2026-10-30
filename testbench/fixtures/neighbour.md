@@ -13,7 +13,7 @@ A closing paragraph.
   - The band shows the neighbour's line as well as Synaptik's, mod on
 - **A review from ctrl+x tab**
   - One ctrl+x tab starts the review
-  - ←/→ walk only Synaptik's actions, never the neighbour's ping
+  - ←/→ walk Synaptik's actions; past them they land on the neighbour's ping, and the review ends
   - Pressing n in the band pings the neighbour, as a click on ping does, and a, x, c, d still reach Synaptik
 - **A review from a click on a block**
   - a, x, c, d reach Synaptik, and n does not reach the neighbour
