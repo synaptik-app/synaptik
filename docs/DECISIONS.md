@@ -1368,7 +1368,7 @@ needed; emoji width (`💬`) is the one to watch.
 ### D41 — Fullscreen reviews in the reply itself; classic keeps its pane
 **Status:** settled · added 2026-10-27 · decided on a spike (`spike/client-reply`,
 Claude Code 2.1.308) · built on #39 · revises D20, D31, D38 · **revised
-2026-10-28: review mode** (below)
+2026-10-28: review mode; 2026-10-30: the shared ring, and revealing** (below)
 
 **In fullscreen there is no navigator pane.** Each block of the reply is drawn by
 its own `Client` (a region the mod's own module draws). **A click on a block
@@ -1451,6 +1451,31 @@ Tried on the terminal, three things changed what is above:
 yellow `⏎ sends what you typed`; and the hint line. Prompt edits and changes
 redraw it, so the note follows the box. During a review, D33 yields: the reply
 is Synaptik's to draw.
+
+#### Revision 2026-10-30 — the shared ring, and revealing
+
+Found on the test bench, Claude Code 2.1.308.
+
+- **The band's ring stays shared.** Before D41 Synaptik had nothing focusable in
+  the band, so `ctrl+x tab` stopped on another mod's button and then moved on to
+  the pane. Now Synaptik's hidden actions are in the band, the first takes the
+  ring, and a neighbour's button is a stop among them. ←/→ past the actions land
+  on it, and the review ends. Its hotkey works while the band has the keyboard;
+  after a click on a block the keys are the `Client`'s, and it does not.
+- **Rejected: refusing other mods' stops during a review** (`ui.focus`,
+  `{ deny }`). It worked, and a click on the button still fired, but a button with
+  no hotkey could then not be reached from the keyboard at all: `ctrl+x tab` always
+  lands on Synaptik, and `q` hands the keyboard back to the prompt. Those stops are
+  not Synaptik's to take away. No "next mod" key can replace them: `ctrl+x tab`
+  moves between sites (the band, a pane), mods share the one band, and a hotkey
+  is a single letter or digit.
+- **Revealing the reply works only from `j` / `k`.** `$.ui.scroll` moves a
+  transcript row only in answer to the person's own input. `j` / `k` are presses;
+  a key in a `Client` reaches the hooks as a post, which is refused (`not
+  person-initiated`). So after a click ↑/↓ never scroll the reply, at its top and
+  end as well as in the middle. There is no workaround in the mod: handing the keys
+  back to the band would lose ↑/↓ and comments typed in place. The fix is Claude
+  Code's (#64).
 
 ---
 
