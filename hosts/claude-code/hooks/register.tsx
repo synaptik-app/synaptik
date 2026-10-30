@@ -822,6 +822,8 @@ export const register: Register = on => {
       const { Client } = $.ui.resolve(e)
       const review = await shownReview($)
       const staged = commented as Record<string, string>
+      // A move crosses the reply's pieces: the bounds are the whole reply's.
+      const count = await blockCount($)
       let n = offset - 1
       return (
         <Box flexDirection="column" marginTop={1}>
@@ -852,8 +854,8 @@ export const register: Register = on => {
                     indent: seg.indent,
                     ...(mark ? { glyph: GLYPH[mark] } : {}),
                     ...(bullet ? { bullet } : {}),
-                    first: offset,
-                    last: offset + pieceBlocks - 1,
+                    first: 0,
+                    last: count - 1,
                     review,
                     acked: held.acked,
                     comments: staged,
@@ -939,6 +941,10 @@ export const register: Register = on => {
     const element = baseKey(e.element ?? '')
     observe(`band focus → ${element || '(off)'} by ${e.origin.kind}`)
     if (element === NEXT_BLOCK || element === PREVIOUS_BLOCK || element === END_REVIEW) return { deny: 'synaptik: not a stop' }
+    // During a review from the band, ←/→ walk Synaptik's actions: the ring is the
+    // band's, shared, so another mod's button would be a stop among them, and
+    // landing there would end the review. Its hotkey and a click on it still work.
+    if (holder === 'band' && e.plugin && e.plugin !== 'synaptik') return { deny: 'synaptik: reviewing' }
     const verb = VERBS.findIndex(v => v.key === element)
     if (verb >= 0 || element.startsWith(BAND_COMMENT_PREFIX)) {
       holder = 'band'

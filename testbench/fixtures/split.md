@@ -24,6 +24,7 @@ Part three, a paragraph after the last tool call.
   - Part three can be selected and marked
 - **Moving across the parts**
   - Block N of M counts all three parts
+  - After a click on a block, ↑/↓ and Home/End cross the tool calls, as j / k do after ctrl+x tab
 - **The prompt**
   - Marks in different parts all reach the suggestion, in reading order
 - **While the tool calls run**

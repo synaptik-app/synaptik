@@ -3,7 +3,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { check, pane, position, select, start, suggested, walk } from './engine'
+import { fullscreen, check, pane, position, select, start, suggested, walk } from './engine'
 
 const F = 'split'
 
@@ -51,4 +51,23 @@ test(check(F, 'Nothing can be marked while the tool calls run'), async ($, on) =
   const ui = await pane($, 'inline')
   expect(await ui.find({ type: 'Text', text: /Waiting for the reply/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Block \d+ of \d+/ })).toBeUndefined()
+})
+
+test(check(F, 'After a click on a block, ↑/↓ and Home/End cross the tool calls'), async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await $.ui.focus({ component: 'AbovePrompt', requestId: 'band', element: 'verb-accept', origin: { kind: 'person' } })
+  const ui = await fullscreen($, F)
+  const clients = await ui.findAll({ type: 'Client' })
+  const into = String(clients.at(-1)!.key)
+  await ui.pointer({ type: 'down', x: 4, y: 0, button: 'left', in: into })
+  await ui.key({ key: 'down', in: into })
+  await ui.key({ key: 'a', in: into })
+  expect(suggested()).toContain('✓ "Part two, a paragraph')
+  await ui.key({ key: 'end', in: into })
+  await ui.key({ key: 'x', in: into })
+  expect(suggested()).toContain('✗ "Nothing can be marked')
+  await ui.key({ key: 'home', in: into })
+  await ui.key({ key: 'x', in: into })
+  expect(suggested().split('\n')[0]).toMatch(/^✗ "Part one, a paragraph/)
 })
