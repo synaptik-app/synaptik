@@ -461,3 +461,35 @@ test('a comment typed in place names its keys after the text, as the fields do',
   const into = await clickAndPress(ui, CACHE, ['c', 'h', 'i'])
   expect(await ui.find({ type: 'Text', text: /⏎ ok · \\⏎ new line/, in: into })).toBeDefined()
 })
+
+test(check(F, 'Backspace on a block takes its mark off'), async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  await clickAndPress(ui, CACHE, ['a', { key: 'down' }, 'x', 'backspace'])
+  expect(suggested()).toBe('✓ "1. Cache sessions in Redis"')
+  expect(((await hintLines(await band($)))[0])).toContain('⌫ unmark · q done')
+})
+
+test('Backspace on a commented block keeps the text for c, and on an unmarked block does nothing', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  await clickAndPress(ui, CACHE, ['a'])
+  const into = await clickAndPress(ui, RATE_LIMIT, ['c', 'h', 'i', 'return', 'backspace'])
+  expect(suggested()).toBe('✓ "1. Cache sessions in Redis"')
+  await ui.key({ key: 'backspace', in: into })
+  expect(suggested()).toBe('✓ "1. Cache sessions in Redis"')
+  await ui.key({ key: 'c', in: into })
+  await ui.key({ key: 'return', in: into })
+  expect(suggested()).toContain('✎ "2. Rate-limit the login endpoint" → hi')
+})
+
+test('from the band Backspace is not offered: the legend does not name it', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  expect((await hintLines(await band($)))[0]).not.toContain('unmark')
+})

@@ -175,7 +175,7 @@ type Tray = Map<number, BlockState>
 |---|---|
 | New mark on a marked block | **overwrites.** One slot, last write wins. |
 | Same verb twice | unmarks |
-| `Backspace` on a block ⚠️ | clears it: mark removed, thread set to `included: false`. **No key yet:** a mod's hotkey is one letter or digit, so Backspace can't be bound (#23); `clear` exists in `src/tray.ts` for when it can (#100). |
+| `Backspace` on a block | clears it: mark removed, a comment's text kept for `c`, thread set to `included: false`. **In fullscreen after a click only:** the keys are a `Client`'s there. From the band or the pane a hotkey is one letter or digit, so Backspace can't be bound (#23, #100). |
 | Clear-all | empties the tray |
 | Mark **and** included thread on one block | both are sent; the agent reconciles |
 
@@ -306,7 +306,7 @@ about the prompt box**; outside one it does:
 The action line, in **fullscreen**: outside a review, `ctrl+x tab to review the
 reply` and `click here to review the reply` in turn (`…to continue reviewing`
 once something is staged); while reviewing, `Block 3 of 12 · ↑↓ blocks · ←→
-actions · ⏎ apply · q done` (`j/k blocks` from the band). In **classic**:
+actions · ⏎ apply · ⌫ unmark · q done` (from the band, `j/k blocks` and no `⌫`). In **classic**:
 
 | State | Text |
 |---|---|
@@ -589,7 +589,7 @@ those stops (D41, revision 2026-10-30).
 **Status in the band:** the hint line above, or, while reviewing (the hint stays
 drawn, showing the legend — removing the `Client` the person clicked would take
 the keyboard with it), `Block N of M · ↑↓ blocks · ←→ actions · ⏎ apply ·
-q done` (`j/k blocks` from the band). The staged counts sit above it.
+⌫ unmark · q done` (from the band, `j/k blocks` and no `⌫`). The staged counts sit above it.
 
 **How the blocks hold together** (`src/review.ts`):
 - The block clicked keeps the keyboard and steers every block: its keys become
@@ -669,6 +669,7 @@ dropped. `⏎` or backspace on an empty line cancels it.
 | Walk the actions | ← / → | ← / → |
 | Apply the action under the cursor | ⏎, or click it | ⏎ |
 | Apply an action directly | `a` `x` `c` `d` | `a` `x` `c` `d` |
+| Take a block's mark off | Backspace | the same action again; a ✎ can't (#100) |
 | Leave | `q` (Esc is not seen, #23) | `q` |
 
 **The default renderer** (the pane):
