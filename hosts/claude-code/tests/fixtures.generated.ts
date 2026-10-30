@@ -85,13 +85,13 @@ export const FIXTURES: Readonly<Record<string, Fixture>> = {
   },
   "neighbour": {
     pieces: [
-      "## Neighbour test\n\nRun with the neighbour mod loaded next to Synaptik, in fullscreen. This reply is short on purpose: the test is about the shared surfaces, not the reply.\n\n1. A first item to mark\n2. A second item to mark\n\nA closing paragraph.\n\n### What to check\n\n- **The band**\n  - The band shows the neighbour's line as well as Synaptik's, mod on\n- **A review from ctrl+x tab**\n  - One ctrl+x tab starts the review\n  - ←/→ walk only Synaptik's actions, never the neighbour's ping\n  - Pressing n in the band pings the neighbour, and a, x, c, d still reach Synaptik\n- **A review from a click on a block**\n  - a, x, c, d reach Synaptik, and n does not reach the neighbour\n- **The reply and the suggestion**\n  - Older replies show \"— neighbour saw this reply\"; the reply Synaptik marks does not (one mod redraws a reply at a time)\n  - /neighbour suggest, prompt box empty: does its suggestion show, and which one stays after marking a block\n- **A less polite neighbour**\n  - With the neighbour loaded first and /neighbour greedy on: Synaptik's marks vanish from the reply, but the review still works — moving, actions, comments, the suggestion"
+      "## Neighbour test\n\nRun with the neighbour mod loaded next to Synaptik, in fullscreen. This reply is short on purpose: the test is about the shared surfaces, not the reply.\n\n1. A first item to mark\n2. A second item to mark\n\nA closing paragraph.\n\n### What to check\n\n- **The band**\n  - The band shows the neighbour's line as well as Synaptik's, mod on\n- **A review from ctrl+x tab**\n  - One ctrl+x tab starts the review\n  - ←/→ walk Synaptik's actions; past them they land on the neighbour's ping, and the review ends\n  - Pressing n in the band pings the neighbour, as a click on ping does, and a, x, c, d still reach Synaptik\n- **A review from a click on a block**\n  - a, x, c, d reach Synaptik, and n does not reach the neighbour\n- **The reply and the suggestion**\n  - Older replies show \"— neighbour saw this reply\"; the reply Synaptik marks does not (one mod redraws a reply at a time)\n  - /neighbour suggest, prompt box empty: does its suggestion show, and which one stays after marking a block\n- **A less polite neighbour**\n  - With the neighbour loaded first and /neighbour greedy on: Synaptik's marks vanish from the reply, but the review still works — moving, actions, comments, the suggestion"
     ],
     checks: [
       "The band shows the neighbour's line as well as Synaptik's, mod on",
       "One ctrl+x tab starts the review",
-      "←/→ walk only Synaptik's actions, never the neighbour's ping",
-      "Pressing n in the band pings the neighbour, and a, x, c, d still reach Synaptik",
+      "←/→ walk Synaptik's actions; past them they land on the neighbour's ping, and the review ends",
+      "Pressing n in the band pings the neighbour, as a click on ping does, and a, x, c, d still reach Synaptik",
       "a, x, c, d reach Synaptik, and n does not reach the neighbour",
       "Older replies show \"— neighbour saw this reply\"; the reply Synaptik marks does not (one mod redraws a reply at a time)",
       "/neighbour suggest, prompt box empty: does its suggestion show, and which one stays after marking a block",
@@ -117,13 +117,14 @@ export const FIXTURES: Readonly<Record<string, Fixture>> = {
     pieces: [
       "## Split test\n\nPart one, a paragraph before the first tool call.\n\n1. Part one, first item\n2. Part one, second item",
       "Part two, a paragraph between the tool calls.\n\n- Part two, a bullet\n- Part two, another bullet",
-      "Part three, a paragraph after the last tool call.\n\n### What to check\n\n- **Marking each part**\n  - Part one can be selected and marked\n  - Part two can be selected and marked\n  - Part three can be selected and marked\n- **Moving across the parts**\n  - Block N of M counts all three parts\n- **The prompt**\n  - Marks in different parts all reach the suggestion, in reading order\n- **While the tool calls run**\n  - Nothing can be marked while the tool calls run: the band offers no review, and the reply is Claude Code's own"
+      "Part three, a paragraph after the last tool call.\n\n### What to check\n\n- **Marking each part**\n  - Part one can be selected and marked\n  - Part two can be selected and marked\n  - Part three can be selected and marked\n- **Moving across the parts**\n  - Block N of M counts all three parts\n  - After a click on a block, ↑/↓ and Home/End cross the tool calls, as j / k do after ctrl+x tab\n- **The prompt**\n  - Marks in different parts all reach the suggestion, in reading order\n- **While the tool calls run**\n  - Nothing can be marked while the tool calls run: the band offers no review, and the reply is Claude Code's own"
     ],
     checks: [
       "Part one can be selected and marked",
       "Part two can be selected and marked",
       "Part three can be selected and marked",
       "Block N of M counts all three parts",
+      "After a click on a block, ↑/↓ and Home/End cross the tool calls, as j / k do after ctrl+x tab",
       "Marks in different parts all reach the suggestion, in reading order",
       "Nothing can be marked while the tool calls run: the band offers no review, and the reply is Claude Code's own"
     ],

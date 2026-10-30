@@ -562,6 +562,7 @@ selects nothing inside one.
 - **A click on a block selects it** and hands the reply the keyboard. The click
   lands on that block's own `Client`, so it is exact.
 - ↑/↓ move between blocks, Home/End (and PgUp/PgDn) jump to the first or last.
+  They run over the whole reply, across its tool calls.
 - ←/→ (and Tab) walk the menu under the selected block; ⏎ applies the action
   under the cursor; a click on an action applies it; `a` `x` `c` `d` act
   directly.
@@ -581,10 +582,14 @@ the band, and Claude Code's own lists use J/K. ←/→ walk the actions (Claude 
 binds them in the band by default), `⏎` applies, `a` `x` `c` `d` act; a comment
 opened from the band is typed in a field in the band and shows under its block.
 
+The band's ring is shared. Another mod's button there is a stop like Synaptik's,
+so ←/→ past the actions land on it, and the review ends. Synaptik does not refuse
+those stops (D41, revision 2026-10-30).
+
 **Status in the band:** the hint line above, or, while reviewing (the hint stays
 drawn, showing the legend — removing the `Client` the person clicked would take
 the keyboard with it), `Block N of M · ↑↓ blocks · ←→ actions · ⏎ apply ·
-esc done` (`j/k blocks` from the band). The staged counts sit above it.
+q done` (`j/k blocks` from the band). The staged counts sit above it.
 
 **How the blocks hold together** (`src/review.ts`):
 - The block clicked keeps the keyboard and steers every block: its keys become
@@ -614,7 +619,10 @@ holds text.
 
 **Revealing the reply** as the selection moves works as for the pane (below):
 entering the first or last third of the blocks scrolls the reply's top or end
-into view, best effort.
+into view, best effort. **Only from `j` / `k`:** Claude Code scrolls a transcript
+row only in answer to the person's own input, and a key a `Client` posts does not
+count (`not person-initiated`). After a click, ↑/↓ move the selection and the
+person scrolls with the wheel (#64).
 
 ### The navigator (classic)
 
@@ -863,7 +871,10 @@ drawing learns (`isFocused`, `onScreen`) go into module variables and a
 
 **Sharing with other mods** (D33, tested with the bench's `neighbour-mod`):
 chain order follows load order (`--plugin-dir` order). The band composes with
-`next(e)` except while reviewing; the reply is redrawn only when needed; the
+`next(e)` except while the navigator or the band holds a review; a review started
+by a click leaves other mods' lines drawn, and a mod above Synaptik always keeps
+its own. The band's ring is shared with other mods' buttons, and their hotkeys
+work while the band has the keyboard. The reply is redrawn only when needed; the
 navigator, a pane of Synaptik's own, works whatever other mods do.
 
 ---

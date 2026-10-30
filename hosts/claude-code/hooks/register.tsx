@@ -822,6 +822,8 @@ export const register: Register = on => {
       const { Client } = $.ui.resolve(e)
       const review = await shownReview($)
       const staged = commented as Record<string, string>
+      // A move crosses the reply's pieces: the bounds are the whole reply's.
+      const count = await blockCount($)
       let n = offset - 1
       return (
         <Box flexDirection="column" marginTop={1}>
@@ -852,8 +854,8 @@ export const register: Register = on => {
                     indent: seg.indent,
                     ...(mark ? { glyph: GLYPH[mark] } : {}),
                     ...(bullet ? { bullet } : {}),
-                    first: offset,
-                    last: offset + pieceBlocks - 1,
+                    first: 0,
+                    last: count - 1,
                     review,
                     acked: held.acked,
                     comments: staged,
