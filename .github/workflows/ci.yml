@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
 
+# Checks out and tests; nothing here writes to the repository.
+permissions:
+  contents: read
+
 # One run per branch; a newer push cancels the older run.
 concurrency:
   group: ci-${{ github.ref }}
