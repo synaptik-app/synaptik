@@ -1481,6 +1481,11 @@ Found on the test bench, Claude Code 2.1.308.
   "clear" reads as deleting the text, which stays for `c` (#122 is the key that
   deletes it). It is a key, not a fifth action in the menu, and from the band a ✎
   still goes only by overwriting it.
+- **`ctrl+u` empties the comment being typed in place (#122).** `ctrl+c`, the
+  prompt box's clear, never reaches a mod, and Esc reaches no `Client`. There is no
+  undo; that is what a clear is for. The `Input` on the band path and in the pane
+  is Claude Code's: there `ctrl+u` empties only the current line, and a mod can't
+  change that, since `ui.input` reports the text and not the key.
 
 ---
 

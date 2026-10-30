@@ -100,6 +100,8 @@ function edit(review: Review, e: Editing, key: Key, scope: Scope): Step | undefi
   // ctrl+j, or a backslash before Enter, as Claude Code's own prompt takes.
   if (key.key === 'return' && (key.shift || key.meta)) return newline(text, cursor)
   if (key.key === 'j' && key.ctrl) return newline(text, cursor)
+  // ctrl+u: the whole comment, every line. ctrl+c never reaches a mod.
+  if (key.key === 'u' && key.ctrl) return put('', 0)
   if (key.key === 'return' && text[cursor - 1] === '\\') return newline(text.slice(0, cursor - 1) + text.slice(cursor), cursor - 1)
   if (key.key === 'return') {
     const done = finish(review)

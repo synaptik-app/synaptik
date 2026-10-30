@@ -82,8 +82,8 @@ review the reply is plain text you can select.
 | Take a mark off | Backspace | the same action again |
 | Done | `q` | `q` |
 
-A comment is typed right under its block; `\` then ⏎ starts a new line, and a
-paste goes into it.
+A comment is typed right under its block; `\` then ⏎ starts a new line, a paste
+goes into it, and after a click `ctrl+u` clears it.
 
 **Default renderer** (`/tui default`) — the navigator above the band shows the
 selected block:
