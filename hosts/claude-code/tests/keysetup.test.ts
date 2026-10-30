@@ -30,7 +30,7 @@ async function menu($: Dollar, placement: 'dock' | 'inline' = 'dock', isFocused 
 async function begin($: Dollar, on: Dollar, file: unknown = DEFAULTS, env?: Record<string, string>) {
   drawn = undefined
   keybindings(on, file, env)
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   await synaptik($, 'config')
 }
 
@@ -167,7 +167,7 @@ test('the default renderer draws it above the band, the same', async ($, on) => 
 test('a keybindings file that is not JSON is never written', async ($, on) => {
   drawn = undefined
   keybindings(on, '{ "bindings": [ oops')
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   expect((await synaptik($, 'config'))?.text).toMatch(/isn't JSON/)
   expect(await lines($)).not.toContain('Synaptik keys')
 })
@@ -175,7 +175,7 @@ test('a keybindings file that is not JSON is never written', async ($, on) => {
 test('while the setup is open, ↑/↓ move nothing in the reply, and the action keys are gone', async ($, on) => {
   drawn = undefined
   keybindings(on, DEFAULTS)
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const before = await position(await menu($))
   await synaptik($, 'config')
   expect(await (await menu($)).find({ type: 'Button', key: 'verb-accept' })).toBeUndefined()
@@ -216,7 +216,7 @@ test('CLAUDE_CONFIG_DIR: the file is in that folder', async ($, on) => {
 test('no folder at all: /synaptik config says so and opens nothing', async ($, on) => {
   drawn = undefined
   keybindings(on, DEFAULTS, {})
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   expect((await synaptik($, 'config'))?.text).toMatch(/can't find Claude Code's config folder/)
   expect(await lines($)).not.toContain('Synaptik keys')
   expect(written).toEqual([])
@@ -240,9 +240,9 @@ test('a failed write keeps the menu and the choice, and says why', async ($, on)
 test('fullscreen: /synaptik config says there is nothing to set, and opens nothing', async ($, on) => {
   drawn = undefined
   keybindings(on, DEFAULTS)
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   await $.ui.mount({ plugin: 'synaptik', surface: 'terminal', component: 'AssistantMessage',
-    props: { text: FIXTURES['rendering']!.pieces[0]!, isFirstOfReply: true }, viewport: { columns: 120, rows: 40, isFullscreen: true } })
+    props: { text: FIXTURES['classic']!.pieces[0]!, isFirstOfReply: true }, viewport: { columns: 120, rows: 40, isFullscreen: true } })
   expect((await synaptik($, 'config'))?.text).toBe('nothing to set in fullscreen: /synaptik config is for the default renderer')
   expect(await lines($)).not.toContain('Synaptik keys')
 })

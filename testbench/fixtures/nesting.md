@@ -17,11 +17,14 @@
 
 ### What to check
 
-- Each list item is its own block, nested ones too
-- Indentation of nested items matches the mod-off view
-- Item 2 and its second paragraph are one block
-- Numbered lists under bullets keep their numbers
-- Marking a nested item compiles indented under its parent
-- An unmarked parent of a marked item is sent as a plain quote, for context
-- Items that open alike can be told apart in the suggestion (numbers kept)
-- Accepting a parent and rejecting a child reads correctly in the suggestion
+- **Blocks**
+  - Each list item is its own block, nested ones too
+  - Item 2 and its second paragraph are one block
+- **How it looks**
+  - Indentation of nested items matches the mod-off view
+  - Numbered lists under bullets keep their numbers
+- **The prompt**
+  - Marking a nested item compiles indented under its parent
+  - An unmarked parent of a marked item is sent as a plain quote, for context
+  - Items that open alike can be told apart in the suggestion (numbers kept)
+  - Accepting a parent and rejecting a child reads correctly in the suggestion

@@ -9,24 +9,24 @@ const isOwn = async (drawn: Awaited<ReturnType<typeof reply>>) =>
   (await drawn.find({ type: 'Text', text: ENGINE_DRAWING })) !== undefined
 
 test('an unmarked reply outside review is Claude Code’s own drawing', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   await pane($, 'dock', false)
-  expect(await isOwn(await reply($, 'rendering'))).toBe(true)
+  expect(await isOwn(await reply($, 'classic'))).toBe(true)
 })
 
 test('while reviewing, Synaptik draws the reply', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   await pane($, 'dock')
-  expect(await isOwn(await reply($, 'rendering'))).toBe(false)
+  expect(await isOwn(await reply($, 'classic'))).toBe(false)
 })
 
 test('after review, a marked reply keeps its glyphs (D35)', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await ui.unmount()
   await pane($, 'inline', false)
-  const drawn = await reply($, 'rendering')
+  const drawn = await reply($, 'classic')
   expect(await isOwn(drawn)).toBe(false)
   expect(await drawn.find({ type: 'Text', text: '✓' })).toBeDefined()
 })
@@ -42,7 +42,7 @@ test('in a reply split around tool calls, only the marked piece is redrawn', asy
 })
 
 test('a reply other than the adopted one is left alone', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   await pane($, 'dock')
   const other = await $.ui.mount({
     plugin: PLUGIN,
@@ -55,9 +55,9 @@ test('a reply other than the adopted one is left alone', async ($, on) => {
 })
 
 test('with the mod switched off (/synaptik off), even a marked reply is Claude Code’s', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await synaptik($, 'off')
-  expect(await isOwn(await reply($, 'rendering'))).toBe(true)
+  expect(await isOwn(await reply($, 'classic'))).toBe(true)
 })

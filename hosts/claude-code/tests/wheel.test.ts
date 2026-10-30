@@ -20,7 +20,7 @@ for (const placement of ['dock', 'inline'] as const) {
 // $.ui.invalidate, which the test engine answers without drawing again, so the
 // pane is drawn again here, as Claude Code would.
 test('a fast spin over the classic navigator neither moves nor pages', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   let ui = await pane($, 'inline', true, 7)
   await select($, ui, /^```ts/) // taller than the pane: there is more to page to
   const redrawn = async () => {

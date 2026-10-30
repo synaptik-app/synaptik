@@ -1,6 +1,6 @@
 ## Long test
 
-A reply long enough to fill more than one screen, so the navigator has to scale and the transcript has to scroll.
+A reply long enough to fill more than one screen, so the transcript has to scroll. Run it in either renderer; one group is the default renderer's only.
 
 ### Section one
 
@@ -10,7 +10,7 @@ A reply long enough to fill more than one screen, so the navigator has to scale 
 4. Plan the invalidation path
 5. Measure the hit rate after a week
 
-A paragraph between lists, of ordinary length, so that blocks differ in size and the minimap shows it.
+A paragraph between lists, of ordinary length, so that blocks differ in size.
 
 - Log every cache miss for a day
 - Alert when the hit rate drops below ninety percent
@@ -24,7 +24,7 @@ A paragraph between lists, of ordinary length, so that blocks differ in size and
 4. Exempt internal health checks
 5. Review the limit after launch
 
-A much longer paragraph, to give the minimap one tall block among short ones. It goes on for a while about trade-offs: a lower limit protects the database but frustrates power users, a higher one does the opposite, and a burst allowance sits somewhere in between, letting short spikes through while keeping the sustained rate in check. None of this needs deciding now; it only needs to be long.
+A much longer paragraph, to give one tall block among short ones. It goes on for a while about trade-offs: a lower limit protects the database but frustrates power users, a higher one does the opposite, and a burst allowance sits somewhere in between, letting short spikes through while keeping the sustained rate in check. None of this needs deciding now; it only needs to be long.
 
 - Document the limit in the API reference
 - Mention it in the changelog
@@ -50,14 +50,17 @@ A closing paragraph after the final list.
 
 ### What to check
 
-- ↑/↓ reach every block, first to last, and stop at the ends
-- The minimap fits all blocks, sized by length
-- The tall paragraph in section two shows as a taller bar
-- Block N of M counts every block, headings excluded
-- Review starts on the last block, already on screen
-- Moving up into the first third jumps the view to the reply's top
-- Moving back down into the last third jumps the view to the reply's end
-- In the middle third the view stays where you scroll it
-- Marks spread across sections all reach the suggestion in reading order
-- Classic renderer: the pane shows the selected block in full, with the previous and next blocks dim and the menu right under it
-- Classic renderer: the tall paragraph in section two is trimmed, PgUp/PgDn read on, ↑/↓ still move between blocks
+- **Moving between blocks**
+  - ↑/↓ reach every block, first to last, and stop at the ends
+  - Block N of M counts every block, headings excluded
+  - Review starts on the last block, already on screen
+- **Scrolling the reply**
+  - With ctrl+x tab and j / k, or in the default renderer: moving up into the first third jumps the view to the reply's top
+  - With ctrl+x tab and j / k, or in the default renderer: moving back down into the last third jumps the view to the reply's end
+  - In the middle third the view stays where you scroll it
+  - After a click on a block or the band's hint, ↑/↓ never scroll the view; the wheel does (known limit: Claude Code refuses it, "not person-initiated")
+- **Marking**
+  - Marks spread across sections all reach the suggestion in reading order
+- **The default renderer's navigator**
+  - The pane shows the selected block in full, with the previous and next blocks dim and the menu right under it
+  - The tall paragraph in section two is trimmed, PgUp/PgDn read on, ↑/↓ still move between blocks

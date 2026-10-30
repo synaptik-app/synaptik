@@ -1,6 +1,6 @@
 // The neighbour fixture's checklist (testbench/fixtures/neighbour.md), as tests,
 // with the test bench's neighbour mod loaded beside Synaptik.
-// Manual only: pane tabs, the entry key's stops, ←/→ in the neighbour's pane,
+// Manual only: the entry key's stops and the ring,
 // and anything that depends on which mod loads first (the reply's footer,
 // greedy mode) — the test kit decides that order, not the test.
 
@@ -39,7 +39,7 @@ test(check(F, "The band shows the neighbour's line as well as Synaptik's"), WITH
   expect(await ui.find({ type: 'Text', text: /Synaptik/ })).toBeDefined()
 })
 
-test(check(F, "While reviewing in the navigator, Synaptik's band stands alone"), WITH_NEIGHBOUR, async ($, on) => {
+test("classic: while reviewing in the navigator, Synaptik's band stands alone; the neighbour's line returns on Esc", WITH_NEIGHBOUR, async ($, on) => {
   await start($, on, F)
   const focused = await pane($, 'dock', true)
   const reviewing = await band($)

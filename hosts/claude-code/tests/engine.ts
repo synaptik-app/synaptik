@@ -21,7 +21,7 @@ type Dollar = any
 export type Row = { role: 'user' | 'assistant'; text: string; toolUses: unknown[]; toolResults?: unknown[] }
 
 // A fixture as the transcript a real run leaves: the prompt, then each piece
-// of the reply, with a tool call and its result where a `<<sleep N>>` stood.
+// of the reply, with a tool call and its result where a `<<STOP WRITING…>>` stood.
 export function transcriptOf(name: string): Row[] {
   const fixture = FIXTURES[name]
   if (!fixture) throw new Error(`no fixture "${name}"`)

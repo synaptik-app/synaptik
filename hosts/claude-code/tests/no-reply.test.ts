@@ -16,7 +16,7 @@ async function texts(ui: Dollar): Promise<string[]> {
 }
 
 test('the navigator with no reply: one line, no counter, no keys', async ($, on) => {
-  await start($, on, 'rendering', NO_REPLY)
+  await start($, on, 'classic', NO_REPLY)
   const ui = await pane($, 'dock')
   const shown = await texts(ui)
   expect(shown).toContain('Nothing to respond to yet — Synaptik opens on the next reply.')
@@ -26,7 +26,7 @@ test('the navigator with no reply: one line, no counter, no keys', async ($, on)
 
 test('/synaptik config with no reply: Cancel closes the pane, giving the prompt the keyboard', async ($, on) => {
   keybindings(on, { bindings: [] })
-  await start($, on, 'rendering', NO_REPLY)
+  await start($, on, 'classic', NO_REPLY)
   expect((await synaptik($, 'config'))?.text).toBeUndefined()
   const ui = await pane($, 'dock', true, 30)
   expect(await texts(ui)).toContain('Synaptik keys')
@@ -37,7 +37,7 @@ test('/synaptik config with no reply: Cancel closes the pane, giving the prompt 
 
 test('/synaptik config with no reply: Save closes the pane too', async ($, on) => {
   keybindings(on, { bindings: [] })
-  await start($, on, 'rendering', NO_REPLY)
+  await start($, on, 'classic', NO_REPLY)
   await synaptik($, 'config')
   const ui = await pane($, 'dock', true, 30)
   for (let i = 0; i < 2; i += 1) await arrow($, 1) // Save
@@ -47,7 +47,7 @@ test('/synaptik config with no reply: Save closes the pane too', async ($, on) =
 
 test('with a reply, closing the setup keeps the navigator open', async ($, on) => {
   keybindings(on, { bindings: [] })
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   await synaptik($, 'config')
   const ui = await pane($, 'dock', true, 30)
   for (let i = 0; i < 3; i += 1) await arrow($, 1) // Cancel

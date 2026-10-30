@@ -16,31 +16,31 @@ async function legend($: Dollar) {
 }
 
 test('no keybindings file: the band names tab/⇧tab, Claude Code’s default', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   expect(await legend($)).toContain('· tab/⇧tab actions ·')
 })
 
 test('the recommended Pane bindings: the band names ←→', async ($, on) => {
   keybindings(on, { bindings: [{ context: 'Pane', bindings: { left: 'abovePrompt:previous', right: 'abovePrompt:next' } }] })
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   expect(await legend($)).toContain('· ←→ actions ·')
 })
 
 test('other keys: the band names them as bound', async ($, on) => {
   keybindings(on, { bindings: [{ context: 'Pane', bindings: { h: 'abovePrompt:previous', l: 'abovePrompt:next' } }] })
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   expect(await legend($)).toContain('· h/l actions ·')
 })
 
 test('outside the navigator: the entry key is the person’s own binding', async ($, on) => {
   keybindings(on, { bindings: [{ context: 'Chat', bindings: { 'ctrl+s': 'abovePrompt:focus' } }] })
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const found = await (await band($)).find({ type: 'Text', text: /to review the reply/ })
   expect(String(found?.text ?? '')).toContain('ctrl+s')
 })
 
 test('the band counts what is staged as the margins mark it; during a review, nothing about the prompt', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await arrow($, -1)
@@ -50,13 +50,13 @@ test('the band counts what is staged as the margins mark it; during a review, no
 })
 
 test('nothing staged: no summary line', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const drawn = await band($)
   expect(await drawn.find({ type: 'Text', text: /[✓✗✎]\d/ })).toBeUndefined()
 })
 
 test('other text in the prompt box: a yellow note that ⏎ sends what was typed', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await ui.unmount()
@@ -68,7 +68,7 @@ test('other text in the prompt box: a yellow note that ⏎ sends what was typed'
 })
 
 test('the box holding exactly the taken suggestion: ⏎ sends your feedback', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await ui.unmount()
@@ -78,7 +78,7 @@ test('the box holding exactly the taken suggestion: ⏎ sends your feedback', as
 })
 
 test('the suggestion showing in an empty box: tab, then ⏎ to send; the action line offers to continue', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await ui.unmount()
@@ -89,7 +89,7 @@ test('the suggestion showing in an empty box: tab, then ⏎ to send; the action 
 })
 
 test('the legend while reviewing names the position and every key', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const ui = await pane($, 'dock')
   const { at, of } = await position(ui)
   const found = await (await band($)).find({ type: 'Text', text: /actions/ })
@@ -97,7 +97,7 @@ test('the legend while reviewing names the position and every key', async ($, on
 })
 
 test('outside review the band adds its lines under what lies beneath', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const drawn = await band($)
   const texts = (await drawn.findAll({ type: 'Text' })).map((t: { text: unknown }) => String(t.text))
   expect(texts[0]).toBe(ENGINE_DRAWING)
@@ -105,14 +105,14 @@ test('outside review the band adds its lines under what lies beneath', async ($,
 })
 
 test('while reviewing Synaptik’s band stands alone', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   await pane($, 'dock')
   const drawn = await band($)
   expect(await drawn.find({ type: 'Text', text: ENGINE_DRAWING })).toBeUndefined()
 })
 
 test('the navigator not on screen: the band offers the press that opens it', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   // A narrow terminal from here on: the unasked open on the next adoption waits.
   placement.isPlaced = false
   await $.session.start({ cwd: '/tmp/synaptik-test', surface: 'terminal', isInteractive: true })
@@ -125,7 +125,7 @@ test('the navigator not on screen: the band offers the press that opens it', asy
 })
 
 test('classic: q is done too, unadvertised — the pane draws its actions anew', async ($, on) => {
-  await start($, on, 'rendering')
+  await start($, on, 'classic')
   const ui = await pane($, 'inline')
   const before = await ui.findAll({ type: 'Button' })
   expect(before.some((b: FoundElement) => b.key === 'verb-accept')).toBe(true)
