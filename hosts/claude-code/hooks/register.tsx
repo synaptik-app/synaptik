@@ -14,7 +14,7 @@ import type { Mark } from '../types'
 import { quote, segment } from '../src/blocks'
 import { lastTurnText } from '../src/turn'
 import { compile as compileTray, GLYPH } from '../src/compile'
-import { draftComment, dropComment, EMPTY, finishComment as finishTrayComment, toggle as toggleMark } from '../src/tray'
+import { clear as clearMark, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, toggle as toggleMark } from '../src/tray'
 import type { Tray } from '../src/tray'
 import { apply as applyMenu, closed, letGo, paste, press, receive, START } from '../src/review'
 import type { Action, Held, Key, Numbered, Review } from '../src/review'
@@ -379,6 +379,9 @@ async function applyAction($: EngineInterface, a: Action) {
   if (a.kind === 'comment') {
     const { index, text } = a
     await writeTray($, tray => finishTrayComment(draftComment(tray, index, text), index))
+  } else if (a.kind === 'unmark') {
+    const { index } = a
+    await writeTray($, tray => clearMark(tray, index))
   } else {
     const { index } = a
     await writeTray($, tray => dropComment(tray, index))
@@ -1274,7 +1277,7 @@ export const register: Register = on => {
       holder === 'band'
         ? `${blockCounter(sel, blocks.length)} · j/k blocks · ←→ actions · ⏎ apply · q done`
         : holder
-          ? `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ←→ actions · ⏎ apply · q done`
+          ? `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ←→ actions · ⏎ apply · ⌫ unmark · q done`
           : `${key} to ${staged ? 'continue reviewing' : 'review the reply'}`
     const action = keyMenu
       ? 'customizing Synaptik'

@@ -79,6 +79,7 @@ review the reply is plain text you can select.
 | Choose an action | ← / → | ← / → |
 | Apply it | ⏎, or click it | ⏎ |
 | Apply directly | `a` accept · `x` reject · `c` comment | same |
+| Take a mark off | Backspace | the same action again |
 | Done | `q` | `q` |
 
 A comment is typed right under its block; `\` then ⏎ starts a new line, and a

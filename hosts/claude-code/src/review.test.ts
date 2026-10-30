@@ -184,3 +184,13 @@ test('lineMove: to the same column, or the end of a shorter line', async () => {
   expect(lineMove('abcd\nef', 2, -1)).toBeUndefined()
   expect(lineMove('abcd\nef', 6, 1)).toBeUndefined()
 })
+
+test('Backspace on a block unmarks it; in a comment it deletes a character', async () => {
+  const scope = { first: 0, last: 3, comments: {} }
+  const on = { ...START, selected: 2, isActive: true }
+  expect(press(on, { key: 'backspace' }, scope)?.actions).toEqual([{ kind: 'unmark', index: 2 }])
+  const typing = { ...on, editing: { index: 2, text: 'hi', cursor: 2 } }
+  const s = press(typing, { key: 'backspace' }, scope)
+  expect(s?.actions).toEqual([])
+  expect(s?.review.editing?.text).toBe('h')
+})

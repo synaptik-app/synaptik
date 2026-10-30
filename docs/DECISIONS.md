@@ -1368,7 +1368,7 @@ needed; emoji width (`💬`) is the one to watch.
 ### D41 — Fullscreen reviews in the reply itself; classic keeps its pane
 **Status:** settled · added 2026-10-27 · decided on a spike (`spike/client-reply`,
 Claude Code 2.1.308) · built on #39 · revises D20, D31, D38 · **revised
-2026-10-28: review mode; 2026-10-30: the shared ring, and revealing** (below)
+2026-10-28: review mode; 2026-10-30: the shared ring, revealing, Backspace** (below)
 
 **In fullscreen there is no navigator pane.** Each block of the reply is drawn by
 its own `Client` (a region the mod's own module draws). **A click on a block
@@ -1452,7 +1452,7 @@ yellow `⏎ sends what you typed`; and the hint line. Prompt edits and changes
 redraw it, so the note follows the box. During a review, D33 yields: the reply
 is Synaptik's to draw.
 
-#### Revision 2026-10-30 — the shared ring, and revealing
+#### Revision 2026-10-30 — the shared ring, revealing, Backspace
 
 Found on the test bench, Claude Code 2.1.308.
 
@@ -1476,6 +1476,11 @@ Found on the test bench, Claude Code 2.1.308.
   end as well as in the middle. There is no workaround in the mod: handing the keys
   back to the band would lose ↑/↓ and comments typed in place. The fix is Claude
   Code's (#64).
+- **Backspace takes a mark off, after a click only (#100).** A `Client` gets the
+  key; the band and the pane can't bind it (#23). The legend names it `⌫ unmark`:
+  "clear" reads as deleting the text, which stays for `c` (#122 is the key that
+  deletes it). It is a key, not a fifth action in the menu, and from the band a ✎
+  still goes only by overwriting it.
 
 ---
 

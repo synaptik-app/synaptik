@@ -87,6 +87,7 @@ x()
   - After a click, ↑/↓ and Home/End move between blocks, and the band says "Block N of M · ↑↓ blocks"
   - ←/→ walk the menu under the selected block, ⏎ applies the action under the cursor, and a click on an action applies it
   - a / x / c / d act directly on the selected block
+  - Backspace on a block takes its mark off, after a click only (the legend says "⌫ unmark"); a comment's text comes back with c
 - **Comments**
   - c opens a comment under the block, dim, with a cursor: type, move with ←/→ and Home/End, Backspace, Delete, then ⏎ stages it
   - In a comment, backslash then ⏎ starts a new line (the hint after it says so); ↑/↓ move between its lines and nothing more — ⏎ stages it; Backspace on an empty comment cancels it

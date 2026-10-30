@@ -34,6 +34,8 @@ export type Action =
   | { kind: 'discuss'; index: number }
   | { kind: 'comment'; index: number; text: string }
   | { kind: 'cancel'; index: number }
+  // Backspace on a block: its mark goes; a comment's text stays for `c`.
+  | { kind: 'unmark'; index: number }
   // q: the review ends (Esc would, but a mod never sees it — #23).
   | { kind: 'end' }
 
@@ -167,6 +169,8 @@ export function press(review: Review, key: Key, scope: Scope): Step | undefined 
       return apply(review, 2, scope)
     case 'd':
       return apply(review, 3, scope)
+    case 'backspace':
+      return step(review, review, [{ kind: 'unmark', index: review.selected }])
     case 'q':
       return step(review, review, [{ kind: 'end' }])
   }
