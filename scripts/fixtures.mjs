@@ -20,11 +20,11 @@ const target = join(root, 'hosts', 'claude-code', 'tests', 'fixtures.generated.t
 const neighbourSource = join(root, 'testbench', 'neighbour-mod', 'hooks', 'register.tsx')
 const neighbourTarget = join(root, 'hosts', 'claude-code', 'tests', 'neighbour.generated.tsx')
 
-const SLEEP = /^<<sleep (\d+)>>$/
+const SLEEP = /^<<STOP WRITING\..*sleep (\d+)\..*>>$/
 
-// A fixture's reply, split into the pieces a real run produces: a `<<sleep N>>`
+// A fixture's reply, split into the pieces a real run produces: a `<<STOP WRITING…>>`
 // line is a tool call, so the text before and after it are separate messages.
-// Its checks are the list under "What to check".
+// Its checks are the list under "What to check", grouped or not.
 function parse(text) {
   const pieces = []
   let current = []
@@ -38,13 +38,16 @@ function parse(text) {
   }
   pieces.push(current.join('\n').trim())
 
-  const checks = []
+  const items = []
   let inChecks = false
   for (const line of text.split('\n')) {
+    const item = line.match(/^(\s*)- (.*)$/)
     if (/^#{1,6}\s+What to check\s*$/.test(line)) inChecks = true
     else if (/^#{1,6}\s/.test(line)) inChecks = false
-    else if (inChecks && line.startsWith('- ')) checks.push(line.slice(2).trim())
+    else if (inChecks && item) items.push({ indent: item[1].length, text: item[2].trim() })
   }
+  // An item with items under it is a group's name, not a check.
+  const checks = items.filter((item, i) => !(items[i + 1]?.indent > item.indent)).map(item => item.text)
   return { pieces: pieces.filter(Boolean), checks }
 }
 

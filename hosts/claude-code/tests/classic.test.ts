@@ -1,4 +1,4 @@
-// The rendering fixture's checklist (testbench/fixtures/rendering.md), as tests.
+// The classic fixture's checklist (testbench/fixtures/classic.md), as tests.
 // Each test is named after its checklist line; items only a person can judge
 // stay manual: "Mod on and off look the same apart from marks and the selection".
 
@@ -7,7 +7,7 @@ import type { FoundElement } from 'claude-code/testing'
 
 import { arrow, check, ENGINE_DRAWING, pane, position, reply, start } from './engine'
 
-const F = 'rendering'
+const F = 'classic'
 
 // The texts of every Markdown element drawn, in document order.
 async function markdowns(ui: { findAll: (q: unknown) => Promise<{ text: string; props: Record<string, unknown> }[]> }) {
@@ -99,7 +99,7 @@ test(check(F, 'Marking a block puts its glyph before it'), async ($, on) => {
   expect((await markdowns(after)).length).toBe(blocksBefore)
 })
 
-test(check(F, 'Classic renderer: selecting the table'), async ($, on) => {
+test(check(F, 'Selecting the table shows it whole'), async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline', true, 30)
   const { of } = await position(ui)

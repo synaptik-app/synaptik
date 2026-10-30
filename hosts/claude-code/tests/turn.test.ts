@@ -9,7 +9,7 @@ import type { Row } from './engine'
 import { FIXTURES } from './fixtures.generated'
 import { segment } from '../src/blocks'
 
-const F = 'rendering'
+const F = 'classic'
 const ask = (text: string): Row => ({ role: 'user', text, toolUses: [] })
 const answer = (text: string): Row => ({ role: 'assistant', text, toolUses: [] })
 const NEW_REPLY = 'First new point.\n\nSecond new point.'

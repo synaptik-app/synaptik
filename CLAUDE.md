@@ -74,7 +74,7 @@ claude plugin test ./hosts/claude-code      # run *.test.ts, no session needed
 
 **Testing by hand:** `testbench/` holds fixed replies to mark up. Start a session
 there (`cd testbench && claude --plugin-dir ../hosts/claude-code`) and ask it to
-run a test — `rendering`, `split`, `nesting`, `long`, or `all`. Its own
+run a test — `fullscreen`, `classic`, `split`, `nesting`, `long`, or `all`. Its own
 `CLAUDE.md` says how; results go to issues #11–#13.
 
 ## API reference

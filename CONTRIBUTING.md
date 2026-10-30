@@ -44,7 +44,7 @@ Before opening one:
   `cd synaptik/testbench && claude --plugin-dir ../hosts/claude-code` (one
   session, reloading when files change; it replaces an installed copy for that
   session), and ask it to run
-  `rendering`, `split`, `nesting`, `long` or `all`.
+  `fullscreen`, `classic`, `split`, `nesting`, `long` or `all`.
 - **Keep the docs true** — `docs/SPEC.md` when behaviour changes,
   `docs/DECISIONS.md` when a decision does.
 

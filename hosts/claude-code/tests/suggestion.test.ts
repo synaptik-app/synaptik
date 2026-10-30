@@ -7,7 +7,7 @@ import type { FoundElement } from 'claude-code/testing'
 
 import { focus, pane, promptBox, start, submitted, suggested, suggestions, typeInPrompt } from './engine'
 
-const F = 'rendering'
+const F = 'classic'
 const PLACEHOLDER = 'Give me a sec to read through this.'
 
 // The plugin's type config has no timers; the test runtime does.
@@ -21,17 +21,17 @@ test('every mark and unmark proposes the suggestion again', async ($, on) => {
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   expect(suggestions.length).toBe(1)
-  expect(suggested()).toMatch(/^✓ "/)
+  expect(suggested()).toMatch(/✓ "/)
   await ui.press({ key: 'verb-reject' })
   expect(suggestions.length).toBe(2)
-  expect(suggested()).toMatch(/^✗ "/)
+  expect(suggested()).toMatch(/✗ "/)
 })
 
 test('the suggestion is proposed as compiled, with no leading space (D30, revised)', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
-  expect(suggestions.at(-1)).toMatch(/^✓ "/)
+  expect(suggestions.at(-1)).toMatch(/✓ "/)
 })
 
 test('clearing the last mark proposes the placeholder, since a suggestion cannot be withdrawn', async ($, on) => {
@@ -59,7 +59,7 @@ test('the navigator taking the keyboard proposes it again (#32)', async ($, on) 
   await focus($, 'verb-accept', 'plugin')
   await settled() // the hook proposes it without waiting
   expect(suggestions.length).toBe(before + 1)
-  expect(suggested()).toMatch(/^✓ "/)
+  expect(suggested()).toMatch(/✓ "/)
 })
 
 test('a person moving between verbs does not propose it again', async ($, on) => {

@@ -1,5 +1,5 @@
 // The long fixture's checklist (testbench/fixtures/long.md), as tests.
-// Manual only: the minimap's proportions and the transcript's scrolling
+// Manual only: the transcript's scrolling
 // (top/end reveals, the middle third) — they need a real screen.
 
 import { expect, test } from 'claude-code/testing'
@@ -46,7 +46,7 @@ test(check(F, 'Marks spread across sections all reach the suggestion'), async ($
   expect(lines[1]).toMatch(/^✓ "8\. Remove the old columns/)
 })
 
-test(check(F, 'Classic renderer: the pane shows the selected block in full'), async ($, on) => {
+test(check(F, 'The pane shows the selected block in full'), async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   await select($, ui, /^- Log every cache miss/)
@@ -57,7 +57,7 @@ test(check(F, 'Classic renderer: the pane shows the selected block in full'), as
   expect(await ui.find({ type: 'Button', key: 'verb-accept' })).toBeDefined()
 })
 
-test(check(F, 'Classic renderer: the tall paragraph'), async ($, on) => {
+test(check(F, 'The tall paragraph in section two is trimmed'), async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline', true, 9) // a short pane: 3 rows of text
   await select($, ui, /^A much longer paragraph/)

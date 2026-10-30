@@ -11,12 +11,12 @@ const PANE = 'synaptik-map'
 
 for (const surface of ['desktop', 'mobile', 'vscode'] as const) {
   test(`${surface}: the reply, the band and the navigator are Claude Code's own`, async ($, on) => {
-    await start($, on, 'rendering')
+    await start($, on, 'classic')
     const reply = await $.ui.mount({
       plugin: PLUGIN,
       surface,
       component: 'AssistantMessage',
-      props: { text: FIXTURES.rendering!.pieces[0]!, isFirstOfReply: true },
+      props: { text: FIXTURES.classic!.pieces[0]!, isFirstOfReply: true },
     } as never)
     expect(await reply.find({ type: 'Text', text: ENGINE_DRAWING })).toBeDefined()
     const band = await $.ui.mount({

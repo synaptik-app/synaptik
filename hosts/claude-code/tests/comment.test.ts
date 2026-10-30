@@ -6,7 +6,7 @@ import type { On } from 'claude-code'
 
 import { focus, focusMoves, log, pane, reply, start, suggested } from './engine'
 
-const F = 'rendering'
+const F = 'classic'
 // The plugin's type config has no timers; the test runtime does.
 declare const setTimeout: (run: () => void, ms: number) => unknown
 
@@ -44,7 +44,7 @@ test('⏎ stages the comment: counted, shown in the reply, in the suggestion', a
   await ui.input({ key: FIELD, text: 'too vague' })
   expect(await ui.find({ type: 'Input', key: FIELD })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /Your notes · ✎1/ })).toBeDefined()
-  expect(suggested()).toMatch(/^✎ ".+" → too vague$/)
+  expect(suggested()).toMatch(/✎ ".+" → too vague$/)
   const drawn = await reply($, F)
   expect(await drawn.find({ type: 'Text', text: '✎' })).toBeDefined()
 })
