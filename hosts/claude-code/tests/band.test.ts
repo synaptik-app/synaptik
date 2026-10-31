@@ -4,7 +4,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { FoundElement } from 'claude-code/testing'
 
-import { arrow, band, ENGINE_DRAWING, keybindings, pane, placement, position, promptBox, start, suggested } from './engine'
+import { arrow, band, ENGINE_DRAWING, pane, placement, position, promptBox, start, suggested } from './engine'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Dollar = any
@@ -15,28 +15,10 @@ async function legend($: Dollar) {
   return String(found?.text ?? '')
 }
 
-test('no keybindings file: the band names tab/⇧tab, Claude Code’s default', async ($, on) => {
+test('the band names Claude Code\'s keys: ctrl+x tab outside a review, tab/⇧tab in one', async ($, on) => {
   await start($, on, 'classic')
+  expect(String((await (await band($)).find({ type: 'Text', text: /to review the reply/ }))?.text ?? '')).toContain('ctrl+x tab')
   expect(await legend($)).toContain('· tab/⇧tab actions ·')
-})
-
-test('the recommended Pane bindings: the band names ←→', async ($, on) => {
-  keybindings(on, { bindings: [{ context: 'Pane', bindings: { left: 'abovePrompt:previous', right: 'abovePrompt:next' } }] })
-  await start($, on, 'classic')
-  expect(await legend($)).toContain('· ←→ actions ·')
-})
-
-test('other keys: the band names them as bound', async ($, on) => {
-  keybindings(on, { bindings: [{ context: 'Pane', bindings: { h: 'abovePrompt:previous', l: 'abovePrompt:next' } }] })
-  await start($, on, 'classic')
-  expect(await legend($)).toContain('· h/l actions ·')
-})
-
-test('outside the navigator: the entry key is the person’s own binding', async ($, on) => {
-  keybindings(on, { bindings: [{ context: 'Chat', bindings: { 'ctrl+s': 'abovePrompt:focus' } }] })
-  await start($, on, 'classic')
-  const found = await (await band($)).find({ type: 'Text', text: /to review the reply/ })
-  expect(String(found?.text ?? '')).toContain('ctrl+s')
 })
 
 test('the band counts what is staged as the margins mark it; during a review, nothing about the prompt', async ($, on) => {

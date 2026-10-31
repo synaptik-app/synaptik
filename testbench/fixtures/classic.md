@@ -54,6 +54,5 @@ A closing paragraph after a horizontal rule.
 - **The prompt**
   - The suggestion in the prompt box follows every mark; Tab takes it and ⏎ sends it
   - The band counts ✓ ✗ ✎ and says "tab, then ⏎ to send", "⏎ sends your feedback", or in yellow "⏎ sends what you typed"
-- **Ending and setup**
+- **Ending a review**
   - Esc ends the review and gives the keyboard back; q does too, unadvertised
-  - `/synaptik config` offers one setting, Move between actions; after choosing ← / → and Save, ← / → walk the actions

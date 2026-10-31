@@ -17,13 +17,6 @@ sandboxed**. What Synaptik does with them:
 
 - reads the session's transcript and the prompt box, to draw marks and propose
   the compiled prompt;
-- reads `keybindings.json` in Claude Code's config folder — `CLAUDE_CONFIG_DIR`
-  when set, else `~/.claude` (found through `HOME`, or `USERPROFILE` on Windows)
-  — to name your keys in the band;
-- **writes `~/.claude/keybindings.json` only through `/synaptik config`, and only
-  when you press save** — after it has shown the exact entries it adds or removes.
-  It changes only its own two settings (the key that opens Synaptik, the keys
-  that move between its actions) and leaves every other binding as it was;
 - proposes text in the prompt box, as a suggestion. It never submits anything:
   you take the suggestion and send it yourself.
 

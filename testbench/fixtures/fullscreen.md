@@ -101,4 +101,3 @@ x()
 - **The prompt and the band**
   - The suggestion in the prompt box follows every mark, and comes back when the prompt box is emptied
   - The band: header "Synaptik"; the staged line counts ✓ ✗ ✎ and, outside a review only, says "tab, then ⏎ to send", "⏎ sends your feedback", or in yellow "⏎ sends what you typed"
-  - `/synaptik config` says there is nothing to set in fullscreen

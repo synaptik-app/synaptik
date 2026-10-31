@@ -1238,7 +1238,7 @@ preview, folding far blocks, and following the scrolling were set aside.
 ---
 
 ### D38 — `/synaptik config` writes the key bindings, after the person confirms
-**Status:** settled · added 2026-10-20 · settles D32's candidate · spike on #8
+**Status:** superseded by D42 · settled · added 2026-10-20 · settles D32's candidate · spike on #8
 
 The keys that matter most for adapting are the entry key and the verb keys, and
 they live in `~/.claude/keybindings.json` — the only place Claude Code takes them
@@ -1391,8 +1391,7 @@ with no setting.
 
 **Classic keeps its pane** above the band, as it is. It cannot redraw a reply
 that has scrolled off, so its block viewer is how those blocks are reviewed, and
-it has no clicks. `/synaptik config` stays for it: a pane takes only Tab/⇧Tab
-for the actions, and ←/→ needs the binding the menu writes (#113).
+it has no clicks. Its pane takes Tab/⇧Tab for the actions (D42).
 
 **Why:** the pane existed to turn ↑/↓ into blocks (the scroll trick, D20) and to
 hold the comment field. A `Client` receives every key once clicked, arrows and
@@ -1486,6 +1485,18 @@ Found on the test bench, Claude Code 2.1.308.
   undo; that is what a clear is for. The `Input` on the band path and in the pane
   is Claude Code's: there `ctrl+u` empties only the current line, and a mod can't
   change that, since `ui.input` reports the text and not the key.
+
+
+### D42 — No key setup: Synaptik reads and writes no key bindings
+**Status:** settled · added 2026-10-31 · supersedes D38 and D32's reading of the file
+
+`/synaptik config`, and the reading of `keybindings.json` behind it, are gone. Since
+D41 only the classic renderer used them, for one setting: ←/→ in place of Tab/⇧Tab,
+which work. That doesn't justify a mod that reads the person's environment and
+writes one of their files, least of all before a marketplace submission.
+
+**Cost, accepted:** the band names Claude Code's defaults (`ctrl+x tab`, `tab/⇧tab`).
+Someone who rebound those keys sees the default named; their keys still work.
 
 ---
 
