@@ -64,7 +64,7 @@ const commentSeq = atom({ plugin: 'synaptik', key: 'commentSeq' } as const, 0)
 // any other surface (the Desktop app, the mobile app, VS Code) to next(e).
 
 // What happened, for `/synaptik log` and bug reports: events and failures —
-// adopting, suggesting, scrolling and focus moves, comments, the key setup —
+// adopting, suggesting, scrolling and focus moves, comments —
 // not every redraw or keystroke, which would push them out of its 60 lines.
 // Module variable, not $.state: a render hook may not write state. Lost on reload.
 const observed: string[] = []
