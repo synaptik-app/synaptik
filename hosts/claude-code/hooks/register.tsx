@@ -25,7 +25,7 @@ import { decorate } from '../src/decorate'
 import {
   BAND_COMMENT_PREFIX,
   BULLET,
-  COMMENT_KEYS,
+  COMMENT_HINT,
   COMMENT_PREFIX,
   commentKey,
   MARGIN,
@@ -134,7 +134,7 @@ const REVIEW_GRACE_MS = 300
 // How long the band's hint shows each of its lines.
 const HINT_EVERY_MS = 3000
 // Claude Code's key for the band and panes, named in the band.
-const ENTRY_KEY = 'ctrl+x tab'
+const ENTRY_CHORD = 'ctrl+x tab'
 let bandLeaves = 0
 const PLACEHOLDER = 'Give me a sec to read through this.'
 
@@ -907,7 +907,7 @@ export const register: Register = on => {
       <Input
         key={commentKey(seq)}
         placeholder="comment"
-        submitLabel={COMMENT_KEYS}
+        submitLabel={COMMENT_HINT}
         rows={fieldRows}
         value={seed}
         onInput={async value => {
@@ -996,7 +996,7 @@ export const register: Register = on => {
     const sel = await read($, selected)
     const isShown = await read($, isPaneShown)
     const reviewing = isNavigatorFocused
-    const key = ENTRY_KEY
+    const key = ENTRY_CHORD
     const staged = glyphCounts(await read($, marks))
     const compiled = await compile($)
     const box = await $.prompt.read()

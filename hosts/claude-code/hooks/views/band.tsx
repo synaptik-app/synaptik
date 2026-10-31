@@ -4,7 +4,7 @@
 
 import type { Elements, RenderElement, RenderNode } from 'claude-code'
 
-import { COMMENT_KEYS, END_REVIEW, generational, NEXT_BLOCK, PREVIOUS_BLOCK, VERBS } from '../ui'
+import { COMMENT_HINT, END_REVIEW, generational, NEXT_BLOCK, PREVIOUS_BLOCK, VERBS } from '../ui'
 
 // The lead of each line under the header: as Claude Code nests its own output,
 // so with several mods in the band it is clear which lines are ours.
@@ -119,7 +119,7 @@ export function BandKeysView(
           <Input
           key={m.comment.key}
           placeholder="comment"
-          submitLabel={COMMENT_KEYS}
+          submitLabel={COMMENT_HINT}
           // Several lines: Shift+⏎ or a backslash before ⏎ (#16).
           rows={3}
           value={m.comment.text}

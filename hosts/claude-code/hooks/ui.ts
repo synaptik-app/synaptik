@@ -19,7 +19,7 @@ export const END_REVIEW = 'review-end'
 
 // What a comment field's Enter does, and how to start a new line: a backslash
 // before ⏎, which works in every terminal. Only that key is named.
-export const COMMENT_KEYS = 'ok · \\⏎ new line'
+export const COMMENT_HINT = 'ok · \\⏎ new line'
 
 // The band's controls are keyed per generation: ending a review draws them under
 // fresh keys, so the one holding the keyboard disappears and Claude Code hands
