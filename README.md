@@ -132,6 +132,19 @@ A Claude Code mod runs with your own permissions and is not sandboxed. Synaptik:
 - proposes that prompt in the prompt box, as a suggestion. It never submits:
   you take the suggestion and send it yourself.
 
+**The hooks it registers.** It changes nothing beyond what each line says, and every hook falls back to Claude Code's own behaviour on an error:
+
+| Hook | What it does |
+|---|---|
+| `session.start` | registers `/synaptik`, and picks up the last reply |
+| `command.run` | answers `/synaptik` only; other commands aren't touched |
+| `turn.start`, `turn.complete` | stops marking during a turn, and picks up the new reply after it |
+| `ui.render` | draws the reply while it's under review or carries marks, the band above the prompt, and its own pane |
+| `ui.message` | receives clicks and keys from its own elements |
+| `ui.focus`, `ui.scroll`, `ui.close` | tracks focus in the band and its own pane, moves between blocks, and notices its pane closing. It refuses focus only on its own hidden keys. |
+| `prompt.edit` | colours the ✓ ✗ ✎ glyphs in the box, and moves a paste into a comment you have open. Typing there ends a review. |
+| `prompt.change` | proposes the suggestion again when the box is emptied |
+
 It reads and writes no files, makes no network requests, runs no commands and
 registers no tool hooks. Your marks stay in memory for the session. More in [SECURITY.md](SECURITY.md).
 

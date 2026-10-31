@@ -9,7 +9,7 @@ import type { ClientModule } from 'claude-code'
 
 import { chunk } from '../../src/blocks'
 import { oneLine } from '../../src/compile'
-import { COMMENT_KEYS } from '../ui'
+import { COMMENT_HINT } from '../ui'
 import { click, current, itemAt, MENU, press, queue } from '../../src/review'
 import type { Editing, Local, Review, Step } from '../../src/review'
 
@@ -101,7 +101,7 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
             ...(n === atLine && e.cursor >= 0
               ? [line.slice(0, atColumn), Text({ inverse: true, children: [line[atColumn] ?? ' '] }), line.slice(atColumn + 1)]
               : [line]),
-            ...(n === lines.length - 1 ? [Text({ dimColor: true, children: [`   ⏎ ${COMMENT_KEYS}${e.text === '' ? '' : ' · ctrl+u clear'}`] })] : []),
+            ...(n === lines.length - 1 ? [Text({ dimColor: true, children: [`   ⏎ ${COMMENT_HINT}${e.text === '' ? '' : ' · ctrl+u clear'}`] })] : []),
           ],
         }),
       ),

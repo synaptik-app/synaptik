@@ -25,7 +25,7 @@ import { decorate } from '../src/decorate'
 import {
   BAND_COMMENT_PREFIX,
   BULLET,
-  COMMENT_KEYS,
+  COMMENT_HINT,
   COMMENT_PREFIX,
   commentKey,
   MARGIN,
@@ -134,7 +134,7 @@ const REVIEW_GRACE_MS = 300
 // How long the band's hint shows each of its lines.
 const HINT_EVERY_MS = 3000
 // Claude Code's key for the band and panes, named in the band.
-const ENTRY_KEY = 'ctrl+x tab'
+const ENTRY_CHORD = 'ctrl+x tab'
 let bandLeaves = 0
 const PLACEHOLDER = 'Give me a sec to read through this.'
 
@@ -256,9 +256,9 @@ async function readTray($: EngineInterface): Promise<Tray> {
 }
 
 async function writeTray($: EngineInterface, change: (tray: Tray) => Tray) {
-  const next = change(await readTray($))
-  await update($, marks, () => ({ ...next.marks }))
-  await update($, comments, () => ({ ...next.comments }))
+  const changed = change(await readTray($))
+  await update($, marks, () => ({ ...changed.marks }))
+  await update($, comments, () => ({ ...changed.comments }))
 }
 
 async function toggle($: EngineInterface, i: number, mark: Mark) {
@@ -583,7 +583,6 @@ export const register: Register = on => {
       if (await read($, isPaneShown)) closePaneForFullscreen($)
     }
     if (e.viewport?.isFullscreen && holder) {
-      const { Client } = $.ui.resolve(e)
       const review = await shownReview($)
       const staged = commented as Record<string, string>
       // A move crosses the reply's pieces: the bounds are the whole reply's.
@@ -609,10 +608,10 @@ export const register: Register = on => {
             const mark = marked[n]
             return (
               <Box flexDirection="column" marginTop={seg.hasGapBefore ? 1 : 0}>
-                <Client
-                  key={`block-${replyGeneration}-${n}`}
-                  module="./client/block.tsx"
-                  props={{
+                {h('Client', {
+                  key: `block-${replyGeneration}-${n}`,
+                  module: './client/block.tsx',
+                  props: {
                     index: n,
                     text: seg.text,
                     indent: seg.indent,
@@ -623,8 +622,8 @@ export const register: Register = on => {
                     review,
                     acked: held.acked,
                     comments: staged,
-                  }}
-                />
+                  },
+                })}
               </Box>
             )
           })}
@@ -908,7 +907,7 @@ export const register: Register = on => {
       <Input
         key={commentKey(seq)}
         placeholder="comment"
-        submitLabel={COMMENT_KEYS}
+        submitLabel={COMMENT_HINT}
         rows={fieldRows}
         value={seed}
         onInput={async value => {
@@ -997,7 +996,7 @@ export const register: Register = on => {
     const sel = await read($, selected)
     const isShown = await read($, isPaneShown)
     const reviewing = isNavigatorFocused
-    const key = ENTRY_KEY
+    const key = ENTRY_CHORD
     const staged = glyphCounts(await read($, marks))
     const compiled = await compile($)
     const box = await $.prompt.read()
@@ -1027,17 +1026,16 @@ export const register: Register = on => {
     // two ways in; a click on it starts the review and hands it the raw keys, so
     // ↑/↓ move between blocks (client/hint.tsx). It stays drawn during the review,
     // showing the legend: removing it would take the keyboard with it.
-    const { Client } = $.ui.resolve(e)
     const what = staged ? 'continue reviewing' : 'review the reply'
     const messages = holder ? [fullscreenAction] : [`${key} to ${what}`, `click here to ${what}`]
     const hint =
-      isFullscreen ? (
-        <Client
-          key={generational('band-hint', bandGeneration)}
-          module="./client/hint.tsx"
-          props={{ messages, everyMs: HINT_EVERY_MS }}
-        />
-      ) : undefined
+      isFullscreen
+        ? h('Client', {
+            key: generational('band-hint', bandGeneration),
+            module: './client/hint.tsx',
+            props: { messages, everyMs: HINT_EVERY_MS },
+          })
+        : undefined
     const band = BandView(
       { Box, Text, Button },
       {

@@ -3,7 +3,6 @@
   "displayName": "Synaptik",
   "version": "0.2.2",
   "description": "Review the agent’s reply in place. Synaptik turns your review into one prompt.",
-  "types": "./types/index.d.ts",
   "author": {
     "name": "Synaptik",
     "email": "hello@synaptik.app",
@@ -11,6 +10,8 @@
   },
   "homepage": "https://github.com/synaptik-app/synaptik",
   "repository": "https://github.com/synaptik-app/synaptik",
+  "supportUrl": "https://github.com/synaptik-app/synaptik/issues",
+  "documentationUrl": "https://github.com/synaptik-app/synaptik#readme",
   "license": "Apache-2.0",
   "keywords": [
     "review",

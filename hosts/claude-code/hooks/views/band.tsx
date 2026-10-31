@@ -2,9 +2,9 @@
 // beneath (other mods', Claude Code's own) — a header, what is staged, and what
 // the keys do now. Plain data and one callback — no `$`.
 
-import type { Elements, RenderElement } from 'claude-code'
+import type { Elements, RenderElement, RenderNode } from 'claude-code'
 
-import { COMMENT_KEYS, END_REVIEW, generational, NEXT_BLOCK, PREVIOUS_BLOCK, VERBS } from '../ui'
+import { COMMENT_HINT, END_REVIEW, generational, NEXT_BLOCK, PREVIOUS_BLOCK, VERBS } from '../ui'
 
 // The lead of each line under the header: as Claude Code nests its own output,
 // so with several mods in the band it is clear which lines are ours.
@@ -24,7 +24,7 @@ export type BandModel = {
   // The last line, just above the prompt: what the keys do right now — or, in
   // fullscreen outside a review, the hooks' rotating hint (a Client) instead.
   action: string
-  actionElement?: RenderElement
+  actionElement?: RenderNode
   isNavigatorShown: boolean
   entryKey: string
 }
@@ -119,7 +119,7 @@ export function BandKeysView(
           <Input
           key={m.comment.key}
           placeholder="comment"
-          submitLabel={COMMENT_KEYS}
+          submitLabel={COMMENT_HINT}
           // Several lines: Shift+⏎ or a backslash before ⏎ (#16).
           rows={3}
           value={m.comment.text}
