@@ -748,14 +748,6 @@ export const register: Register = on => {
     return paints.length > 0 ? { ...box, decorations: [...(box.decorations ?? []), ...paints] } : box
   }).catch(($, e, next) => next(e))
 
-  // The same after a clear, an undo or a recalled history entry.
-  on('prompt.change', async ($, e, next) => {
-    const box = await next(e)
-    if (box.text === '') void suggestTray($)
-    $.ui.invalidate('ui.render')
-    return box
-  }).catch(($, e, next) => next(e))
-
   // --- The pane: classic's block viewer, ↑↓ via scroll, ←→ via the focus ring --
 
   on('ui.close', { id: PANE }, async ($, e, next) => {
