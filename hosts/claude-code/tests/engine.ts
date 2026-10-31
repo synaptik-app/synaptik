@@ -48,6 +48,9 @@ export function check(name: string, startsWith: string): string {
 // is what the box shows. Reset by `engine`.
 export const suggestions: string[] = []
 
+// What `$.ui.selection()` answers; a test sets it. Reset by `engine`.
+export const selection: { text?: string } = {}
+
 // The compiled prompt as last proposed.
 export function suggested(): string {
   return suggestions[suggestions.length - 1] ?? ''
@@ -115,6 +118,8 @@ export function engine(on: On, rows: Row[]) {
   })
   call('ui.invalidate', () => undefined)
   call('ui.toast', () => undefined)
+  delete selection.text
+  call('ui.selection', () => (selection.text === undefined ? undefined : { text: selection.text }))
   event('ui.message', () => ({}))
   // A close answers nothing (void); since 2.1.304 a test hook must still say
   // so explicitly, as a plain call's empty value.

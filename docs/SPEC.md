@@ -576,6 +576,16 @@ selects nothing inside one.
 - **A paste** while a comment is open goes into the comment: Claude Code hands
   every paste to the prompt box, and a `prompt.edit` hook moves it.
 
+**Marking selected text** (#91): outside a review, a drag selects as usual. `$.ui.selection()` is read every 250 ms from the band hint's timer, since no event says a selection changed or a drag ended. While text in the last reply is selected, the hint row shows the actions and the text, live:
+
+```
+⎿  [ ✓ accept ][ ✗ reject ][ ✎ comment ][ 💬 discuss ]  "expire after 5 minutes"
+```
+
+A click on an action applies it, with no focus needed; ✎ types the comment on that row, as in a block. The selection then goes on the tray and the hint comes back; the keyboard returns to the prompt. A click elsewhere clears the selection. The same text isn't offered again until the selection has cleared.
+
+A selection belongs to the block it ends in (found by its last line; not found, no actions). It shows as a row under that block; a block can hold several. In the prompt it is quoted whole, as selected (box characters too), under that block, which is quoted for context. Backspace on the block removes them all, and a selection's comment goes with it: nothing can reopen it.
+
 **With the keyboard:** only a click can focus a `Client`, so the review stays in
 the **band**, where `ctrl+x tab` put it. Its ring stops on the four actions (hidden; the menu in the
 reply shows the cursor), with `j` / `k` as hotkeys between blocks — ↑/↓ scroll

@@ -94,6 +94,12 @@ x()
   - ctrl+u empties the comment being typed, every line, and it stays open; ⏎ then drops it, ✎ included (the hint names it once there is text); after ctrl+x tab the field is Claude Code's, and ctrl+u empties only the current line
   - A paste while a comment is open goes into the comment, not the prompt box
   - c on a commented block reopens its text
+- **Marking selected text**
+  - Dragging over text, outside a review, puts the actions and the text on the band's hint row, live; nothing in the reply moves
+  - A click on ✓ or ✗ stages the text; a click on ✎ opens a comment on that row, and ⏎ stages it; the keyboard goes back to the prompt
+  - A click elsewhere clears the selection, and the hint comes back
+  - A staged selection is a row under the block it ends in, several in order, and all of them reach the prompt whole, under that block
+  - Backspace on that block, in a review, removes its mark and its selections
 - **Ending a review**
   - q ends the review — from the reply, the band or its hint — and the band's legend says "q done"; in a comment, q types a q
   - Typing in the prompt ends the review: the reply is plain again, and its text can be selected

@@ -27,6 +27,8 @@ export type BlockProps = {
   acked: number
   // Staged comment texts by block index: shown under their block, reopened by c.
   comments: Record<string, string>
+  // Marks on selected text this block owns, one row each (#91).
+  selections: string[]
 }
 
 const MARGIN = 2
@@ -80,7 +82,7 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
   // Where the menu sits in the region: its last row, or the one above a staged
   // comment's (a single row: its first line, truncated), after the margin,
   // indent and "└ ".
-  const menuRow = () => surface.rows - 1 - (staged ? 1 : 0)
+  const menuRow = () => surface.rows - 1 - (staged ? 1 : 0) - props.selections.length
   const menuStart = MARGIN + props.indent + 2
 
   // The comment being typed, dim like a staged one, its cursor an inverse cell,
@@ -148,6 +150,9 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
       ...(staged
         ? [Box({ paddingLeft: MARGIN + props.indent + 2, children: [Text({ dimColor: true, wrap: 'truncate', children: [`→ ${oneLine(staged)}`] })] })]
         : []),
+      ...props.selections.map(row =>
+        Box({ paddingLeft: MARGIN + props.indent + 2, children: [Text({ dimColor: true, wrap: 'truncate', children: [row] })] }),
+      ),
     ],
   })
 }

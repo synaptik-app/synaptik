@@ -62,3 +62,21 @@ test('oneLine: the first line, and how many more', async () => {
   expect(oneLine('first\nsecond')).toBe('first (+1 line)')
   expect(oneLine('  first\nsecond\nthird \n')).toBe('first (+2 lines)')
 })
+
+const SELECTION_BLOCKS = [
+  { text: '1. Cache sessions', depth: 0, parent: -1 },
+  { text: '- key by user', depth: 1, parent: 0 },
+]
+
+test('a selection arrives whole, under the block it ends in, with its parent for context', async () => {
+  const out = compile(SELECTION_BLOCKS, {}, {}, [{ text: 'key by', block: 1, mark: 'accept' }])
+  expect(out).toBe(['"1. Cache sessions"', '    "key by user"', '        ✓ "key by"'].join('\n'))
+})
+
+test('several selections on one block, under its own mark; lines and comments line up', async () => {
+  const out = compile(SELECTION_BLOCKS, { 0: 'reject' }, {}, [
+    { text: 'one\ntwo', block: 0, mark: 'reject' },
+    { text: 'three', block: 0, mark: 'comment', comment: 'why\nhow' },
+  ])
+  expect(out).toBe(['✗ "1. Cache sessions"', '    ✗ "one', '       two"', '    ✎ "three" → why', '       how'].join('\n'))
+})
