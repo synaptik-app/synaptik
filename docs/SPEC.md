@@ -353,6 +353,10 @@ suggestion showing sends nothing (checked 2026-10-28); `ctrl+c` clears it.
   cannot show, and writing to the box does not dismiss it. When the last mark is
   cleared, the mod proposes a harmless placeholder instead — currently `Give me a
   sec to read through this.` (wording provisional).
+- **Shortened during a fullscreen review**: the first 3 lines, then `… (+9
+  lines)`, so the box doesn't grow with every mark. Ending the review with `q`
+  brings the full text back. Esc raises nothing, so the short text can stay after
+  it; taking it (`→`/`Tab`) puts the full text in the box.
 - **The mod never sends.** Taking the suggestion and pressing `⏎` is the only
   way the compiled prompt goes (D30). There is no send key.
 
