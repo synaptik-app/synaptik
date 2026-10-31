@@ -2,7 +2,7 @@
 // beneath (other mods', Claude Code's own) — a header, what is staged, and what
 // the keys do now. Plain data and one callback — no `$`.
 
-import type { Elements, RenderElement } from 'claude-code'
+import type { Elements, RenderElement, RenderNode } from 'claude-code'
 
 import { COMMENT_KEYS, END_REVIEW, generational, NEXT_BLOCK, PREVIOUS_BLOCK, VERBS } from '../ui'
 
@@ -24,7 +24,7 @@ export type BandModel = {
   // The last line, just above the prompt: what the keys do right now — or, in
   // fullscreen outside a review, the hooks' rotating hint (a Client) instead.
   action: string
-  actionElement?: RenderElement
+  actionElement?: RenderNode
   isNavigatorShown: boolean
   entryKey: string
 }

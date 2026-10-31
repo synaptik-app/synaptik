@@ -583,7 +583,6 @@ export const register: Register = on => {
       if (await read($, isPaneShown)) closePaneForFullscreen($)
     }
     if (e.viewport?.isFullscreen && holder) {
-      const { Client } = $.ui.resolve(e)
       const review = await shownReview($)
       const staged = commented as Record<string, string>
       // A move crosses the reply's pieces: the bounds are the whole reply's.
@@ -609,10 +608,10 @@ export const register: Register = on => {
             const mark = marked[n]
             return (
               <Box flexDirection="column" marginTop={seg.hasGapBefore ? 1 : 0}>
-                <Client
-                  key={`block-${replyGeneration}-${n}`}
-                  module="./client/block.tsx"
-                  props={{
+                {h('Client', {
+                  key: `block-${replyGeneration}-${n}`,
+                  module: './client/block.tsx',
+                  props: {
                     index: n,
                     text: seg.text,
                     indent: seg.indent,
@@ -623,8 +622,8 @@ export const register: Register = on => {
                     review,
                     acked: held.acked,
                     comments: staged,
-                  }}
-                />
+                  },
+                })}
               </Box>
             )
           })}
@@ -1027,17 +1026,16 @@ export const register: Register = on => {
     // two ways in; a click on it starts the review and hands it the raw keys, so
     // ↑/↓ move between blocks (client/hint.tsx). It stays drawn during the review,
     // showing the legend: removing it would take the keyboard with it.
-    const { Client } = $.ui.resolve(e)
     const what = staged ? 'continue reviewing' : 'review the reply'
     const messages = holder ? [fullscreenAction] : [`${key} to ${what}`, `click here to ${what}`]
     const hint =
-      isFullscreen ? (
-        <Client
-          key={generational('band-hint', bandGeneration)}
-          module="./client/hint.tsx"
-          props={{ messages, everyMs: HINT_EVERY_MS }}
-        />
-      ) : undefined
+      isFullscreen
+        ? h('Client', {
+            key: generational('band-hint', bandGeneration),
+            module: './client/hint.tsx',
+            props: { messages, everyMs: HINT_EVERY_MS },
+          })
+        : undefined
     const band = BandView(
       { Box, Text, Button },
       {
