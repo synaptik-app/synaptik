@@ -58,11 +58,20 @@ unzip synaptik-<version>.zip -d ~/.claude/skills/
 On Windows the skills folder is `%USERPROFILE%\.claude\skills\`. To update,
 replace the `synaptik` folder there with the newer zip's.
 
-### Once it's in
+### Turn it off or remove it
 
-`/synaptik` opens the navigator, `/synaptik off` and
-`/synaptik on` turn it off and on for the session, and `/synaptik help` lists
-the rest.
+```bash
+# inside a session: current session only
+/synaptik off
+/synaptik on
+
+# from your shell: stays off until you enable it again
+claude plugin disable synaptik@synaptik-app
+claude plugin enable synaptik@synaptik-app
+
+# from your shell: remove it
+claude plugin uninstall synaptik@synaptik-app
+```
 
 ### Keys
 
@@ -113,6 +122,18 @@ selected block:
 - **A Claude Code update can break Synaptik:** it is built on the young mods
   API. [An issue](https://github.com/synaptik-app/synaptik/issues/new/choose)
   with your `claude --version` helps.
+
+## What it can access
+
+A Claude Code mod runs with your own permissions and is not sandboxed. Synaptik:
+
+- reads the session's transcript and the prompt box, to draw marks and propose
+  your review as a prompt;
+- proposes that prompt in the prompt box, as a suggestion. It never submits:
+  you take the suggestion and send it yourself.
+
+It reads and writes no files, makes no network requests, runs no commands and
+registers no tool hooks. Your marks stay in memory for the session. More in [SECURITY.md](SECURITY.md).
 
 ## Contributing
 

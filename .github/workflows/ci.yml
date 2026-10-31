@@ -47,6 +47,10 @@ jobs:
 
       - name: Validate the mod
         run: claude plugin validate ./hosts/claude-code
+      # What the community catalog checks locally (#93), on the newest version.
+      - name: Validate for the plugin directory
+        if: matrix.claude-code == '2.1.308'
+        run: claude plugin validate --strict --profile directory ./hosts/claude-code
       - name: Validate the marketplace
         run: claude plugin validate --strict .
 

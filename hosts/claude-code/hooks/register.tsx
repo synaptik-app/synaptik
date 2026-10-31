@@ -38,7 +38,6 @@ import {
   PANE_ANCHOR,
   PANE_COLUMNS,
   PREVIOUS_BLOCK,
-  SELECTED_BACKGROUND,
   VERBS,
 } from './ui'
 import { ClassicView, EmptyView } from './views/navigator'
@@ -64,7 +63,7 @@ const commentSeq = atom({ plugin: 'synaptik', key: 'commentSeq' } as const, 0)
 // any other surface (the Desktop app, the mobile app, VS Code) to next(e).
 
 // What happened, for `/synaptik log` and bug reports: events and failures —
-// adopting, suggesting, scrolling and focus moves, comments, the key setup —
+// adopting, suggesting, scrolling and focus moves, comments —
 // not every redraw or keystroke, which would push them out of its 60 lines.
 // Module variable, not $.state: a render hook may not write state. Lost on reload.
 const observed: string[] = []
@@ -472,7 +471,7 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   // `/synaptik` and its subcommands (D39, SPEC §10).
-  on('command.run', { command: 'synaptik' }, async ($, e, next) => {
+  on('command.run', { command: 'synaptik' }, async ($, e) => {
     const args = (e.args ?? '').trim()
     if (args === '') {
       if (!(await read($, isOn))) return { text: 'off for this session · /synaptik on turns it back on' }
