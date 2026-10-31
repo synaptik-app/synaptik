@@ -6,6 +6,10 @@ import { cells } from './review'
 
 export type Mark = 'accept' | 'reject' | 'comment'
 
+// A mark on selected text, owned by the block the selection ends in (#91). The
+// text is sent whole and as selected; a block can hold several.
+export type SelectionMark = { text: string; block: number; mark: Mark; comment?: string }
+
 export const GLYPH: Record<Mark, string> = { accept: '✓', reject: '✗', comment: '✎' }
 
 // A block as the segmenter gives it: its parent is its enclosing list item's
@@ -20,34 +24,59 @@ export function compile(
   blocks: readonly Block[],
   marks: Readonly<Record<number, Mark>>,
   comments: Readonly<Record<number, string>>,
+  selections: readonly SelectionMark[] = [],
 ): string {
   const isStaged = (i: number) => {
     const mark = marks[i]
     return mark !== undefined && (mark !== 'comment' || (comments[i]?.trim() ?? '') !== '')
   }
+  const under = (i: number) => selections.filter(s => s.block === i)
   const context = new Set<number>()
   blocks.forEach((_, i) => {
-    if (!isStaged(i)) return
+    if (under(i).length > 0) context.add(i)
+    if (!isStaged(i) && under(i).length === 0) return
     for (let p = blocks[i]!.parent; p >= 0; p = blocks[p]!.parent) context.add(p)
   })
 
   return blocks
     .flatMap((block, i) => {
       const indent = '    '.repeat(block.depth)
+      const rows = under(i).flatMap(s => selectionLines(s, `${indent}    `))
       if (isStaged(i)) {
         const mark = marks[i]!
         const head = `${indent}${GLYPH[mark]} "${quote(block.text)}"`
-        if (mark !== 'comment') return [head]
+        if (mark !== 'comment') return [head, ...rows]
         // A comment of several lines: the rest lined up under its first
         // character, so every line stays with its block in the nesting.
         const [first, ...rest] = comments[i]!.trim().split('\n')
         const lead = `${head} → `
         const pad = ' '.repeat(cells(lead))
-        return [`${lead}${first}`, ...rest.map(line => (line.trim() ? `${pad}${line.trimEnd()}` : ''))]
+        return [`${lead}${first}`, ...aligned(rest, pad), ...rows]
       }
-      return context.has(i) ? [`${indent}"${quote(block.text)}"`] : []
+      return context.has(i) ? [`${indent}"${quote(block.text)}"`, ...rows] : []
     })
     .join('\n')
+}
+
+const aligned = (lines: readonly string[], pad: string) => lines.map(line => (line.trim() ? `${pad}${line.trimEnd()}` : ''))
+
+// A selection's lines: quoted whole, its lines and its comment's lined up.
+function selectionLines(s: SelectionMark, indent: string): string[] {
+  const lead = `${indent}${GLYPH[s.mark]} "`
+  const [first = '', ...rest] = s.text.trim().split('\n')
+  const quoted = [`${lead}${first}`, ...aligned(rest, ' '.repeat(cells(lead)))]
+  quoted[quoted.length - 1] += '"'
+  const comment = s.mark === 'comment' ? (s.comment ?? '').trim() : ''
+  if (!comment) return quoted
+  const [note = '', ...more] = comment.split('\n')
+  quoted[quoted.length - 1] += ` → ${note}`
+  return [...quoted, ...aligned(more, ' '.repeat(cells(lead)))]
+}
+
+// A staged selection, in the one row it gets under its block.
+export function selectionRow(s: SelectionMark): string {
+  const note = s.mark === 'comment' ? ` → ${oneLine(s.comment ?? '')}` : ''
+  return `${GLYPH[s.mark]} "${oneLine(s.text)}"${note}`
 }
 
 // A comment in one row, where only one fits (under a block, in classic's

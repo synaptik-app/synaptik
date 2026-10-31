@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { clear, draftComment, dropComment, EMPTY, finishComment, toggle } from './tray'
+import { addSelection, clear, draftComment, dropComment, EMPTY, finishComment, toggle } from './tray'
 
 test('§5 a new mark on a marked block overwrites it', async () => {
   const tray = toggle(toggle(EMPTY, 2, 'accept'), 2, 'reject')
@@ -44,7 +44,7 @@ test('finishing an empty comment drops it, and the ✎ the block had', async () 
 
 test('cancelling a comment leaves another mark on the block alone', async () => {
   const tray = dropComment(draftComment(toggle(EMPTY, 3, 'accept'), 3, 'x'), 3)
-  expect(tray).toEqual({ marks: { 3: 'accept' }, comments: {} })
+  expect(tray).toEqual({ marks: { 3: 'accept' }, comments: {}, selections: [] })
 })
 
 test('no function changes the tray it is given', async () => {
@@ -53,5 +53,12 @@ test('no function changes the tray it is given', async () => {
   clear(tray, 1)
   dropComment(tray, 1)
   expect(tray.marks).toEqual({ 1: 'accept' })
-  expect(EMPTY).toEqual({ marks: {}, comments: {} })
+  expect(EMPTY).toEqual({ marks: {}, comments: {}, selections: [] })
+})
+
+test('clearing a block takes its selections with it, and leaves other blocks\' alone', async () => {
+  const mine = { text: 'a', block: 1, mark: 'accept' as const }
+  const other = { text: 'b', block: 2, mark: 'reject' as const }
+  const tray = addSelection(addSelection(addSelection(EMPTY, mine), mine), other)
+  expect(clear(tray, 1).selections).toEqual([other])
 })

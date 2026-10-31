@@ -27,8 +27,8 @@ export function summary(marks: Marks, comments: Comments): string {
 }
 
 // The navigator's heading: "✓2 ✗1 ✎1", zero counts left out.
-export function glyphCounts(marks: Marks): string {
-  const marked = Object.values(marks)
+export function glyphCounts(marks: Marks, selections: readonly { mark: Mark }[] = []): string {
+  const marked = [...Object.values(marks), ...selections.map(s => s.mark)]
   return (['accept', 'reject', 'comment'] as const)
     .map(m => [m, marked.filter(x => x === m).length] as const)
     .filter(([, n]) => n > 0)

@@ -22,6 +22,8 @@ export type ReplyModel = {
     glyph?: string
     isSelected?: boolean
     comment?: string
+    // Marks on selected text this block owns, one row each (#91).
+    selections?: readonly string[]
   }[]
   // The action the navigator's focus ring is on: drawn as the primary button.
   cursor: string
@@ -93,6 +95,11 @@ export function ReplyView(
                 <Text dimColor wrap="truncate">→ {oneLine(seg.comment)}</Text>
               </Box>
             )}
+            {seg.selections?.map(row => (
+              <Box paddingLeft={MARGIN + seg.indent + 2}>
+                <Text dimColor wrap="truncate">{row}</Text>
+              </Box>
+            ))}
           </Box>
         )
       })}

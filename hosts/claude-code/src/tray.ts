@@ -2,16 +2,18 @@
 // comment's text per block index. Every change goes through these functions;
 // the hooks keep the result in $.state.
 
-import type { Mark } from './compile'
+import type { Mark, SelectionMark } from './compile'
 
 export type Tray = {
   marks: Readonly<Record<number, Mark>>
   // A comment's text: kept when its mark is cleared or overwritten, so opening
   // the comment again starts from it.
   comments: Readonly<Record<number, string>>
+  // Marks on selected text (#91), in the order they were made.
+  selections: readonly SelectionMark[]
 }
 
-export const EMPTY: Tray = { marks: {}, comments: {} }
+export const EMPTY: Tray = { marks: {}, comments: {}, selections: [] }
 
 function withMark(tray: Tray, i: number, mark: Mark | undefined): Tray {
   const marks = { ...tray.marks }
@@ -44,8 +46,12 @@ export function dropComment(tray: Tray, i: number): Tray {
   return withMark({ ...tray, comments }, i, tray.marks[i] === 'comment' ? undefined : tray.marks[i])
 }
 
-// Clearing a block unstages it, never destroys: the mark goes, a comment's text
-// stays for when it is commented again.
+// Clearing a block unstages it: the mark goes, a comment's text stays for when it
+// is commented again. Its selections go whole, since nothing can reopen them.
 export function clear(tray: Tray, i: number): Tray {
-  return withMark(tray, i, undefined)
+  return { ...withMark(tray, i, undefined), selections: tray.selections.filter(s => s.block !== i) }
+}
+
+export function addSelection(tray: Tray, mark: SelectionMark): Tray {
+  return { ...tray, selections: [...tray.selections, mark] }
 }

@@ -13,8 +13,9 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Mark } from '../types'
 import { quote, segment } from '../src/blocks'
 import { lastTurnText } from '../src/turn'
-import { compile as compileTray, GLYPH } from '../src/compile'
-import { clear as clearMark, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, toggle as toggleMark } from '../src/tray'
+import { compile as compileTray, GLYPH, oneLine, selectionRow } from '../src/compile'
+import { endingBlock, loose } from '../src/selection'
+import { addSelection, clear as clearMark, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, toggle as toggleMark } from '../src/tray'
 import type { Tray } from '../src/tray'
 import { apply as applyMenu, closed, letGo, paste, press, receive, START } from '../src/review'
 import type { Action, Held, Key, Numbered, Review } from '../src/review'
@@ -60,6 +61,7 @@ const lastText = atom({ plugin: 'synaptik', key: 'lastText' } as const, '')
 const selected = atom({ plugin: 'synaptik', key: 'selected' } as const, 0)
 const marks = atom({ plugin: 'synaptik', key: 'marks' } as const, {})
 const comments = atom({ plugin: 'synaptik', key: 'comments' } as const, {})
+const selections = atom({ plugin: 'synaptik', key: 'selections' } as const, [])
 const isCommenting = atom({ plugin: 'synaptik', key: 'isCommenting' } as const, false)
 const focusedVerb = atom({ plugin: 'synaptik', key: 'focusedVerb' } as const, '')
 const isPaneShown = atom({ plugin: 'synaptik', key: 'isPaneShown' } as const, false)
@@ -142,6 +144,13 @@ let isPaneClosedForFullscreen = false
 const REVIEW_GRACE_MS = 300
 // How long the band's hint shows each of its lines.
 const HINT_EVERY_MS = 3000
+// How often the selection is read: there is no event for it (#91).
+const SELECTION_POLL_MS = 250
+// What is selected in the last reply now; the text an action already took, which
+// stays readable until the next selection; and its comment being typed.
+let selectionNow: { text: string; block: number } | undefined
+let handledSelection = ''
+let selectionDraft: { text: string; block: number; review: Review } | undefined
 let bandLeaves = 0
 const PLACEHOLDER = 'Give me a sec to read through this.'
 
@@ -211,6 +220,9 @@ async function adoptLastReply($: EngineInterface) {
     const count = segment(text).filter(s => s.isBlock).length
     await update($, selected, () => Math.max(0, count - 1))
     await writeTray($, () => EMPTY)
+    selectionNow = undefined
+    selectionDraft = undefined
+    handledSelection = ''
     await update($, isCommenting, () => false)
     held = { review: { ...START, selected: Math.max(0, count - 1), epoch: held.review.epoch + 1 }, acked: held.acked }
     holder = undefined
@@ -260,13 +272,18 @@ async function moveSelection($: EngineInterface, by: number) {
 
 // The tray (src/tray.ts) as $.state holds it: two atoms, marks and comments.
 async function readTray($: EngineInterface): Promise<Tray> {
-  return { marks: await read($, marks), comments: (await read($, comments)) as Record<number, string> }
+  return {
+    marks: await read($, marks),
+    comments: (await read($, comments)) as Record<number, string>,
+    selections: await read($, selections),
+  }
 }
 
 async function writeTray($: EngineInterface, change: (tray: Tray) => Tray) {
   const next = change(await readTray($))
   await update($, marks, () => ({ ...next.marks }))
   await update($, comments, () => ({ ...next.comments }))
+  await update($, selections, () => [...next.selections])
 }
 
 async function toggle($: EngineInterface, i: number, mark: Mark) {
@@ -325,7 +342,7 @@ async function finishComment($: EngineInterface) {
 async function compile($: EngineInterface): Promise<string> {
   const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
   const tray = await readTray($)
-  return compileTray(blocks, tray.marks, tray.comments)
+  return compileTray(blocks, tray.marks, tray.comments, tray.selections)
 }
 
 // Brings the selected block into view, as far as the transcript allows.
@@ -387,6 +404,67 @@ async function applyAction($: EngineInterface, a: Action) {
     await writeTray($, tray => dropComment(tray, index))
   }
   await suggestTray($)
+}
+
+// --- A text selection (#91): the actions on the band's hint row -------------
+// Nothing is drawn in the reply until an action is taken: a redraw there moves
+// the text under the drag, and no event says the drag ended.
+
+async function pollSelection($: EngineInterface) {
+  if (holder || isNavigatorFocused || selectionDraft || (await read($, isWorking))) return
+  const text = (await $.ui.selection())?.text
+  if (!text) handledSelection = ''
+  const isFresh = text && loose(text) !== handledSelection
+  if (isFresh && text === selectionNow?.text) return
+  const blocks = segment(await read($, lastText)).filter(s => s.isBlock).map(s => s.text)
+  const block = isFresh ? endingBlock(text, blocks) : -1
+  const now = isFresh && block >= 0 ? { text, block } : undefined
+  if (!now && !selectionNow) return
+  selectionNow = now
+  $.ui.invalidate('ui.render')
+}
+
+// The selection is dealt with: the keyboard goes back to the prompt, by drawing
+// the hint that holds it anew (as ending a review does).
+function closeSelection($: EngineInterface, text: string) {
+  handledSelection = loose(text)
+  selectionNow = undefined
+  selectionDraft = undefined
+  bandGeneration += 1
+  $.ui.invalidate('ui.render')
+}
+
+async function selectionAction($: EngineInterface, verb: number) {
+  const now = selectionNow
+  if (!now) return
+  if (verb === 3) return $.ui.toast('discuss: phase 2')
+  if (verb === 2) {
+    const review = { ...START, isActive: true, selected: now.block, editing: { index: now.block, text: '', cursor: 0 } }
+    selectionDraft = { ...now, review }
+    selectionNow = undefined
+    return $.ui.invalidate('ui.render')
+  }
+  const mark = verb === 0 ? 'accept' : 'reject'
+  await writeTray($, tray => addSelection(tray, { text: now.text, block: now.block, mark }))
+  closeSelection($, now.text)
+  await suggestTray($)
+}
+
+// A key while the selection's comment is typed, through the same steps as a
+// comment in a block's own Client.
+async function selectionKey($: EngineInterface, draft: NonNullable<typeof selectionDraft>, key: Key) {
+  const s = press(draft.review, key, { first: draft.block, last: draft.block, comments: {} })
+  if (!s) return
+  selectionDraft = { ...draft, review: s.review }
+  const done = s.actions.find(a => a.kind === 'comment' || a.kind === 'cancel')
+  if (done?.kind === 'comment' && done.text.trim()) {
+    const { text, block } = draft
+    await writeTray($, tray => addSelection(tray, { text, block, mark: 'comment', comment: done.text }))
+    closeSelection($, text)
+    return suggestTray($)
+  }
+  if (done) return closeSelection($, draft.text)
+  $.ui.invalidate('ui.render')
 }
 
 // The person typed in the prompt: the reply lets go of its selection and menu.
@@ -769,7 +847,20 @@ export const register: Register = on => {
 
   // The band's hint, clicked: the review starts, and its keys steer it.
   on('ui.message', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const d = (e.data ?? {}) as { kind?: string; key?: string; ctrl?: boolean; shift?: boolean; meta?: boolean }
+    const d = (e.data ?? {}) as { kind?: string; verb?: number; key?: string; ctrl?: boolean; shift?: boolean; meta?: boolean }
+    if (d.kind === 'poll') {
+      await pollSelection($)
+      return next(e)
+    }
+    if (d.kind === 'selection-action') {
+      await selectionAction($, d.verb ?? -1)
+      return next(e)
+    }
+    if (d.kind === 'key' && d.key && selectionDraft) {
+      await selectionKey($, selectionDraft, { key: d.key, ctrl: d.ctrl, shift: d.shift, meta: d.meta })
+      return next(e)
+    }
+    selectionNow = undefined
     if (d.kind === 'start') {
       await bandMove($, 0)
       holder = 'hint'
@@ -801,6 +892,8 @@ export const register: Register = on => {
     const sel = await read($, selected)
     const marked = await read($, marks)
     const commented = (await read($, comments)) as Record<number, string>
+    const selectionMarks = await read($, selections)
+    const selectionRows = (i: number) => selectionMarks.filter(m => m.block === i).map(selectionRow)
     const isTyping = await read($, isCommenting)
     const cursor = isNavigatorFocused ? await read($, focusedVerb) : ''
 
@@ -862,6 +955,7 @@ export const register: Register = on => {
                     review,
                     acked: held.acked,
                     comments: staged,
+                    selections: selectionRows(n),
                   }}
                 />
               </Box>
@@ -871,7 +965,9 @@ export const register: Register = on => {
       )
     }
 
-    const isMarkedHere = Object.keys(marked).some(k => Number(k) >= offset && Number(k) < offset + pieceBlocks)
+    const isMarkedHere =
+      Object.keys(marked).some(k => Number(k) >= offset && Number(k) < offset + pieceBlocks) ||
+      selectionMarks.some(m => m.block >= offset && m.block < offset + pieceBlocks)
     const isTypingHere = isTyping && sel >= offset && sel < offset + pieceBlocks
     if (!isNavigatorFocused && !isMarkedHere && !isTypingHere) return next(e)
 
@@ -899,6 +995,7 @@ export const register: Register = on => {
             isSelected: isSelected && isNavigatorFocused,
             // The comment line: live while it is typed, else once staged.
             comment: (isSelected && isTyping) || (commented[i] && mark === 'comment') ? (commented[i] ?? '') : undefined,
+            selections: selectionRows(i),
           }
         }),
         cursor,
@@ -966,6 +1063,13 @@ export const register: Register = on => {
   // into the comment instead: Claude Code hands every paste to the box. Any other
   // edit means the person is typing there, so the reply lets go.
   on('prompt.edit', async ($, e, next) => {
+    const draftPaste = selectionDraft && !e.key ? paste(selectionDraft.review, e.inputText) : undefined
+    if (selectionDraft && draftPaste) {
+      selectionDraft = { ...selectionDraft, review: draftPaste }
+      $.ui.invalidate('ui.render')
+      return next({ ...e, inputText: '' })
+    }
+    if (selectionDraft) closeSelection($, selectionDraft.text)
     const pasted = (holder === 'reply' || holder === 'hint') && !e.key ? paste(held.review, e.inputText) : undefined
     if (!e.key && e.inputText.length > 1) {
       observe(`paste of ${e.inputText.length} chars: holder=${holder ?? '-'} comment open=${held.review.editing ? 'yes' : 'no'} → ${pasted ? 'into the comment' : 'the prompt box'}`)
@@ -1266,7 +1370,7 @@ export const register: Register = on => {
     const reviewing = isNavigatorFocused
     const keys = await currentKeys($)
     const key = keys.entry
-    const staged = glyphCounts(await read($, marks))
+    const staged = glyphCounts(await read($, marks), await read($, selections))
     const compiled = await compile($)
     const box = await $.prompt.read()
 
@@ -1305,7 +1409,15 @@ export const register: Register = on => {
         <Client
           key={generational('band-hint', bandGeneration)}
           module="./client/hint.tsx"
-          props={{ messages, everyMs: HINT_EVERY_MS }}
+          props={{
+            messages,
+            everyMs: HINT_EVERY_MS,
+            pollMs: SELECTION_POLL_MS,
+            ...(selectionNow && !holder ? { selection: oneLine(selectionNow.text) } : {}),
+            ...(selectionDraft?.review.editing
+              ? { comment: { text: selectionDraft.review.editing.text, cursor: selectionDraft.review.editing.cursor } }
+              : {}),
+          }}
         />
       ) : undefined
     const band = BandView(

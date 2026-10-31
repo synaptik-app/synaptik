@@ -412,6 +412,7 @@ separate channels:
 conversation and can be flipped back to included — that is D3's toggle reached
 from the block rather than the pane, not a second mechanism. A cleared comment
 keeps its text, so a misfire costs nothing.
+**Exception (2026-10-31, #91):** a mark on selected text goes whole, comment included, since nothing can reopen it.
 
 The gutter shows the result directly: a cleared block drops back to a dim `▏`
 with no symbol. No state the user cannot see. (Gutter characters are defined in
@@ -1476,6 +1477,16 @@ Found on the test bench, Claude Code 2.1.308.
   end as well as in the middle. There is no workaround in the mod: handing the keys
   back to the band would lose ↑/↓ and comments typed in place. The fix is Claude
   Code's (#64).
+- **Selected text is marked from the band's hint row (#91).** The actions were to
+  go under the block, and a spike tried it on 2.1.308. Drawing there means redrawing
+  the reply, one `Markdown` per block, which doesn't match Claude Code's single
+  `Markdown`: numbering and gaps differ (`3. Nine` becomes `9. Nine`), so rows move.
+  The selection follows screen cells, so what it holds changes under the drag.
+  Rejected: waiting for a pause, which can't tell a pause from a release; an
+  absolutely placed row over the next line, which needs the same redraw and whose
+  cells joined the selection. No API says a drag ended: `ui.copy` didn't fire, and
+  the hint line showed nothing. The band moves nothing and updates live. Ask of
+  Claude Code: an event when a selection ends, and drawing into its reply (#23).
 - **Backspace takes a mark off, after a click only (#100).** A `Client` gets the
   key; the band and the pane can't bind it (#23). The legend names it `⌫ unmark`:
   "clear" reads as deleting the text, which stays for `c` (#122 is the key that
