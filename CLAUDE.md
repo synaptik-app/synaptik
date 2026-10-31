@@ -70,7 +70,11 @@ gates, modifies or executes a tool call. See `DECISIONS.md` P3.
 claude --plugin-dir ./hosts/claude-code     # load for one session; reloads on save
 claude plugin validate ./hosts/claude-code  # list hooks and API calls, without running
 claude plugin test ./hosts/claude-code      # run *.test.ts, no session needed
+npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code  # types; local only
 ```
+
+The type check needs the API types, which Claude Code writes when a session loads
+the mod. That takes a login, so CI doesn't run it.
 
 **Testing by hand:** `testbench/` holds fixed replies to mark up. Start a session
 there (`cd testbench && claude --plugin-dir ../hosts/claude-code`) and ask it to
