@@ -140,6 +140,10 @@ export function engine(on: On, rows: Row[]) {
     promptBox.text = e.text
     return { text: e.text }
   })
+  event('prompt.fill', (e: { text: string }) => {
+    promptBox.text = e.text
+    return { isFilled: true }
+  })
   event('prompt.suggest', (e: { text: string }) => {
     suggestions.push(e.text)
     return { isShown: true }

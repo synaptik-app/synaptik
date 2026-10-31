@@ -3,7 +3,7 @@
 import { expect, test } from 'claude-code/testing'
 
 import { segment } from './blocks'
-import { compile, oneLine } from './compile'
+import { compile, oneLine, preview } from './compile'
 
 const NESTING = `1. Top level, numbered
    - Second level, bullet
@@ -17,6 +17,12 @@ const NESTING = `1. Top level, numbered
    2. Second level, numbered`
 
 const blocks = segment(NESTING).filter(s => s.isBlock)
+
+test('a preview keeps three lines and counts the rest', async () => {
+  expect(preview('a\nb\nc')).toBe('a\nb\nc')
+  expect(preview('a\nb\nc\nd')).toBe('a\nb\nc\n… (+1 line)')
+  expect(preview('a\nb\nc\nd\ne')).toBe('a\nb\nc\n… (+2 lines)')
+})
 
 test('a list item with a second paragraph is one block', async () => {
   // 1, its two bullets and nested bullet, 2 with its paragraph, 3, 3.1, 3.2

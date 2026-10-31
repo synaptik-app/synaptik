@@ -50,6 +50,14 @@ export function compile(
     .join('\n')
 }
 
+// The compiled prompt in a few lines, and how many more there are: what the
+// suggestion shows during a review. Short enough already, it comes back as is.
+export function preview(text: string, keep = 3): string {
+  const lines = text.split('\n')
+  const rest = lines.length - keep
+  return rest <= 0 ? text : [...lines.slice(0, keep), `… (+${rest} line${rest === 1 ? '' : 's'})`].join('\n')
+}
+
 // A comment in one row, where only one fits (under a block, in classic's
 // viewer): its first line, and how many more there are.
 export function oneLine(comment: string): string {

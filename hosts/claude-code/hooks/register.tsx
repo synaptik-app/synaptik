@@ -13,7 +13,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Mark } from '../types'
 import { quote, segment } from '../src/blocks'
 import { lastTurnText } from '../src/turn'
-import { compile as compileTray, GLYPH } from '../src/compile'
+import { compile as compileTray, GLYPH, preview } from '../src/compile'
 import { clear as clearMark, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, toggle as toggleMark } from '../src/tray'
 import type { Tray } from '../src/tray'
 import { apply as applyMenu, closed, letGo, paste, press, receive, START } from '../src/review'
@@ -99,6 +99,11 @@ let blockTextRows = 1
 // (Tab takes it). Set from prompt.suggest's answer; the band words itself by it.
 let isSuggested = false
 
+// The shortened suggestion last proposed during a review, if it differs from the
+// full text. Esc raises nothing, so it can outlive the review: taking it brings
+// the full text instead (prompt.change).
+let shortProposed: string | undefined
+
 // Fullscreen reviews in the reply itself (D41): each block a Client
 // (client/block.tsx), no navigator pane. Learned from the first drawing's
 // viewport, since a session starts before anything is drawn.
@@ -166,15 +171,19 @@ async function suggestTray($: EngineInterface) {
         observe(`suggest placeholder: ${JSON.stringify(shown)}`)
       }
       isSuggested = false
+      shortProposed = undefined
       $.ui.invalidate('ui.render')
       return
     }
     // Proposed as compiled. The box draws its cursor over the first cell, so the
     // first glyph hides under it until taken — a leading space to avoid that
     // looked worse (D30, revised 2026-10-28).
-    const shown = await $.prompt.suggest({ text })
+    // During a review, a few lines, so the box doesn't grow with every mark.
+    const proposed = holder ? preview(text) : text
+    const shown = await $.prompt.suggest({ text: proposed })
     isSuggested = shown.isShown
-    observe(`suggest ${text.split('\n').length} lines: ${JSON.stringify(shown)}`)
+    if (shown.isShown) shortProposed = proposed === text ? undefined : proposed
+    observe(`suggest ${proposed.split('\n').length} of ${text.split('\n').length} lines: ${JSON.stringify(shown)}`)
     $.ui.invalidate('ui.render')
   } catch (err) {
     observe(`suggest failed: ${String(err)}`)
@@ -387,6 +396,7 @@ function releaseReview($: EngineInterface) {
   holder = undefined
   bandGeneration += 1
   held = { ...held, review: letGo(held.review) }
+  if (shortProposed) void suggestTray($)
   $.ui.invalidate('ui.render')
 }
 
@@ -504,6 +514,7 @@ export const register: Register = on => {
   on('turn.start', async ($, e, next) => {
     if (e.agentId) return next(e)
     isSuggested = false
+    shortProposed = undefined
     await update($, isWorking, () => true)
     return next(e)
   }).catch(($, e, next) => next(e))
@@ -534,6 +545,7 @@ export const register: Register = on => {
     if (d.kind === 'start') {
       await bandMove($, 0)
       holder = 'hint'
+      void suggestTray($)
       $.ui.invalidate('ui.render')
     }
     if (d.kind === 'key' && d.key) await steer($, { key: d.key, ctrl: d.ctrl, shift: d.shift, meta: d.meta })
@@ -682,7 +694,11 @@ export const register: Register = on => {
     const got = receive(held, data.review, data.actions ?? [])
     held = got.held
     const isEnd = got.apply.some(a => a.kind === 'end')
-    if (data.review && !isEnd) holder = 'reply'
+    if (data.review && !isEnd) {
+      const isEntering = !holder
+      holder = 'reply'
+      if (isEntering) void suggestTray($)
+    }
     for (const a of got.apply) await applyAction($, a)
     if (data.review && !isEnd) {
       const before = await read($, selected)
@@ -706,9 +722,11 @@ export const register: Register = on => {
     if (element === NEXT_BLOCK || element === PREVIOUS_BLOCK || element === END_REVIEW) return { deny: 'synaptik: not a stop' }
     const verb = VERBS.findIndex(v => v.key === element)
     if (verb >= 0 || element.startsWith(BAND_COMMENT_PREFIX)) {
+      const isEntering = !holder
       holder = 'band'
       const r = held.review
       held = { ...held, review: { ...r, isActive: true, ...(verb >= 0 ? { verb } : {}), seq: r.seq + 1 } }
+      if (isEntering) void suggestTray($)
     } else if (holder === 'reply') {
       // The ring moved within the band while the reply had the keys.
       releaseReview($)
@@ -751,6 +769,20 @@ export const register: Register = on => {
   // The same after a clear, an undo or a recalled history entry.
   on('prompt.change', async ($, e, next) => {
     const box = await next(e)
+    // The shortened suggestion taken, most likely after an Esc we couldn't see:
+    // the review is over, and the box gets the full text. Not awaited: the fill
+    // raises this event again, one at a time.
+    if (shortProposed && box.text === shortProposed) {
+      shortProposed = undefined
+      releaseReview($)
+      const full = await compile($)
+      if (full) {
+        void $.prompt.fill({ text: full }).catch(err => {
+          observe(`fill failed: ${String(err)}`)
+          $.ui.toast('Synaptik: the box holds only part of your review. Clear it, then take the suggestion again')
+        })
+      }
+    }
     if (box.text === '') void suggestTray($)
     $.ui.invalidate('ui.render')
     return box

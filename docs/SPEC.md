@@ -347,12 +347,17 @@ suggestion showing sends nothing (checked 2026-10-28); `ctrl+c` clears it.
   red, ✎ in the suggestion colour — as prompt decorations, which never change the
   draft. From the first keystroke only: taking the suggestion is a
   `prompt.change`, which carries no decorations, and Synaptik never writes the
-  box to add them. A line not led by a glyph, and any prompt of the person's own,
+  box to add them (it writes the box only to expand a shortened suggestion the
+  person took, below). A line not led by a glyph, and any prompt of the person's own,
   is left alone.
 - **A suggestion cannot be withdrawn**: there is no call for it, a blank one
   cannot show, and writing to the box does not dismiss it. When the last mark is
   cleared, the mod proposes a harmless placeholder instead — currently `Give me a
   sec to read through this.` (wording provisional).
+- **Shortened during a fullscreen review**: the first 3 lines, then `… (+9
+  lines)`, so the box doesn't grow with every mark. Ending the review with `q`
+  brings the full text back. Esc raises nothing, so the short text can stay after
+  it; taking it (`→`/`Tab`) puts the full text in the box.
 - **The mod never sends.** Taking the suggestion and pressing `⏎` is the only
   way the compiled prompt goes (D30). There is no send key.
 

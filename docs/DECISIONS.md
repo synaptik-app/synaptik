@@ -1032,6 +1032,21 @@ pane is easy to hit by accident, and the prompt would leave before it had been
 looked at in the box. The surfaces where suggestions don't show (item 4) are
 outside the terminal (D40); a send button belongs to their design (#76).
 
+#### Revision 2026-10-31 — shortened during a fullscreen review
+
+A long review grew the prompt box with every mark. During a fullscreen review the
+suggestion is now its first 3 lines and `… (+N lines)`; the end of the review
+proposes the full text again. Classic is unchanged.
+
+Esc raises nothing, so the short text can outlive the review, and taking it as it
+stands would send most of the review missing. So `prompt.change` compares the box
+with the short text and, on a match, fills in the full text. This writes the box,
+but only at the person's own Tab or →, and they see all of it before their `⏎`, so
+it keeps to "never behind their back". `⏎` on the empty box sends nothing (checked
+2026-10-28), so taking is the only way out. This leans on `prompt.change`, which
+the plugin directory doesn't list yet: dropping that hook means finding another
+way to do this repair.
+
 ---
 
 ### D31 — The navigator: a docked pane that maps the reply
@@ -2032,7 +2047,7 @@ here. New open questions are in §11.
 | `$.env.get` + `$.fs.read` | Read the person's entry-key binding (D32) | Yes |
 | `$.ui.scroll` | Bring the reply into view (whole reply only) | Yes |
 | `$.model.fork` | Thread conversations and the commit summary | Phase 2 |
-| `$.prompt.fill` | No longer used — the suggestion replaced the copy key | No |
+| `$.prompt.fill` | Puts the full text in the box when a shortened suggestion is taken (D30, revision 2026-10-31) | Yes |
 | `$.store` | Thread persistence within the session | Phase 2 |
 | `tool.call` | E5, E12 | No |
 | `session.append` | E13 | No |

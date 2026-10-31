@@ -114,6 +114,8 @@ test(check(F, 'A click on any block selects that block'), async ($, on) => {
   for (const index of [CODE, TABLE, KEY_BY_USER]) {
     await clickAndPress(ui, index, ['a'])
   }
+  await clickAndPress(ui, KEY_BY_USER, ['q'])
+  await settled()
   expect(suggested()).toContain('✓ "npm run migrate"')
   expect(suggested()).toContain('✓ "table: Option · Latency"')
   expect(suggested()).toContain('✓ "key each entry by user"')
@@ -229,6 +231,34 @@ test(check(F, 'The suggestion in the prompt box follows every mark'), async ($, 
   await settled()
   expect(suggestions.length).toBe(before + 1)
   expect(suggested()).toBe('✓ "1. Cache sessions in Redis"')
+})
+
+test(check(F, 'During a review a long suggestion shows 3 lines'), async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  for (const index of [CODE, TABLE, KEY_BY_USER]) await clickAndPress(ui, index, ['a'])
+  expect(suggested().split('\n').length).toBe(4)
+  expect(suggested()).toMatch(/\n… \(\+\d+ lines?\)$/)
+  await clickAndPress(ui, KEY_BY_USER, ['q'])
+  await settled()
+  expect(suggested()).not.toContain('…')
+  expect(suggested()).toContain('✓ "table: Option · Latency"')
+})
+
+test(check(F, 'Esc during a review, then Tab on the short suggestion'), async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  for (const index of [CODE, TABLE, KEY_BY_USER]) await clickAndPress(ui, index, ['a'])
+  // Esc raises nothing. Tab: the box holds the suggestion, as a prompt.change.
+  const short = suggested()
+  await ($ as unknown as { prompt: { change: (e: object) => Promise<unknown> } }).prompt.change({ origin: { kind: 'clear' }, text: short, cursor: short.length })
+  await settled()
+  expect(promptBox.text).not.toContain('…')
+  expect(promptBox.text).toContain('✓ "table: Option · Latency"')
 })
 
 test(check(F, 'ctrl+x tab starts a review'), async ($, on) => {
