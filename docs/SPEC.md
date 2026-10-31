@@ -347,7 +347,8 @@ suggestion showing sends nothing (checked 2026-10-28); `ctrl+c` clears it.
   red, ✎ in the suggestion colour — as prompt decorations, which never change the
   draft. From the first keystroke only: taking the suggestion is a
   `prompt.change`, which carries no decorations, and Synaptik never writes the
-  box to add them. A line not led by a glyph, and any prompt of the person's own,
+  box to add them (it writes the box only to expand a shortened suggestion the
+  person took, below). A line not led by a glyph, and any prompt of the person's own,
   is left alone.
 - **A suggestion cannot be withdrawn**: there is no call for it, a blank one
   cannot show, and writing to the box does not dismiss it. When the last mark is

@@ -776,7 +776,12 @@ export const register: Register = on => {
       shortProposed = undefined
       releaseReview($)
       const full = await compile($)
-      if (full) void $.prompt.fill({ text: full }).catch(err => observe(`fill failed: ${String(err)}`))
+      if (full) {
+        void $.prompt.fill({ text: full }).catch(err => {
+          observe(`fill failed: ${String(err)}`)
+          $.ui.toast('Synaptik: the box holds only part of your review. Clear it, then take the suggestion again')
+        })
+      }
     }
     if (box.text === '') void suggestTray($)
     $.ui.invalidate('ui.render')

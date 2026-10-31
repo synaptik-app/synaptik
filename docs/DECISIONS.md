@@ -2047,7 +2047,7 @@ here. New open questions are in §11.
 | `$.env.get` + `$.fs.read` | Read the person's entry-key binding (D32) | Yes |
 | `$.ui.scroll` | Bring the reply into view (whole reply only) | Yes |
 | `$.model.fork` | Thread conversations and the commit summary | Phase 2 |
-| `$.prompt.fill` | No longer used — the suggestion replaced the copy key | No |
+| `$.prompt.fill` | Puts the full text in the box when a shortened suggestion is taken (D30, revision 2026-10-31) | Yes |
 | `$.store` | Thread persistence within the session | Phase 2 |
 | `tool.call` | E5, E12 | No |
 | `session.append` | E13 | No |
