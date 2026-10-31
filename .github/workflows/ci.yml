@@ -47,6 +47,11 @@ jobs:
 
       - name: Validate the mod
         run: claude plugin validate ./hosts/claude-code
+
+      # Against the API types Claude Code generates for this version.
+      - name: Type check
+        run: npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code
+
       - name: Validate the marketplace
         run: claude plugin validate --strict .
 
