@@ -31,13 +31,20 @@ Before opening one:
 - **Read `CLAUDE.md`** — the rules every change keeps: `src/` holds pure logic and
   never touches the host; the mod never interferes with the prompt/response flow;
   every hook fails back to plain Claude Code.
-- **Run the tests** — CI runs the same on every PR:
+- **Run the tests** — CI runs these on every PR:
 
   ```bash
   node scripts/fixtures.mjs --check          # the UI tests' fixtures are current
   claude plugin validate ./hosts/claude-code
   claude plugin test ./hosts/claude-code     # unit and UI tests, no session needed
-  npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code   # after the tests: they write the types
+  ```
+
+- **Check the types** — locally only, since CI can't. Claude Code writes the API
+  types when a session loads the mod, which takes a login, so load it once first
+  (`claude --plugin-dir ./hosts/claude-code`):
+
+  ```bash
+  npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code
   ```
 
 - **For a change you can see**, try it from a clone on the test bench —
