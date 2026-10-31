@@ -19,7 +19,7 @@ interferes with the prompt/response flow.
 
 ## Status
 
-**v0.2.1, early.** Used daily by its author: accept, reject and comment on any
+**v0.2.2, early.** Used daily by its author: accept, reject and comment on any
 block of the last reply — in fullscreen right in the reply, in the default
 renderer from the navigator above the prompt. What comes next is on the
 [roadmap](https://github.com/orgs/synaptik-app/projects/2).

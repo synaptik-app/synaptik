@@ -1,7 +1,7 @@
 {
   "name": "synaptik",
   "displayName": "Synaptik",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Review the agent’s reply in place. Synaptik turns your review into one prompt.",
   "types": "./types/index.d.ts",
   "author": {
