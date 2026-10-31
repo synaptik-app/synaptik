@@ -38,7 +38,6 @@ import {
   PANE_ANCHOR,
   PANE_COLUMNS,
   PREVIOUS_BLOCK,
-  SELECTED_BACKGROUND,
   VERBS,
 } from './ui'
 import { ClassicView, EmptyView } from './views/navigator'
@@ -472,7 +471,7 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   // `/synaptik` and its subcommands (D39, SPEC §10).
-  on('command.run', { command: 'synaptik' }, async ($, e, next) => {
+  on('command.run', { command: 'synaptik' }, async ($, e) => {
     const args = (e.args ?? '').trim()
     if (args === '') {
       if (!(await read($, isOn))) return { text: 'off for this session · /synaptik on turns it back on' }
