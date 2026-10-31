@@ -18,11 +18,6 @@ import { clear as clearMark, draftComment, dropComment, EMPTY, finishComment as 
 import type { Tray } from '../src/tray'
 import { apply as applyMenu, closed, letGo, paste, press, receive, START } from '../src/review'
 import type { Action, Held, Key, Numbered, Review } from '../src/review'
-import { DEFAULT_KEYS, keyLabel, keysFrom, parseKeyFile } from '../src/keys'
-import type { KeyFile, Keys } from '../src/keys'
-import { applySetup, changes, costs, currentSetup, DEFAULT_VERBS } from '../src/keysetup'
-import type { Setup } from '../src/keysetup'
-import { keybindingsPath, shownPath } from '../src/configpath'
 import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
@@ -46,13 +41,10 @@ import {
   SELECTED_BACKGROUND,
   VERBS,
 } from './ui'
-import { KeyMenuView } from './views/keymenu'
 import { ClassicView, EmptyView } from './views/navigator'
 import type { NavigatorActions } from './views/navigator'
 import { ReplyView } from './views/reply'
 import { BandKeysView, BandView } from './views/band'
-import type { KeyMenuModel } from './views/keymenu'
-import type { ConfigEnv } from '../src/configpath'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
 const isWorking = atom({ plugin: 'synaptik', key: 'isWorking' } as const, false)
@@ -142,6 +134,8 @@ let isPaneClosedForFullscreen = false
 const REVIEW_GRACE_MS = 300
 // How long the band's hint shows each of its lines.
 const HINT_EVERY_MS = 3000
+// Claude Code's key for the band and panes, named in the band.
+const ENTRY_KEY = 'ctrl+x tab'
 let bandLeaves = 0
 const PLACEHOLDER = 'Give me a sec to read through this.'
 
@@ -154,7 +148,6 @@ const HELP = [
   '  /synaptik          open the navigator',
   '  /synaptik on       turn Synaptik on for this session',
   '  /synaptik off      turn it off for this session (/plugin disables it for good)',
-  '  /synaptik config   customize Synaptik',
   '  /synaptik log      what Synaptik observed, for bug reports',
   '  /synaptik help     this list',
 ].join('\n')
@@ -223,8 +216,8 @@ async function adoptLastReply($: EngineInterface) {
 // columns; opened from the person's press it is placed at any width. When it
 // waits or is closed, the band offers that press.
 async function openPane($: EngineInterface, focus = false) {
-  // Fullscreen has no navigator (D41); the key setup still opens the pane.
-  if (isFullscreen && !keyMenu) return
+  // Fullscreen has no navigator (D41).
+  if (isFullscreen) return
   isPaneClosedForFullscreen = false
   const rows = classicRows(await read($, lastText), screen)
   const opened = await $.ui.open({
@@ -462,230 +455,6 @@ async function bandComment($: EngineInterface, text: string, isDone: boolean) {
   $.ui.invalidate('ui.render')
 }
 
-// The keys the band names (src/keys.ts), from the person's own keybindings.json
-// (written only by `/synaptik config`, on Save: D38). Claude Code applies an
-// edited file at once, so the band reads it again whenever its mtime changes.
-// Module variable, not $.state: the band's render hook reads it.
-let keyFile: { mtimeMs: number; keys: Keys } | undefined
-
-async function currentKeys($: EngineInterface): Promise<Keys> {
-  try {
-    const path = await keyFilePath($)
-    if (!path) throw new Error('no config folder')
-    const { mtimeMs } = await $.fs.stat(path)
-    if (keyFile?.mtimeMs !== mtimeMs) keyFile = { mtimeMs, keys: keysFrom(parseKeyFile(await $.fs.read(path))) }
-    return keyFile.keys
-  } catch {
-    // No file: Claude Code's defaults.
-    keyFile = undefined
-    return DEFAULT_KEYS
-  }
-}
-
-// The variables that place Claude Code's config folder (src/configpath.ts).
-// Names written out: `claude plugin validate` lists what the mod reads.
-async function configEnv($: EngineInterface): Promise<ConfigEnv> {
-  return {
-    CLAUDE_CONFIG_DIR: await $.env.get('CLAUDE_CONFIG_DIR'),
-    HOME: await $.env.get('HOME'),
-    USERPROFILE: await $.env.get('USERPROFILE'),
-  }
-}
-
-// Where keybindings.json is, or undefined when no variable names a folder.
-async function keyFilePath($: EngineInterface): Promise<string | undefined> {
-  return keybindingsPath(await configEnv($))
-}
-
-// The person's keybindings.json, whole: `{}` when there is none yet,
-// `undefined` when it is there but not JSON — the key setup then writes nothing.
-async function readKeyFile($: EngineInterface, path: string): Promise<KeyFile | undefined> {
-  let text: string
-  try {
-    text = String(await $.fs.read(path))
-  } catch {
-    return {} // no file yet: the setup creates it
-  }
-  try {
-    const file = JSON.parse(text) as unknown
-    return file !== null && typeof file === 'object' && !Array.isArray(file) ? (file as KeyFile) : undefined
-  } catch {
-    return undefined
-  }
-}
-
-// The key setup (D38, `/synaptik config`): while it is open the navigator pane
-// draws it instead of the map. A module variable, as the pane's own drawing
-// ends it (Esc) and a render hook may not write state. Lost on reload.
-type KeyMenu = {
-  // The file as read when the menu opened, and the choice so far.
-  file: KeyFile
-  choice: Setup
-  // A line for the person: why the save failed.
-  note?: string
-  // The file's path, and as the menu shows it (`~/.claude/keybindings.json`).
-  path: string
-  shown: string
-  // Seen holding the keyboard: losing it after that is Esc.
-  hasFocus: boolean
-  // Where the person is: the list of rows, or one setting's options; the row
-  // and option under the cursor; the setting whose options are open.
-  view: 'rows' | 'options'
-  row: number
-  option: number
-  editing?: 'verbs'
-}
-let keyMenu: KeyMenu | undefined
-
-type MenuRow = 'verbs' | 'save' | 'cancel'
-const MENU_ROWS: readonly MenuRow[] = ['verbs', 'save', 'cancel']
-const MENU_LABEL: Record<MenuRow, string> = {
-  verbs: 'Move between actions',
-  save: 'Save',
-  cancel: 'Cancel',
-}
-
-// The setting's choice as an option's value: the two action keys as
-// `previous next`.
-function currentValue(menu: KeyMenu) {
-  const verbs = menu.choice.verbs ?? DEFAULT_VERBS
-  return `${verbs.previous} ${verbs.next}`
-}
-
-// The setting's choice as the row shows it.
-function menuValue(menu: KeyMenu) {
-  const verbs = menu.choice.verbs
-  // The default as its option names it; otherwise previous / next.
-  return verbs ? `${keyLabel(verbs.previous)} / ${keyLabel(verbs.next)}` : 'tab / ⇧tab'
-}
-
-// The setting's options: back to the rows (Esc cannot be that: it gives the
-// keyboard to the prompt, and a mod cannot take it back), the presets, and the
-// person's own keys when the file binds others, so a hand-made binding is never
-// lost by opening the menu. Custom keys are a feature request: the presets only,
-// for now (#80).
-function menuOptions(menu: KeyMenu): { value: string; label: string }[] {
-  const now = currentValue(menu)
-  const presets = [
-    { value: `${DEFAULT_VERBS.previous} ${DEFAULT_VERBS.next}`, label: 'tab / ⇧tab (default)' },
-    { value: 'left right', label: '← / →' },
-  ]
-  const own = presets.some(p => p.value === now) ? [] : [{ value: now, label: menuValue(menu) }]
-  return [{ value: 'back', label: '‹ back' }, ...presets, ...own]
-}
-
-// ↑/↓ in the menu: the cursor, over the rows or the open setting's options.
-function moveMenu(by: number) {
-  const menu = keyMenu
-  if (!menu) return
-  const count = menu.view === 'rows' ? MENU_ROWS.length : menuOptions(menu).length
-  if (menu.view === 'rows') menu.row = Math.max(0, Math.min(count - 1, menu.row + by))
-  else menu.option = Math.max(0, Math.min(count - 1, menu.option + by))
-}
-
-// ⏎ in the menu: open a setting's options, take an option, save or cancel.
-async function enterMenu($: EngineInterface) {
-  const menu = keyMenu
-  if (!menu) return
-  if (menu.view === 'rows') {
-    const row = MENU_ROWS[menu.row]!
-    if (row === 'save') return saveKeyMenu($)
-    if (row === 'cancel') return closeKeyMenu($)
-    menu.editing = row
-    menu.view = 'options'
-    menu.option = Math.max(0, menuOptions(menu).findIndex(o => o.value === currentValue(menu)))
-    observe(`key menu: options of ${row}`)
-    return $.ui.invalidate('ui.render')
-  }
-  const picked = menuOptions(menu)[menu.option]!
-  observe(`key menu: picked ${picked.value}`)
-  menu.view = 'rows'
-  menu.note = undefined
-  if (picked.value === 'back') {
-    // Nothing chosen: the setting stays as it was.
-  } else {
-    const [previous, nextKey] = picked.value.split(' ') as [string, string]
-    const isDefault = previous === DEFAULT_VERBS.previous && nextKey === DEFAULT_VERBS.next
-    menu.choice = { ...menu.choice, verbs: isDefault ? undefined : { previous, next: nextKey } }
-  }
-  $.ui.invalidate('ui.render')
-}
-
-async function openKeyMenu($: EngineInterface): Promise<string | undefined> {
-  const env = await configEnv($)
-  const path = keybindingsPath(env)
-  if (!path) return "can't find Claude Code's config folder: CLAUDE_CONFIG_DIR, HOME and USERPROFILE are all unset. Nothing to edit."
-  const file = await readKeyFile($, path)
-  if (!file) return `can't read ${path}: it isn't JSON. Fix it by hand, then try again.`
-  const shown = shownPath(path, env)
-  keyMenu = { file, path, shown, choice: currentSetup(file), hasFocus: false, view: 'rows', row: 0, option: 0 }
-  await openPane($, true)
-  $.ui.invalidate('ui.render')
-  return undefined
-}
-
-// Ends the key setup. With no reply to review (a new session: `/synaptik
-// config` opens the pane all the same), the pane closes too, which hands the
-// keyboard back to the prompt — an empty navigator is nothing to hold it (#73).
-async function closeKeyMenu($: EngineInterface) {
-  keyMenu = undefined
-  if (!(await read($, lastText))) {
-    await $.ui.close({ id: PANE }).catch((err: unknown) => observe(`close empty pane: ${String(err)}`))
-  }
-  $.ui.invalidate('ui.render')
-}
-
-// Writes the choice into the file as it is now, changing only the setup's own
-// entries. Saving is the person's confirmation: the menu showed the changes.
-async function saveKeyMenu($: EngineInterface) {
-  const menu = keyMenu
-  if (!menu) return
-  const file = await readKeyFile($, menu.path)
-  if (!file) {
-    menu.note = "the file changed and isn't JSON any more: nothing written"
-    return $.ui.invalidate('ui.render')
-  }
-  const after = applySetup(file, menu.choice)
-  const changed = changes(file, after)
-  if (changed.length) {
-    try {
-      await $.fs.write(menu.path, `${JSON.stringify(after, null, 2)}\n`)
-    } catch (err) {
-      // The menu stays, with the choice, and says why: a failed save is never silent.
-      menu.note = `couldn't write ${menu.shown}: ${String(err)}`
-      observe(`key setup failed to write ${menu.path}: ${String(err)}`)
-      return $.ui.invalidate('ui.render')
-    }
-    observe(`key setup wrote ${menu.path}: ${changed.join(' | ')}`)
-  }
-  await $.ui.toast(changed.length ? 'Synaptik: keys saved' : 'Synaptik: no changes')
-  await closeKeyMenu($)
-}
-
-// What the key setup's view draws (views/keymenu.tsx), from its state.
-function keyMenuModel(menu: KeyMenu, bodyRows: number): KeyMenuModel {
-  const after = applySetup(menu.file, menu.choice)
-  return {
-    view: menu.view,
-    rows: MENU_ROWS.map((row, i) => ({
-      text: `${MENU_LABEL[row]}${row === 'verbs' ? ` · ${menuValue(menu)}` : ''}`,
-      isAt: i === menu.row,
-      hasGapAfter: row === 'verbs',
-    })),
-    editing: menu.editing ? MENU_LABEL[menu.editing] : '',
-    options: menuOptions(menu).map((option, i) => ({
-      text: option.label,
-      isAt: i === menu.option,
-      isNow: option.value === currentValue(menu),
-    })),
-    note: menu.note,
-    changed: changes(menu.file, after),
-    costs: costs(menu.choice),
-    shown: menu.shown,
-    bodyRows,
-  }
-}
-
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     isHeadless = !e.isInteractive
@@ -693,7 +462,7 @@ export const register: Register = on => {
     await $.command.register({
       name: 'synaptik',
       description: "Review the agent's reply in place · help for more",
-      argumentHint: '[help|on|off|config|log]',
+      argumentHint: '[help|on|off|log]',
       // So `off` works while a turn runs, when a drawing gone wrong hurts most.
       immediate: true,
     })
@@ -725,13 +494,6 @@ export const register: Register = on => {
       return { text: wanted ? 'on' : 'off for this session · /synaptik on turns it back on, /plugin disables it for good' }
     }
     if (args === 'log') return { text: observed.join('\n') || '(nothing observed yet)' }
-    if (args === 'config') {
-      if (!(await read($, isOn))) return { text: 'off for this session · /synaptik on turns it back on' }
-      // Fullscreen needs no key setup (D41, #113): it is classic's.
-      if (isFullscreen) return { text: 'nothing to set in fullscreen: /synaptik config is for the default renderer' }
-      const refused = await openKeyMenu($)
-      return refused ? { text: refused } : {}
-    }
     return { text: `unknown: /synaptik ${args}\n\n${HELP}` }
   }).catch(($, e, next) => next(e))
 
@@ -819,7 +581,7 @@ export const register: Register = on => {
     // (a Client holds the pointer, and the transcript selects nothing in it).
     if (e.viewport?.isFullscreen) {
       isFullscreen = true
-      if ((await read($, isPaneShown)) && !keyMenu) closePaneForFullscreen($)
+      if (await read($, isPaneShown)) closePaneForFullscreen($)
     }
     if (e.viewport?.isFullscreen && holder) {
       const { Client } = $.ui.resolve(e)
@@ -1013,15 +775,6 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('ui.scroll', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
-    // The key setup: ↑/↓ move its cursor, as they move the navigator's
-    // selection; the wheel and the other scroll keys move nothing.
-    if (keyMenu) {
-      if (e.origin.kind === 'person' && !e.pointer && Math.abs(e.by) === 1) {
-        moveMenu(e.by)
-        $.ui.invalidate('ui.render')
-      }
-      return next(e.origin.kind === 'person' ? { ...e, offset: 1 } : e)
-    }
     observe(
       `scroll by=${e.by} offset=${e.offset} rows=${e.contentRows}/${e.bodyRows} ${e.origin.kind}${e.pointer ? ' wheel' : ''}`,
     )
@@ -1058,8 +811,6 @@ export const register: Register = on => {
   // and focus sent to ✎ after it.
   on('ui.focus', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     observe(`pane focus → ${e.element ?? '(none)'} by ${e.origin.kind}`)
-    // The key setup's lists and buttons are all stops.
-    if (keyMenu) return next(e)
     const isField = e.element?.startsWith(COMMENT_PREFIX) ?? false
     const isVerb = e.element?.startsWith('verb-') ?? false
     const wasField = (await read($, isCommenting)) && !isField
@@ -1093,31 +844,14 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     if (e.surface !== 'terminal') return next(e)
     // Fullscreen has no navigator (D41). A pane opened before the mod knew it was
-    // fullscreen (at session start) closes on its first drawing. The key setup
-    // still uses it.
-    if (e.viewport?.isFullscreen && !keyMenu) {
+    // fullscreen (at session start) closes on its first drawing.
+    if (e.viewport?.isFullscreen) {
       isFullscreen = true
       closePaneForFullscreen($)
       return next(e)
     }
     const { Box, Text, Button, Input, Markdown } = $.ui.resolve(e)
 
-    // The key setup, drawn instead of the map while it is open. Esc gives the
-    // keyboard back, and closes it unsaved.
-    if (keyMenu) {
-      const menu = keyMenu
-      if (e.props.isFocused) menu.hasFocus = true
-      else if (menu.hasFocus) {
-        observe('key menu closed: the pane lost the keyboard (Esc?)')
-        // A drawing can't wait on the close; the empty navigator below draws
-        // meanwhile.
-        void closeKeyMenu($)
-      }
-    }
-    if (keyMenu) {
-      isNavigatorFocused = false // the reply is not under review meanwhile
-      return KeyMenuView({ Box, Text, Button }, keyMenuModel(keyMenu, e.props.scroll.bodyRows), () => enterMenu($))
-    }
     const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
     const sel = await read($, selected)
     const marked = await read($, marks)
@@ -1264,8 +998,7 @@ export const register: Register = on => {
     const sel = await read($, selected)
     const isShown = await read($, isPaneShown)
     const reviewing = isNavigatorFocused
-    const keys = await currentKeys($)
-    const key = keys.entry
+    const key = ENTRY_KEY
     const staged = glyphCounts(await read($, marks))
     const compiled = await compile($)
     const box = await $.prompt.read()
@@ -1279,13 +1012,11 @@ export const register: Register = on => {
         : holder
           ? `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ←→ actions · ⏎ apply · ⌫ unmark · q done`
           : `${key} to ${staged ? 'continue reviewing' : 'review the reply'}`
-    const action = keyMenu
-      ? 'customizing Synaptik'
-      : isFullscreen
-        ? fullscreenAction
-        : reviewing
-      ? `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ${keys.choose} actions · ⏎ apply · esc done`
-      : `${key} to ${staged ? 'continue reviewing' : 'review the reply'}`
+    const action = isFullscreen
+      ? fullscreenAction
+      : reviewing
+        ? `${blockCounter(sel, blocks.length)} · ↑↓ blocks · tab/⇧tab actions · ⏎ apply · esc done`
+        : `${key} to ${staged ? 'continue reviewing' : 'review the reply'}`
     const boxText = box.text.trim()
     // Taken: the box holds exactly the suggestion. Edited: it holds something
     // else (what to say then is an open decision; for now, the warning).
@@ -1301,7 +1032,7 @@ export const register: Register = on => {
     const what = staged ? 'continue reviewing' : 'review the reply'
     const messages = holder ? [fullscreenAction] : [`${key} to ${what}`, `click here to ${what}`]
     const hint =
-      isFullscreen && !keyMenu ? (
+      isFullscreen ? (
         <Client
           key={generational('band-hint', bandGeneration)}
           module="./client/hint.tsx"

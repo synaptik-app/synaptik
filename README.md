@@ -88,18 +88,15 @@ goes into it, and after a click `ctrl+u` clears it.
 **Default renderer** (`/tui default`) — the navigator above the band shows the
 selected block:
 
-| | Default | After `/synaptik config` |
-|---|---|---|
-| Start reviewing | `ctrl+x tab` | same |
-| Move between blocks | ↑ / ↓ | same |
-| First / last block | Home / End | same |
-| Choose an action | Tab / ⇧Tab | ← / → |
-| Apply it | ⏎ | same |
-| Apply directly | `a` accept · `x` reject · `c` comment | same |
-| Done | Esc | same |
-
-In the default renderer's pane, Claude Code binds only Tab / ⇧Tab to move between
-actions. Use `/synaptik config` to change it to ← / →.
+| | Keys |
+|---|---|
+| Start reviewing | `ctrl+x tab` |
+| Move between blocks | ↑ / ↓ |
+| First / last block | Home / End |
+| Choose an action | Tab / ⇧Tab |
+| Apply it | ⏎ |
+| Apply directly | `a` accept · `x` reject · `c` comment |
+| Done | Esc |
 
 ### Known limits
 

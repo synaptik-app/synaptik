@@ -76,11 +76,7 @@ export const opened: { focus: boolean }[] = []
 // Every slash command Synaptik registered. Reset by `engine`.
 export const registered: string[] = []
 
-// Every file Synaptik wrote, in order, path and whole text. Reset by `engine`.
-export const written: { path: string; text: string }[] = []
 
-// Set to a reason to make every file write fail with it. Reset by `engine`.
-export const failing = { write: '' }
 
 // Every prompt submitted by Synaptik — none: the person sends (D30). Reset by
 // `engine`.
@@ -97,8 +93,6 @@ export function engine(on: On, rows: Row[]) {
   opened.length = 0
   registered.length = 0
   closed.length = 0
-  written.length = 0
-  failing.write = ''
   const event = (name: string, fn: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => fn(e)) as never)
   const call = (name: string, value: (e: never) => unknown) =>
@@ -121,11 +115,6 @@ export function engine(on: On, rows: Row[]) {
   event('ui.close', (e: { id?: string }) => {
     closed.push(e.id ?? '')
     return { value: undefined }
-  })
-  call('fs.write', (e: { path: string; text: string }) => {
-    if (failing.write) throw new Error(failing.write)
-    written.push({ path: e.path, text: e.text })
-    return undefined
   })
   call('prompt.read', () => ({ text: promptBox.text, cursor: promptBox.text.length }))
   event('session.start', (e: { cwd: string }) => ({ cwd: e.cwd }))
@@ -346,20 +335,4 @@ export function synaptik($: Dollar, args: string) {
 export async function log($: Dollar): Promise<string> {
   const result = await $.command.run({ command: 'synaptik', args: 'log' })
   return String(result?.text ?? '')
-}
-
-// Each keybindings file gets its own mtime, so the band reads it afresh.
-let keyFileTime = 0
-
-// ~/.claude/keybindings.json as the test stands it: `file` written as JSON, or a
-// string as the raw text. Without it, reading the file fails, as when it is
-// missing. `env`: the variables that place the config folder (HOME by default).
-export function keybindings(on: On, file: unknown, env: Record<string, string> = { HOME: '/home/test' }) {
-  const call = (name: string, value: (e: never) => unknown) =>
-    on(name as never, ((_$: unknown, e: never) => ({ value: value(e) })) as never)
-  const text = typeof file === 'string' ? file : JSON.stringify(file)
-  const mtimeMs = (keyFileTime += 1)
-  call('env.get', (e: { name: string }) => env[e.name])
-  call('fs.stat', () => ({ kind: 'file', size: text.length, mtimeMs }))
-  call('fs.read', () => text)
 }

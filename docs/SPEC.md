@@ -329,21 +329,7 @@ band stands alone as the key legend for that mode. Claude Code's own drawing
 `Box` with `width` is refused** — the whole band falls back to Claude Code's own —
 so `width` is set only on the box around Synaptik's own lines.
 
-The keys named are the person's own, read from `~/.claude/keybindings.json`.
-The mod writes that file only through `/synaptik config`, after the person
-confirms (D38):
-
-- **Entering:** the binding for `abovePrompt:focus` in the `Chat` context, or
-  `ctrl+x tab` when there is none.
-- **Choosing a verb:** the bindings for `abovePrompt:previous` / `abovePrompt:next`
-  in the `Pane` context — `←→` for the arrows, otherwise `previous/next` as bound
-  (`h/l`), or `tab/⇧tab` when neither is bound. One direction bound alone keeps
-  the other's default (`⇧tab/→`).
-
-Bindings apply in file order: a later binding of a key replaces an earlier one,
-`null` unbinds it, and of several keys for one action the last counts. Claude
-Code applies an edited file at once, so the band reads it again whenever its
-modification time changes.
+The keys named are Claude Code's defaults: `ctrl+x tab` to enter, `tab/⇧tab` for the verbs. Synaptik reads no bindings (D42).
 
 ### Sending: a live suggestion
 
@@ -685,16 +671,7 @@ dropped. `⏎` or backspace on an empty line cancels it.
 | Apply a verb directly | `a` `x` `c` `d` | same |
 | Leave | Esc | same |
 
-**A mod cannot ship key bindings.** Every improvement on the default column is
-the person's own `~/.claude/keybindings.json` — set by hand, or by `/synaptik
-config` (below), which writes it after the person confirms:
-
-```json
-{ "context": "Pane", "bindings": { "left": "abovePrompt:previous", "right": "abovePrompt:next" } }
-```
-
-The `Pane` arrows apply to every mod's pane. Fullscreen needs none of this: the
-band binds ←/→ by default, and `/synaptik config` there says so (#113).
+**A mod cannot ship key bindings,** and Synaptik doesn't touch the person's: the band names Claude Code's defaults (D42).
 
 Esc raises no `ui.focus` event, so whether the navigator holds the keyboard is
 read from its own drawing (`e.props.isFocused`) and passed to the band and reply
@@ -782,102 +759,7 @@ inline layout below 110 columns, where a vertical map does not fit.
 | `/synaptik` | opens the navigator — also when Claude Code held it back (§10, *Opening the navigator*) |
 | `/synaptik help` | lists the commands and what each does |
 | `/synaptik on` / `off` | the kill switch (§12), this session only; `/plugin` disables the mod for good |
-| `/synaptik config` | the key setup, below |
 | `/synaptik log` | what the hooks observed |
-
-### Key setup: `/synaptik config` (D38)
-
-The default renderer's (in fullscreen it opens nothing and says: `nothing to set
-in fullscreen: /synaptik config is for the default renderer`). A mode of the
-navigator pane (one tab). It moves as the navigator does: the tree is pinned for
-the scroll trick, so **↑/↓ move a cursor over its rows** — the setting, then
-Save and Cancel — and **⏎ on a setting opens its
-options**, where ↑/↓ choose and ⏎ takes one and returns to the rows; the first
-option, `‹ back`, returns unchanged. ⏎ on Save writes; on Cancel, or Esc
-anywhere, nothing is written. Esc cannot mean "back": it gives the keyboard to
-the prompt, and a mod cannot take it back (`$.ui.focus` only moves it within a
-site that holds it). For the same reason, after Save or Cancel the navigator
-keeps the keyboard — a mod cannot hand it to the prompt; Esc does. (`Select` lists were
-tried: they keep ↑/↓ for their own options, so moving between settings took
-Tab.)
-
-```
-Synaptik keys · default renderer
-↑↓ move · ⏎ change · esc: discard changes
-
-▸ Move between actions · ← / →
-
-  Save
-  Cancel
-```
-
-| Setting | Writes | Choices |
-|---|---|---|
-| Move between actions | `Pane`: `"<prev>": "abovePrompt:previous"`, `"<next>": "abovePrompt:next"` | Tab / ⇧Tab (default) · ← / → |
-
-- **The file** is `keybindings.json` in Claude Code's config folder:
-  `CLAUDE_CONFIG_DIR` when set, else `.claude` in the home folder — `HOME`, or
-  `USERPROFILE` on Windows, where PowerShell and cmd set no `HOME` (#74). With
-  none of them set there is no path, and the setup says so. The menu shows the
-  path it writes, with the home folder as `~`.
-- **The key that opens Synaptik is not set here** (#113): `ctrl+x tab` is Claude
-  Code's, and a key the person bound themselves — `ctrl+s` from an earlier
-  version of this menu included — stays as it is; the setup never touches it.
-- The current bindings are read from the file and shown first.
-- **A failed write is never silent:** the menu stays open with the choice, and
-  says where it couldn't write and why.
-- **Presets only.** A key bound by hand in the file shows as its own option, so
-  opening the menu never loses it. Choosing any other key is a feature request
-  (#80): capturing one needed a mouse click, which is not good UX for a keyboard
-  tool; what was learned is recorded there.
-- **Before writing**, the exact entries to add or remove, and one short line for
-  each thing given up — `← → will also move between buttons in other mods' panes` — plus a dim tip where one
-  helps (← on an empty prompt opens agent view: `leftArrowOpensAgents`).
-- The write merges into the file: other contexts and bindings are left as they
-  are. The band picks the new keys up at once (§7).
-
-**Behaviour options are `/config` rows** (`userConfig`), not part of this menu:
-for now only *marks after review* — keep, or only while reviewing (D35).
-
-## 11. Hooks registered
-
-**No tool hooks.** The mod cannot interfere with the agent's operation — it
-draws, and it proposes text for the prompt box.
-
-| Hook | Matcher | Purpose |
-|---|---|---|
-| `session.start` | — | register `/synaptik`, adopt the last reply |
-| `turn.start` | — | marking off while a turn runs |
-| `turn.complete` | — | adopt the new reply, marking on |
-| `ui.render` | `{ component: 'AssistantMessage' }` | bar, marks, menu, comments |
-| `ui.render` | `{ component: 'AbovePrompt' }` | summary and action line |
-| `ui.render` | `{ component: 'Pane', requestId }` | the navigator |
-| `ui.scroll` | `{ component: 'Pane', requestId }` | ↑/↓ → block moves |
-| `ui.focus` | `{ component: 'Pane', requestId }` | keep the ring on the verbs |
-| `ui.close` | `{ id }` | track whether the navigator is on screen |
-
-`ui.press` and `ui.input` need no hooks: a Button's `onPress` and an Input's
-`onInput` / `onSubmit` run as closures.
-
-API calls used: `$.session.messages`, `$.ui.resolve`, `$.ui.invalidate`,
-`$.ui.open`, `$.ui.scroll`, `$.ui.focus`, `$.ui.toast`, `$.prompt.read`,
-`$.prompt.suggest`, `$.prompt.submit`, `$.command.register`, `$.env.get`,
-`$.fs.read`, `$.state`; phase 2 adds `$.model.fork` and `$.store`.
-
-Elements used: `Box`, `Text`, `Button`, `Input`, `Markdown`.
-
-**State** a drawing reads lives in `$.state` (declared in the plugin's
-`types/index.d.ts` contract). A render hook may not write state; facts only a
-drawing learns (`isFocused`, `onScreen`) go into module variables and a
-`$.ui.invalidate('ui.render')`, which a render hook may call.
-
-**Sharing with other mods** (D33, tested with the bench's `neighbour-mod`):
-chain order follows load order (`--plugin-dir` order). The band composes with
-`next(e)` except while the navigator or the band holds a review; a review started
-by a click leaves other mods' lines drawn, and a mod above Synaptik always keeps
-its own. The band's ring is shared with other mods' buttons, and their hotkeys
-work while the band has the keyboard. The reply is redrawn only when needed; the
-navigator, a pane of Synaptik's own, works whatever other mods do.
 
 ---
 
@@ -950,7 +832,6 @@ synaptik/
 │           ├── tray.ts            state + transitions (#51)
 │           ├── compile.ts         Tray + Block[] → string
 │           ├── turn.ts            transcript rows → the last reply
-│           ├── keys.ts, keysetup.ts, configpath.ts   the key bindings
 │           ├── layout.ts, tally.ts, counter.ts       sizes and counts
 │           └── *.test.ts
 
