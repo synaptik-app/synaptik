@@ -256,9 +256,9 @@ async function readTray($: EngineInterface): Promise<Tray> {
 }
 
 async function writeTray($: EngineInterface, change: (tray: Tray) => Tray) {
-  const next = change(await readTray($))
-  await update($, marks, () => ({ ...next.marks }))
-  await update($, comments, () => ({ ...next.comments }))
+  const changed = change(await readTray($))
+  await update($, marks, () => ({ ...changed.marks }))
+  await update($, comments, () => ({ ...changed.comments }))
 }
 
 async function toggle($: EngineInterface, i: number, mark: Mark) {
