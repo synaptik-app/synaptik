@@ -36,8 +36,8 @@ Before opening one:
   ```bash
   node scripts/fixtures.mjs --check          # the UI tests' fixtures are current
   claude plugin validate ./hosts/claude-code
-  npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code   # after validate: it writes the API types
   claude plugin test ./hosts/claude-code     # unit and UI tests, no session needed
+  npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code   # after the tests: they write the types
   ```
 
 - **For a change you can see**, try it from a clone on the test bench —
