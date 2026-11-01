@@ -4,7 +4,7 @@
 
 import type { Elements, RenderElement, RenderNode } from 'claude-code'
 
-import { COMMENT_HINT, END_REVIEW, generational, NEXT_BLOCK, PREVIOUS_BLOCK, VERBS } from '../ui'
+import { COMMENT_HINT, END_REVIEW, generational, NEXT_BLOCK, PREVIOUS_BLOCK, STEP_INTO, VERBS } from '../ui'
 
 // The lead of each line under the header: as Claude Code nests its own output,
 // so with several mods in the band it is clear which lines are ours.
@@ -97,6 +97,7 @@ export type BandKeysModel = {
 
 export type BandKeysActions = {
   move: (by: 1 | -1) => unknown
+  step: () => unknown
   end: () => unknown
   verb: (n: number) => unknown
   type: (text: string) => unknown
@@ -141,6 +142,7 @@ export function BandKeysView(
         ))}
         <Button key={generational(NEXT_BLOCK, m.generation)} plain hotkey="j" label="next block" onPress={() => actions.move(1)} />
         <Button key={generational(PREVIOUS_BLOCK, m.generation)} plain hotkey="k" label="previous block" onPress={() => actions.move(-1)} />
+        <Button key={generational(STEP_INTO, m.generation)} plain hotkey="s" label="step in or out" onPress={() => actions.step()} />
         <Button key={generational(END_REVIEW, m.generation)} plain hotkey="q" label="end review" onPress={() => actions.end()} />
       </Box>
     </Box>

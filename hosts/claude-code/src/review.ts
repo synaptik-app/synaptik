@@ -4,6 +4,8 @@
 // the review and apply the actions to the tray. Plain data in and out — what a
 // Client posts and receives must be JSON, with no missing values.
 
+import { lineKey } from './blocks'
+
 export type Verb = 'accept' | 'reject' | 'comment' | 'discuss'
 
 // The menu under the selected block, in order: ←/→ walk it.
@@ -11,7 +13,7 @@ export const MENU: readonly Verb[] = ['accept', 'reject', 'comment', 'discuss']
 
 // The comment being typed: its block, its text, and the cursor — -1 when the
 // cursor is not known (typed in the band's field, which never reports it).
-export type Editing = { index: number; text: string; cursor: number }
+export type Editing = { index: number | string; text: string; cursor: number }
 
 export type Review = {
   selected: number
@@ -19,6 +21,8 @@ export type Review = {
   verb: number
   // The comment being typed; absent (never undefined) when none is open.
   editing?: Editing
+  // The line stepped into in a code block, from 0; absent otherwise.
+  line?: number
   // Whether the reply or the band has the keyboard, as far as the mod knows.
   isActive: boolean
   // Ordering: `seq` grows with every step; `epoch` grows when the hooks change
@@ -30,12 +34,12 @@ export type Review = {
 
 // What a step does to the tray, applied once by the hooks.
 export type Action =
-  | { kind: 'mark'; verb: 'accept' | 'reject'; index: number }
-  | { kind: 'discuss'; index: number }
-  | { kind: 'comment'; index: number; text: string }
-  | { kind: 'cancel'; index: number }
+  | { kind: 'mark'; verb: 'accept' | 'reject'; index: number | string }
+  | { kind: 'discuss'; index: number | string }
+  | { kind: 'comment'; index: number | string; text: string }
+  | { kind: 'cancel'; index: number | string }
   // Backspace on a block: its mark goes; a comment's text stays for `c`.
-  | { kind: 'unmark'; index: number }
+  | { kind: 'unmark'; index: number | string }
   // q: the review ends (Esc would, but a mod never sees it — #23).
   | { kind: 'end' }
 
@@ -43,7 +47,7 @@ export type Key = { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean
 
 // What a step needs to know beyond the review: the blocks it may select, and
 // the staged comments (to reopen one where it was left).
-export type Scope = { first: number; last: number; comments: Readonly<Record<string, string>> }
+export type Scope = { first: number; last: number; comments: Readonly<Record<string, string>>; codeLines?: Readonly<Record<string, number>> }
 
 export type Step = { review: Review; actions: Action[] }
 
@@ -73,14 +77,15 @@ function finish(review: Review): Step {
 function select(review: Review, to: number, scope: Scope): Step {
   const done = finish(review)
   const selected = Math.max(scope.first, Math.min(scope.last, to))
-  return step(review, { ...done.review, selected }, done.actions)
+  const { line: _, ...rest } = done.review
+  return step(review, { ...rest, selected, verb: Math.min(rest.verb, menuSize(selected, scope) - 1) }, done.actions)
 }
 
 // The menu item `verb` applied to the selected block. Comment opens the field
 // on it, with the comment staged there before.
 export function apply(review: Review, verb: number, scope: Scope): Step {
   const at = closed(review)
-  const index = review.selected
+  const index = review.line === undefined ? review.selected : lineKey(review.selected, review.line)
   const which = MENU[verb] ?? 'accept'
   if (which === 'comment') {
     const text = scope.comments[String(index)] ?? ''
@@ -145,7 +150,10 @@ export function lineMove(text: string, cursor: number, by: -1 | 1): number | und
 // nothing here.
 export function press(review: Review, key: Key, scope: Scope): Step | undefined {
   if (review.editing) return edit(review, review.editing, key, scope)
+  if (review.line !== undefined) return pressInCode(review, review.line, key, scope)
   switch (key.key) {
+    case 's':
+      return scope.codeLines?.[String(review.selected)] ? stepIn(review) : undefined
     case 'up':
       return select(review, review.selected - 1, scope)
     case 'down':
@@ -157,12 +165,12 @@ export function press(review: Review, key: Key, scope: Scope): Step | undefined 
     case 'pagedown':
       return select(review, scope.last, scope)
     case 'left':
-      return step(review, { ...review, verb: (review.verb + MENU.length - 1) % MENU.length })
+      return step(review, { ...review, verb: (review.verb + menuSize(review.selected, scope) - 1) % menuSize(review.selected, scope) })
     case 'right':
     case 'tab':
-      return step(review, { ...review, verb: (review.verb + 1) % MENU.length })
+      return step(review, { ...review, verb: (review.verb + 1) % menuSize(review.selected, scope) })
     case 'return':
-      return apply(review, review.verb, scope)
+      return review.verb === STEP ? stepIn(review) : apply(review, review.verb, scope)
     case 'a':
       return apply(review, 0, scope)
     case 'x':
@@ -175,6 +183,63 @@ export function press(review: Review, key: Key, scope: Scope): Step | undefined 
       return step(review, review, [{ kind: 'unmark', index: review.selected }])
     case 'q':
       return step(review, review, [{ kind: 'end' }])
+  }
+  return undefined
+}
+
+// The menu's 5th item: step in on a code block, step out inside one.
+const STEP = MENU.length
+
+function menuSize(selected: number, scope: Scope): number {
+  return scope.codeLines?.[String(selected)] ? STEP + 1 : STEP
+}
+
+function stepIn(review: Review): Step {
+  return step(review, { ...review, line: 0, verb: 0 })
+}
+
+function stepOut(review: Review): Step {
+  const { line: _, ...rest } = review
+  return step(review, { ...rest, verb: 0 })
+}
+
+// The keys inside a code block: as on a block, with ↑/↓ between its lines, and q
+// one level up.
+function pressInCode(review: Review, line: number, key: Key, scope: Scope): Step | undefined {
+  const last = (scope.codeLines?.[String(review.selected)] ?? 1) - 1
+  const size = STEP + 1
+  const moveTo = (to: number) => step(review, { ...review, line: Math.max(0, Math.min(last, to)) })
+  switch (key.key) {
+    case 'up':
+      return moveTo(line - 1)
+    case 'down':
+      return moveTo(line + 1)
+    case 'home':
+    case 'pageup':
+      return moveTo(0)
+    case 'end':
+    case 'pagedown':
+      return moveTo(last)
+    case 'left':
+      return step(review, { ...review, verb: (review.verb + size - 1) % size })
+    case 'right':
+    case 'tab':
+      return step(review, { ...review, verb: (review.verb + 1) % size })
+    case 'return':
+      return review.verb === STEP ? stepOut(review) : apply(review, review.verb, scope)
+    case 'a':
+      return apply(review, 0, scope)
+    case 'x':
+      return apply(review, 1, scope)
+    case 'c':
+      return apply(review, 2, scope)
+    case 'd':
+      return apply(review, 3, scope)
+    case 'backspace':
+      return step(review, review, [{ kind: 'unmark', index: lineKey(review.selected, line) }])
+    case 's':
+    case 'q':
+      return stepOut(review)
   }
   return undefined
 }
@@ -213,7 +278,8 @@ export function receive(held: Held, review: Review | undefined, actions: readonl
 // reply lets go, and an open comment is dropped from view (its text was never
 // staged, so nothing is lost from the tray).
 export function letGo(review: Review): Review {
-  return { ...closed(review), isActive: false, epoch: review.epoch + 1 }
+  const { line: _, ...rest } = closed(review)
+  return { ...rest, isActive: false, epoch: review.epoch + 1 }
 }
 
 // A paste while a comment is open: Claude Code hands every paste to the prompt

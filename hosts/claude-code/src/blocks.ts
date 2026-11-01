@@ -221,3 +221,28 @@ export function chunk(text: string, limit = 10_000): string[] {
   flush()
   return pieces
 }
+
+// A fenced code block's fences and lines; undefined for any other block.
+export function codeOf(text: string): { open: string; close: string; lines: string[] } | undefined {
+  const lines = text.split('\n')
+  const run = lines[0]?.match(FENCE)?.[2]
+  if (run === undefined || lines.length < 2 || !lines[lines.length - 1]!.trim().startsWith(run)) return undefined
+  return { open: lines[0]!, close: lines[lines.length - 1]!, lines: lines.slice(1, -1) }
+}
+
+// A line inside a code block, as the tray keys it: block index, then line, from 0.
+export function lineKey(block: number, line: number): string {
+  return `${block}.${line}`
+}
+
+// How many lines each code block has, by block index.
+export function codeLineCounts(text: string): Record<string, number> {
+  const counts: Record<string, number> = {}
+  segment(text)
+    .filter(s => s.isBlock)
+    .forEach((block, i) => {
+      const code = codeOf(block.text)
+      if (code && code.lines.length > 0) counts[String(i)] = code.lines.length
+    })
+  return counts
+}

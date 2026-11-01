@@ -11,11 +11,11 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Mark } from '../types'
-import { quote, segment } from '../src/blocks'
+import { codeLineCounts, quote, segment } from '../src/blocks'
 import { lastTurnText } from '../src/turn'
-import { compile as compileTray, GLYPH, preview } from '../src/compile'
-import { clear as clearMark, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, toggle as toggleMark } from '../src/tray'
-import type { Tray } from '../src/tray'
+import { compile as compileTray, GLYPH, PARTLY, preview } from '../src/compile'
+import { clear as clearMark, clearBlock, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, lineMarks, toggle as toggleMark } from '../src/tray'
+import type { Part, Tray } from '../src/tray'
 import { apply as applyMenu, closed, letGo, paste, press, receive, START } from '../src/review'
 import type { Action, Held, Key, Numbered, Review } from '../src/review'
 import { blockCounter } from '../src/counter'
@@ -32,6 +32,7 @@ import {
   MAX_DRAWN,
   baseKey,
   END_REVIEW,
+  STEP_INTO,
   generational,
   NEXT_BLOCK,
   PANE,
@@ -270,7 +271,7 @@ async function writeTray($: EngineInterface, change: (tray: Tray) => Tray) {
   await update($, comments, () => ({ ...changed.comments }))
 }
 
-async function toggle($: EngineInterface, i: number, mark: Mark) {
+async function toggle($: EngineInterface, i: Part, mark: Mark) {
   await writeTray($, tray => toggleMark(tray, i, mark))
   await suggestTray($)
 }
@@ -382,7 +383,7 @@ async function applyAction($: EngineInterface, a: Action) {
     await writeTray($, tray => finishTrayComment(draftComment(tray, index, text), index))
   } else if (a.kind === 'unmark') {
     const { index } = a
-    await writeTray($, tray => clearMark(tray, index))
+    await writeTray($, tray => (typeof index === 'number' ? clearBlock(tray, index) : clearMark(tray, index)))
   } else {
     const { index } = a
     await writeTray($, tray => dropComment(tray, index))
@@ -400,8 +401,10 @@ function releaseReview($: EngineInterface) {
   $.ui.invalidate('ui.render')
 }
 
-// The keyboard path through the band: j / k between blocks.
+// The keyboard path through the band: j / k between blocks, or between lines
+// inside a code block.
 async function bandMove($: EngineInterface, by: 1 | -1 | 0) {
+  if (by !== 0 && held.review.line !== undefined) return steer($, { key: by > 0 ? 'down' : 'up' }, 'band')
   const count = await blockCount($)
   const before = await read($, selected)
   await update($, selected, s => Math.max(0, Math.min(count - 1, s + by)))
@@ -416,13 +419,13 @@ async function bandMove($: EngineInterface, by: 1 | -1 | 0) {
 // which gets the raw keys. They go through the same steps as a clicked block's
 // (src/review.ts): ↑/↓ between blocks, ←/→ and ⏎ through the actions,
 // a / x / c / d, q, and a comment typed in place under its block.
-async function steer($: EngineInterface, key: Key) {
+async function steer($: EngineInterface, key: Key, by: 'hint' | 'band' = 'hint') {
   const count = await blockCount($)
-  const scope = { first: 0, last: count - 1, comments: (await read($, comments)) as Record<string, string> }
+  const scope = { first: 0, last: count - 1, comments: (await read($, comments)) as Record<string, string>, codeLines: codeLineCounts(await read($, lastText)) }
   const before = await read($, selected)
   const s = press({ ...held.review, selected: before, isActive: true }, key, scope)
   if (!s) return
-  holder = 'hint'
+  holder = by
   held = { ...held, review: s.review }
   await update($, selected, () => s.review.selected)
   for (const a of s.actions) await applyAction($, a)
@@ -599,6 +602,7 @@ export const register: Register = on => {
       const staged = commented as Record<string, string>
       // A move crosses the reply's pieces: the bounds are the whole reply's.
       const count = await blockCount($)
+      const codeLines = codeLineCounts(target)
       let n = offset - 1
       return (
         <Box flexDirection="column" marginTop={1}>
@@ -634,6 +638,8 @@ export const register: Register = on => {
                     review,
                     acked: held.acked,
                     comments: staged,
+                    codeLines,
+                    lineMarks: lineMarks(marked, n),
                   },
                 })}
               </Box>
@@ -665,7 +671,7 @@ export const register: Register = on => {
             isBlock: true,
             indent: seg.indent,
             hasGapBefore: seg.hasGapBefore,
-            glyph: mark ? GLYPH[mark] : undefined,
+            glyph: mark ? GLYPH[mark] : Object.keys(lineMarks(marked, i)).length > 0 ? PARTLY : undefined,
             // Background and menu only while the navigator holds the keyboard:
             // after Esc the reply reads as a plain reply again.
             isSelected: isSelected && isNavigatorFocused,
@@ -719,7 +725,7 @@ export const register: Register = on => {
     if (!isFullscreen) return next(e)
     const element = baseKey(e.element ?? '')
     observe(`band focus → ${element || '(off)'} by ${e.origin.kind}`)
-    if (element === NEXT_BLOCK || element === PREVIOUS_BLOCK || element === END_REVIEW) return { deny: 'synaptik: not a stop' }
+    if (element === NEXT_BLOCK || element === PREVIOUS_BLOCK || element === STEP_INTO || element === END_REVIEW) return { deny: 'synaptik: not a stop' }
     const verb = VERBS.findIndex(v => v.key === element)
     if (verb >= 0 || element.startsWith(BAND_COMMENT_PREFIX)) {
       const isEntering = !holder
@@ -1036,11 +1042,19 @@ export const register: Register = on => {
     // Under a "Synaptik" header, each line led by ⎿ as Claude Code nests its own
     // output, so with several mods in the band it is clear which lines are ours.
     // The last line, just above the prompt: what the keys do right now.
+    // Inside a code block, and on one: its lines, and the key that steps in.
+    const codeLines = codeLineCounts(await read($, lastText))
+    const lineOf = held.review.line === undefined ? '' : `Line ${held.review.line + 1} of ${codeLines[String(sel)] ?? 1}`
+    const stepIn = codeLines[String(sel)] ? ' · s step in' : ''
     const fullscreenAction =
       holder === 'band'
-        ? `${blockCounter(sel, blocks.length)} · j/k blocks · ←→ actions · ⏎ apply · q done`
+        ? lineOf
+          ? `${lineOf} · j/k lines · ←→ actions · ⏎ apply · q step out`
+          : `${blockCounter(sel, blocks.length)} · j/k blocks · ←→ actions · ⏎ apply${stepIn} · q done`
         : holder
-          ? `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ←→ actions · ⏎ apply · ⌫ unmark · q done`
+          ? lineOf
+            ? `${lineOf} · ↑↓ lines · ←→ actions · ⏎ apply · ⌫ unmark · q step out`
+            : `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ←→ actions · ⏎ apply · ⌫ unmark${stepIn} · q done`
           : `${key} to ${staged ? 'continue reviewing' : 'review the reply'}`
     const action = isFullscreen
       ? fullscreenAction
@@ -1108,7 +1122,8 @@ export const register: Register = on => {
       },
       {
         move: by => bandMove($, by),
-        end: () => releaseReview($),
+        step: () => steer($, { key: 's' }, 'band'),
+        end: () => (held.review.line !== undefined ? steer($, { key: 'q' }, 'band') : releaseReview($)),
         verb: n => bandVerb($, n),
         type: text => bandComment($, text, false),
         submit: text => bandComment($, text, true),

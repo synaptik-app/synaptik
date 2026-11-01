@@ -9,8 +9,9 @@ declare module 'claude-code' {
       isWorking: boolean
       lastText: string
       selected: number
-      marks: Record<number, Mark>
-      comments: Record<number, string>
+      // By part: a block's index, or a code line's key (src/blocks.ts).
+      marks: Record<string, Mark>
+      comments: Record<string, string>
       isCommenting: boolean
       focusedVerb: string
       isPaneShown: boolean

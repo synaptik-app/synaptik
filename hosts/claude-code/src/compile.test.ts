@@ -18,6 +18,35 @@ const NESTING = `1. Top level, numbered
 
 const blocks = segment(NESTING).filter(s => s.isBlock)
 
+const CODE = segment('Before.\n\n```ts\nconst a = 1\n\n  const b = 2\nconst long = "' + 'x'.repeat(70) + '"\n```').filter(s => s.isBlock)
+
+test('a marked code line nests under its block, as a plain quote for context', async () => {
+  expect(compile(CODE, { '1.2': 'reject', '1.0': 'accept' }, {})).toBe(
+    ['"const a = 1 const b =..." (code block)', '    ✓ line 1: "const a = 1"', '    ✗ line 3: "const b = 2"'].join('\n'),
+  )
+})
+
+test('a code line and its block can both be marked', async () => {
+  expect(compile(CODE, { 1: 'accept', '1.0': 'reject' }, {})).toBe(['✓ "const a = 1 const b =..."', '    ✗ line 1: "const a = 1"'].join('\n'))
+})
+
+test('a blank code line is its number, a long one is trimmed', async () => {
+  expect(compile(CODE, { '1.1': 'accept' }, {})).toContain('    ✓ line 2 (blank)')
+  expect(compile(CODE, { '1.3': 'accept' }, {})).toContain(`    ✓ line 4: "${('const long = "' + 'x'.repeat(70)).slice(0, 60)}..."`)
+})
+
+test('a comment on a code line lines up under it; an empty one is not sent', async () => {
+  const lead = '    ✎ line 1: "const a = 1" → '
+  expect(compile(CODE, { '1.0': 'comment' }, { '1.0': 'one\ntwo' })).toContain(`${lead}one\n${' '.repeat(lead.length)}two`)
+  expect(compile(CODE, { '1.0': 'comment' }, {})).toBe('')
+})
+
+test('line 10 of a block is not line 1', async () => {
+  const long = segment('```\n' + Array.from({ length: 12 }, (_, i) => `l${i}`).join('\n') + '\n```').filter(s => s.isBlock)
+  expect(compile(long, { '0.10': 'accept' }, {})).toContain('✓ line 11: "l10"')
+  expect(compile(long, { '0.10': 'accept' }, {})).not.toContain('line 2')
+})
+
 test('a preview keeps three lines and counts the rest', async () => {
   expect(preview('a\nb\nc')).toBe('a\nb\nc')
   expect(preview('a\nb\nc\nd')).toBe('a\nb\nc\n… (+1 line)')

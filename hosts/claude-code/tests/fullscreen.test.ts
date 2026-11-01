@@ -536,3 +536,93 @@ test(check(F, 'ctrl+u empties the comment being typed'), async ($, on) => {
   await ui.key({ key: 'return', in: into })
   expect(suggested()).not.toContain('✎')
 })
+
+// --- Stepping into a code block (fixtures/code.md) --------------------------
+
+const C = 'code'
+// The code fixture's blocks: the intro, the ts block, the paragraph.
+const TS = 1
+const PARAGRAPH = 2
+
+// Whether a block draws this text: what its module last drew, as plain JSON.
+async function draws(ui: Mounted, index: number, text: RegExp): Promise<boolean> {
+  return text.test(JSON.stringify(await ui.drawn({ in: await block(ui, index) })))
+}
+
+test(check(C, "A code block's menu has a 5th action"), async ($, on) => {
+  await start($, on, C)
+  await fullscreen($, C)
+  await review($)
+  const ui = await fullscreen($, C)
+  await clickAndPress(ui, TS, [])
+  expect(await draws(ui, TS, /step in/)).toBe(true)
+  await clickAndPress(ui, PARAGRAPH, [])
+  expect(await draws(ui, PARAGRAPH, /step in/)).toBe(false)
+})
+
+test(check(C, 's or step in enters the block'), async ($, on) => {
+  await start($, on, C)
+  await fullscreen($, C)
+  await review($)
+  const ui = await fullscreen($, C)
+  await clickAndPress(ui, TS, ['s'])
+  expect(await draws(ui, TS, /step out/)).toBe(true)
+  expect((await hintLines(await band($)))[0]).toMatch(/^Line 1 of \d+ · ↑↓ lines .* q step out$/)
+  await clickAndPress(ui, TS, [])
+  await ui.key({ key: 'q', in: await block(ui, TS) })
+  expect(await draws(ui, TS, /step in/)).toBe(true)
+  // Still in the review: q went up one level only.
+  expect((await hintLines(await band($)))[0]).toMatch(/^Block \d+ of \d+/)
+})
+
+test(check(C, 'After ctrl+x tab: s steps in'), async ($, on) => {
+  await start($, on, C)
+  await fullscreen($, C)
+  await review($)
+  const ui = await fullscreen($, C)
+  const b = await band($)
+  // A review starts on the last block: walk up to the ts block.
+  const at = Number((await hintLines(b))[0]?.match(/^Block (\d+)/)?.[1])
+  for (let n = at - 1; n > TS; n--) await b.press({ key: await bandKey(b, 'block-previous') })
+  await b.press({ key: await bandKey(b, 'code-step') })
+  await b.press({ key: await bandKey(b, 'block-next') })
+  await b.press({ key: await bandKey(b, 'verb-accept') })
+  expect(suggested()).toContain('✓ line 2:')
+  await b.press({ key: await bandKey(b, 'review-end') })
+  expect(await draws(ui, TS, /step in/)).toBe(true)
+})
+
+test(check(C, 'a / x / c on a line stage it'), async ($, on) => {
+  await start($, on, C)
+  await fullscreen($, C)
+  await review($)
+  const ui = await fullscreen($, C)
+  await clickAndPress(ui, TS, ['s', 'down', 'x'])
+  expect(suggested()).toContain('✗ line 2: "step onto this line, and the next."')
+  await clickAndPress(ui, TS, ['backspace'])
+  expect(suggested()).not.toContain('line 2')
+})
+
+test(check(C, 'c opens a comment under the line'), async ($, on) => {
+  await start($, on, C)
+  await fullscreen($, C)
+  await review($)
+  const ui = await fullscreen($, C)
+  await clickAndPress(ui, TS, ['s', 'c', 'h', 'i', 'return'])
+  expect(suggested()).toContain('✎ line 1: "/* A multi-line comment:" → hi')
+  // Drawn again, as the hooks' redraw does: the tray reaches a block as props.
+  const staged = await fullscreen($, C)
+  expect(await draws(staged, TS, /→ hi/)).toBe(true)
+  await staged.key({ key: 'c', in: await block(staged, TS) })
+  expect(await draws(staged, TS, /"hi"/)).toBe(true)
+})
+
+test(check(C, "A block's own mark and its lines' marks"), async ($, on) => {
+  await start($, on, C)
+  await fullscreen($, C)
+  await review($)
+  const ui = await fullscreen($, C)
+  await clickAndPress(ui, TS, ['a', 's', 'x'])
+  expect(suggested()).toMatch(/^✓ "\/\* A multi-line comment:.*\n    ✗ line 1: /)
+})
+
