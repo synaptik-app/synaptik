@@ -1572,8 +1572,12 @@ tallest cell, the list a table becomes without room for a grid, and the 200-row 
 - In a very narrow terminal Claude Code's list format wraps its own 40-column rule, and
   rows below that are off. Left alone on purpose: it's Claude Code's glitch, and
   compensating for it would break when it's fixed.
-- The table is assumed to be laid out for the block's width, and a link in a cell to
-  draw as its text. Neither was confirmed.
+- A table is laid out for the block's full width, not the narrower room after the
+  margin and indent. Claude Code wrapping its rule in that margin shows the layout
+  doesn't shrink for it. So a table in a list keeps its top-level columns, and its
+  grid can wrap again in a narrow terminal, which throws rows off. Inferred from that
+  wrap, and hand-tested on top-level tables only.
+- A link in a cell is assumed to draw as its text. Not confirmed.
 
 ---
 
