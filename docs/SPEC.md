@@ -165,8 +165,9 @@ type BlockState = {
   }
 }
 
-// keyed by block index within the current message
-type Tray = Map<number, BlockState>
+// keyed by block index within the current message, or for a line inside a code
+// block by `block.line` ("3.4", the line from 0)
+type Tray = Map<number | string, BlockState>
 ```
 
 ### Rules
@@ -468,6 +469,16 @@ glyph, so a nested mark arrives under the item it belongs to.
     ✎ "2. Second level, numbered" → merge with the one above
 ```
 
+**A marked code line** nests under its block, with its number from 1, counted from
+the block's first line of code, and the line trimmed to 60 characters. A blank line
+has only its number. The block goes first, for context, even when it has no mark:
+
+```
+"const routes = [ { path: '/api/v1/users'," (code block)
+    ✗ line 4: "{ path: '/api/v1/resource/004', method: 'GET' }," → drop this route
+    ✓ line 5 (blank)
+```
+
 **No header and no prose scaffolding.** Not "Re your last message", not "the
 user approved step 3", not "the user asked to explain". The agent wrote this
 message one turn ago; a short quote locates anything.
@@ -616,6 +627,17 @@ row only in answer to the person's own input, and a key a `Client` posts does no
 count (`not person-initiated`). After a click, ↑/↓ move the selection and the
 person scrolls with the wheel (#64).
 
+### Stepping into a code block (#105)
+
+A code block's menu has a 5th action, `↳ step in`. Inside it the selected line has
+the background and the menu right under it, whose 5th action is `↰ step out`. Marks
+on lines show in the margin during a review; outside one, a block with only marked
+lines shows `✸`, and a block's own mark takes that place. Backspace on a block takes
+its own mark, then, pressed again, its lines' marks. The band's hint says `Line 4 of
+18`; no line numbers are drawn. Lines are for the keyboard: a click never selects
+one (a mouse's partial mark belongs to text selection, #91). Fullscreen only; a table
+stays one block for now.
+
 ### The navigator (classic)
 
 A pane (id `synaptik-map`), opened when a reply is adopted — in classic only;
@@ -662,7 +684,12 @@ dropped. `⏎` or backspace on an empty line cancels it.
 | Apply the action under the cursor | ⏎, or click it | ⏎ |
 | Apply an action directly | `a` `x` `c` `d` | `a` `x` `c` `d` |
 | Take a block's mark off | Backspace | the same action again; a ✎ can't (#100) |
+| Step into a code block, or out | `s` or its menu item | `s` |
+| Move between its lines | ↑ / ↓, Home / End | `j` / `k` |
 | Leave | `q` (Esc is not seen, #23) | `q` |
+
+Inside a code block the actions apply to the selected line, and `q` steps out first,
+then ends the review.
 
 **The default renderer** (the pane):
 

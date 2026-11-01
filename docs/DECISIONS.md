@@ -676,6 +676,9 @@ navigator, its design to be finished on #39.
 
 #### Revision 2026-10-24 — a second level, for code and tables
 
+**Revised 2026-11-01 by D43:** built for code blocks in fullscreen, with `step in` and
+`step out`. Tables are still to come.
+
 A code block or a table gets a 5th action, **step into**. Inside it, ↑/↓ move
 between lines or rows, and the menu holds the four verbs plus **step back**,
 which returns to the blocks. Prose stays at block level: splitting a paragraph
@@ -1512,6 +1515,41 @@ writes one of their files, least of all before a marketplace submission.
 
 **Cost, accepted:** the band names Claude Code's defaults (`ctrl+x tab`, `tab/⇧tab`).
 Someone who rebound those keys sees the default named; their keys still work.
+
+---
+
+### D43 — Step into a code block, drawn as windows of the whole block
+**Status:** settled · added 2026-11-01 · narrows D20's step into (#105)
+
+In fullscreen a code block's menu gets `step in`, and its lines take marks of their
+own, nested under the block in the prompt with their number and text. Tables and
+classic are left out: tables need our own grid, and classic is legacy.
+
+**Drawing.** `Code` has no background for one line and the menu has to sit between
+lines, so the block is drawn in three parts. Cutting the source into three pieces
+fails: a piece that starts with a closing `*/` or `"""` reads it as an opening one,
+and everything after it changes colour. So each part draws the whole block with
+`Markdown`, as Claude Code does, in an `overflow: hidden` box with a negative
+`marginTop` showing its rows only. The highlighter never sees a cut.
+
+**No line numbers on screen.** `Markdown` has no gutter, and our own would push the
+code sideways on every step in. The person marks the line they see; the number is for
+the agent, and the band's hint says `Line 4 of 18`.
+
+**Lines are for the keyboard.** No `Client` per line, and a click doesn't select one.
+Marking part of a block with the mouse, and ranges of lines, belong to text selection
+(#91, #137), which may make step in unnecessary for the mouse.
+
+**Known limits:**
+- Wrapped rows are estimated from the width, so after a very long line the windows,
+  margin glyphs and menu clicks may drift by a row.
+- A line can move off screen in a tall block: the transcript scrolls to whole rows
+  only (#64).
+
+**Taking marks off, and showing them:** Backspace on a block takes its own mark, then
+its lines' marks, with no timing to learn; comments' texts stay, as always. Outside a
+review a line's glyph can't be placed (no width is known there), so a block with only
+marked lines shows `✸`, never sent. Its own mark takes that place, as it says more.
 
 ---
 

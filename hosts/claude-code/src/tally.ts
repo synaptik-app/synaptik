@@ -4,12 +4,12 @@
 import { GLYPH } from './compile'
 import type { Mark } from './compile'
 
-type Marks = Readonly<Record<number, Mark>>
-type Comments = Readonly<Record<number, string>>
+type Marks = Readonly<Record<string, Mark>>
+type Comments = Readonly<Record<string, string>>
 
 // Comments that count: a block marked to comment, with text.
 export function commentCount(marks: Marks, comments: Comments): number {
-  return Object.entries(marks).filter(([i, m]) => m === 'comment' && comments[Number(i)]?.trim()).length
+  return Object.entries(marks).filter(([i, m]) => m === 'comment' && comments[i]?.trim()).length
 }
 
 // The band: "2 accepted · 1 rejected · 1 comment", zero counts left out.
