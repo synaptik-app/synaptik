@@ -46,6 +46,22 @@ plain text
 in a fence
 ```
 
+A table to step into:
+
+| Option | Latency | Cost |
+|---|---|---|
+| Redis | low | $$ |
+| Memcached | low | $ |
+| Postgres | medium | $ |
+
+A table with a long cell, which may wrap:
+
+| Name | Notes |
+|---|---|
+| short | fine |
+| long | a cell with enough text in it that it has to wrap onto a second row in most terminals, and then some more of it to be certain |
+| after | the row after the long one |
+
 ### What to check
 
 - **Stepping in**
@@ -63,6 +79,12 @@ in a fence
   - A block's own mark and its lines' marks can be staged together
   - Outside a review, a block with only marked lines shows ✸ in the margin; its own mark takes that place
   - Backspace on a block takes its own mark, then its lines' marks
+- **Tables**
+  - A table's menu has step in; ↑/↓ move between its data rows, the band says "Row 1 of 3"
+  - The selected row has the background and the menu under it, and the grid otherwise looks unchanged
+  - A row that wraps is selected whole, and ↓ goes to the next row, never a border
+  - Narrowed until the table turns into a list, ↑/↓ still select whole rows
+  - A marked row compiles as row N with its cells, nested under the table's quote
 - **The prompt**
   - A marked line compiles nested under its block, with its number and the line trimmed
   - An unmarked block with a marked line is sent as a plain quote ending "(code block)"

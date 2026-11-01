@@ -1519,11 +1519,12 @@ Someone who rebound those keys sees the default named; their keys still work.
 ---
 
 ### D43 — Step into a code block, drawn as windows of the whole block
-**Status:** settled · added 2026-11-01 · narrows D20's step into (#105)
+**Status:** settled · added 2026-11-01 · narrows D20's step into (#105) · tables added by D44
 
 In fullscreen a code block's menu gets `step in`, and its lines take marks of their
 own, nested under the block in the prompt with their number and text. Tables and
-classic are left out: tables need our own grid, and classic is legacy.
+classic are left out: tables need our own grid, and classic is legacy. (D44 found
+tables don't need one.)
 
 **Drawing.** `Code` has no background for one line and the menu has to sit between
 lines, so the block is drawn in three parts. Cutting the source into three pieces
@@ -1550,6 +1551,33 @@ Marking part of a block with the mouse, and ranges of lines, belong to text sele
 its lines' marks, with no timing to learn; comments' texts stay, as always. Outside a
 review a line's glyph can't be placed (no width is known there), so a block with only
 marked lines shows `✸`, never sent. Its own mark takes that place, as it says more.
+
+### D44 — Step into a table, placing its rows with Claude Code's own layout
+**Status:** settled · added 2026-11-01 · extends D43 (#105)
+
+A table steps like a code block, drawn with the same windows, so its look is Claude
+Code's own rather than a grid of ours. Its data rows take marks; the header doesn't,
+since the table's quote already names the columns.
+
+**Rows are worked out, not measured.** No API reports where a row landed, and a row's
+height depends on every cell in the table. Assuming one line per row put the selection
+on borders as soon as a cell wrapped. So `src/table.ts` ports the layout from Claude
+Code 2.1.309, read from its binary: column widths, word wrap, a row as tall as its
+tallest cell, the list a table becomes without room for a grid, and the 200-row cap.
+
+**Known limits:**
+- If Claude Code changes its layout, the selection drifts until the port follows. The
+  table still draws correctly, and marks stay on the right row, because they hold the
+  row's number and not its place on screen.
+- In a very narrow terminal Claude Code's list format wraps its own 40-column rule, and
+  rows below that are off. Left alone on purpose: it's Claude Code's glitch, and
+  compensating for it would break when it's fixed.
+- A table is laid out for the block's full width, not the narrower room after the
+  margin and indent. Claude Code wrapping its rule in that margin shows the layout
+  doesn't shrink for it. So a table in a list keeps its top-level columns, and its
+  grid can wrap again in a narrow terminal, which throws rows off. Inferred from that
+  wrap, and hand-tested on top-level tables only.
+- A link in a cell is assumed to draw as its text. Not confirmed.
 
 ---
 
@@ -2328,7 +2356,8 @@ the numbers are not decision numbers.
 
 ### Extension points noted
 
-- **Navigation inside tables** — rows, possibly cells, as blocks of their own.
+- **Navigation inside tables** — rows, possibly cells, as blocks of their own. Rows
+  done by stepping in (D44); cells not.
 
 ### To ask upstream
 

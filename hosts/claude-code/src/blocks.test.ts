@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { chunk, quote, segment } from './blocks'
+import { chunk, partCounts, quote, segment, tableCells, tableRows } from './blocks'
 
 const REPLY = `Here's what I'd suggest:
 
@@ -56,4 +56,26 @@ test('chunk: prose splits at lines, and a single line longer than a piece is cut
   const pieces = chunk(text)
   expect(pieces.every(p => p.length <= 10_000)).toBe(true)
   expect(pieces.join('\n').replace(/\n/g, '')).toBe(text.replace(/\n/g, ''))
+})
+
+test('a table row\'s cells, an escaped pipe staying in its cell', () => {
+  expect(tableCells('| a | b \\| c |')).toEqual(['a', 'b \\| c'])
+  expect(tableCells('a | b')).toEqual(['a', 'b'])
+})
+
+test('a table\'s data rows, its cells joined; any other block has none', () => {
+  expect(tableRows('| A | B |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |')).toEqual(['1 · 2', '3 · 4'])
+  expect(tableRows('just a paragraph')).toBeUndefined()
+})
+
+test('a table steps through the 200 rows Claude Code draws', () => {
+  const rows = Array.from({ length: 201 }, (_, n) => `| ${n} |`).join('\n')
+  const steps = tableRows(`| A |\n|---|\n${rows}`)!
+  expect(steps.length).toBe(200)
+  expect(steps.at(-1)).toBe('199')
+})
+
+test('partCounts has each steppable block by its index, and a table with no rows has none', () => {
+  const reply = 'Text.\n\n| A |\n|---|\n| 1 |\n| 2 |\n\n```js\na\nb\nc\n```\n\n| A |\n|---|'
+  expect(partCounts(reply)).toEqual({ '1': 2, '2': 3 })
 })

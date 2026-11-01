@@ -7,12 +7,13 @@
 
 import type { ClientModule } from 'claude-code'
 
-import { chunk, codeOf, lineKey } from '../../src/blocks'
+import { chunk, lineKey, partsOf } from '../../src/blocks'
 import { GLYPH, oneLine, PARTLY } from '../../src/compile'
 import type { Mark } from '../../src/compile'
 import { COMMENT_HINT } from '../ui'
 import { cells, click, current, itemAt, MENU, press, queue } from '../../src/review'
 import type { Editing, Local, Review, Step } from '../../src/review'
+import { tableLayout } from '../../src/table'
 
 export type BlockProps = {
   index: number
@@ -29,8 +30,8 @@ export type BlockProps = {
   // Staged comment texts by block index or line key: shown under their block or
   // line, reopened by c.
   comments: Record<string, string>
-  // How many lines each code block in the reply has: a block's keys steer them all.
-  codeLines: Record<string, number>
+  // How many parts each steppable block in the reply has: a block's keys steer them all.
+  partCounts: Record<string, number>
   // The marks on this block's own lines, by line.
   lineMarks: Record<string, Mark>
 }
@@ -42,8 +43,8 @@ const LABELS: Record<(typeof MENU)[number], string> = {
   comment: '✎ comment',
   discuss: '💬 discuss',
 }
-// The menu's items as drawn, in order: what a click is matched against. A code
-// block adds step in, a line inside one step out.
+// The menu's items as drawn, in order: what a click is matched against. A code block or table
+// adds step in, a part inside one step out.
 const ITEMS = MENU.map(verb => `[ ${LABELS[verb]} ]`)
 const STEP_IN = '[ ↳ step in ]'
 const STEP_OUT = '[ ↰ step out ]'
@@ -55,7 +56,7 @@ type BlockState = Local & { hovered?: number }
 const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
   const { Box, Text, Markdown } = surface.elements
   const review = current(surface.state, props.review)
-  const scope = { first: props.first, last: props.last, comments: props.comments, codeLines: props.codeLines }
+  const scope = { first: props.first, last: props.last, comments: props.comments, partCounts: props.partCounts }
 
   const hovered = surface.state?.hovered
   const take = (s: Step | undefined) => {
@@ -85,17 +86,17 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
 
   const isSelected = review.isActive && review.selected === props.index
   const editing = review.editing?.index === props.index ? review.editing : undefined
-  const code = props.codeLines[String(props.index)] ? codeOf(props.text) : undefined
-  const stepped = code && isSelected && review.line !== undefined ? { ...code, at: review.line } : undefined
+  const parts = props.partCounts[String(props.index)] ? partsOf(props.text) : undefined
+  const stepped = parts && isSelected && review.line !== undefined ? { ...parts, at: review.line } : undefined
   const steppedKey = stepped ? lineKey(props.index, stepped.at) : undefined
   const lineEditing = steppedKey !== undefined && review.editing?.index === steppedKey ? review.editing : undefined
   const lineStaged = steppedKey !== undefined && !lineEditing && props.lineMarks[String(stepped?.at)] === 'comment' ? props.comments[steppedKey] : undefined
-  const items = stepped ? [...ITEMS, STEP_OUT] : code ? [...ITEMS, STEP_IN] : ITEMS
+  const items = stepped ? [...ITEMS, STEP_OUT] : parts ? [...ITEMS, STEP_IN] : ITEMS
   const staged = !editing && props.glyph === '✎' ? props.comments[String(props.index)] : undefined
   // Where the menu sits in the region: its last row, or the one above a staged
   // comment's (a single row: its first line, truncated), after the margin,
   // indent and "└ ".
-  const menuRow = () => (stepped ? rowOf(stepped.lines, stepped.at + 1) : surface.rows - 1 - (staged ? 1 : 0))
+  const menuRow = () => (stepped ? rowEnd(stepped.at) : surface.rows - 1 - (staged ? 1 : 0))
   const menuStart = MARGIN + props.indent + 2
 
   // The comment being typed, dim like a staged one, its cursor an inverse cell,
@@ -143,11 +144,19 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
 
   // The block stepped into: every piece draws the WHOLE block and shows a window
   // of its rows, so the highlighter never sees a cut (a closing */ would read as
-  // an opening one). A long line wraps, so rows are estimated from the room.
-  const rowOf = (lines: readonly string[], line: number) => {
+  // an opening one). A long line wraps, so rows are estimated from the room; a
+  // table's rows come from its layout (src/table.ts).
+  const table = parts?.kind === 'table' ? tableLayout(props.text, surface.columns) : undefined
+  const rowOf = (line: number) => {
+    if (table) return table.spans[line]?.top ?? table.end
     const room = Math.max(1, surface.columns - MARGIN - props.indent)
-    return lines.slice(0, line).reduce((rows, text) => rows + Math.max(1, Math.ceil(cells(text) / room)), 0)
+    return (parts?.lines ?? []).slice(0, line).reduce((rows, text) => rows + Math.max(1, Math.ceil(cells(text) / room)), 0)
   }
+  const rowEnd = (line: number) => {
+    const span = table?.spans[line]
+    return span ? span.top + span.height : rowOf(line + 1)
+  }
+  const lastRow = () => table?.end ?? rowOf(parts?.lines.length ?? 0)
   const whole = () => chunk(props.text).map(piece => Markdown({ text: piece }))
   const windowed = (from: number, to: number, backgroundColor?: 'selectionBg') =>
     Box({
@@ -160,9 +169,9 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
   const lineComment = (text: string) =>
     Box({ paddingLeft: 2, children: [Text({ dimColor: true, wrap: 'truncate', children: [`→ ${oneLine(text)}`] })] })
   const drawCode = (s: NonNullable<typeof stepped>) => {
-    const top = rowOf(s.lines, s.at)
-    const bottom = rowOf(s.lines, s.at + 1)
-    const end = rowOf(s.lines, s.lines.length)
+    const top = rowOf(s.at)
+    const bottom = rowEnd(s.at)
+    const end = lastRow()
     return [
       ...(top > 0 ? [windowed(0, top)] : []),
       windowed(top, bottom, 'selectionBg'),
@@ -176,9 +185,9 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
   const margin = () => {
     const first = props.glyph ?? props.bullet ?? ''
     const marked = Object.entries(props.lineMarks).map(([line, mark]) => [Number(line), GLYPH[mark]] as const)
-    if (!code || marked.length === 0) return [Text({ children: [first] })]
+    if (!parts || marked.length === 0) return [Text({ children: [first] })]
     const under = stepped ? (lineEditing ? lineEditing.text.split('\n').length : 1) + (lineStaged ? 1 : 0) : 0
-    const glyphs = new Map(marked.map(([line, glyph]) => [rowOf(code.lines, line) + (stepped && line > stepped.at ? under : 0), glyph]))
+    const glyphs = new Map(marked.map(([line, glyph]) => [rowOf(line) + (stepped && line > stepped.at ? under : 0), glyph]))
     return Array.from({ length: Math.max(...glyphs.keys()) + 1 }, (_, row) =>
       Text({
         children: [

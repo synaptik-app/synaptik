@@ -230,19 +230,40 @@ export function codeOf(text: string): { open: string; close: string; lines: stri
   return { open: lines[0]!, close: lines[lines.length - 1]!, lines: lines.slice(1, -1) }
 }
 
-// A line inside a code block, as the tray keys it: block index, then line, from 0.
+// A code line or table row, as the tray keys it: block index, then part, from 0.
 export function lineKey(block: number, line: number): string {
   return `${block}.${line}`
 }
 
-// How many lines each code block has, by block index.
-export function codeLineCounts(text: string): Record<string, number> {
+// A table row's cells; a pipe with a backslash before it stays in its cell.
+export function tableCells(row: string): string[] {
+  return row.trim().replace(/^\||(?<!\\)\|$/g, '').split(/(?<!\\)\|/).map(cell => cell.trim())
+}
+
+// A table's data rows, each as its cells joined; undefined for any other block.
+// Claude Code draws the first 200, so the rest can't be stepped to.
+export function tableRows(text: string): string[] | undefined {
+  const lines = text.trim().split('\n')
+  if (lines.length < 2 || !TABLE_DELIMITER.test(lines[1]!)) return undefined
+  return lines.slice(2, 202).map(row => tableCells(row).join(' · '))
+}
+
+// What a block can be stepped into: a code block's lines or a table's rows.
+export function partsOf(text: string): { kind: 'code' | 'table'; lines: string[] } | undefined {
+  const code = codeOf(text)
+  if (code) return { kind: 'code', lines: code.lines }
+  const rows = tableRows(text)
+  return rows ? { kind: 'table', lines: rows } : undefined
+}
+
+// How many parts each steppable block has, by block index.
+export function partCounts(text: string): Record<string, number> {
   const counts: Record<string, number> = {}
   segment(text)
     .filter(s => s.isBlock)
     .forEach((block, i) => {
-      const code = codeOf(block.text)
-      if (code && code.lines.length > 0) counts[String(i)] = code.lines.length
+      const parts = partsOf(block.text)
+      if (parts && parts.lines.length > 0) counts[String(i)] = parts.lines.length
     })
   return counts
 }

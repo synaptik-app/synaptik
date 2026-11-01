@@ -1,7 +1,7 @@
 // The tray compiled into the prompt (SPEC §9): each marked block quoted, nested
 // under its parent, in reading order.
 
-import { codeOf, lineKey, quote } from './blocks'
+import { lineKey, partsOf, quote } from './blocks'
 import { cells } from './review'
 import { lineMarks } from './tray'
 
@@ -19,13 +19,22 @@ export type Block = { text: string; depth: number; parent: number }
 // How much of a code line a mark quotes.
 const LINE_QUOTE = 60
 
-// A code line in the prompt: its number from 1, counted from the block's first
-// line of code, and the line, trimmed. A blank line has only its number.
-function lineReference(line: number, text: string): string {
+// A code line or table row in the prompt: its number from 1, counted from the
+// block's first line of code or data row, and the text, trimmed. A blank line has
+// only its number.
+function lineReference(kind: 'code' | 'table', line: number, text: string): string {
   const trimmed = text.trim()
+  // A row's cells are joined with " · " (src/blocks.ts), so an empty one leaves only
+  // its separators; a trailing empty cell leaves one, the quote not being a literal copy.
+  if (kind === 'table' && /^[·\s]*$/.test(trimmed)) return `row ${line + 1} (blank)`
+  if (kind === 'table') return `row ${line + 1}: "${trimmedQuote(trimmed)}"`
   if (trimmed === '') return `line ${line + 1} (blank)`
-  const chars = [...trimmed]
-  return `line ${line + 1}: "${chars.length <= LINE_QUOTE ? trimmed : chars.slice(0, LINE_QUOTE).join('') + '...'}"`
+  return `line ${line + 1}: "${trimmedQuote(trimmed)}"`
+}
+
+function trimmedQuote(text: string): string {
+  const chars = [...text]
+  return chars.length <= LINE_QUOTE ? text : chars.slice(0, LINE_QUOTE).join('') + '...'
 }
 
 // One line per staged block, in document order, nested under its parent. An unmarked
@@ -67,14 +76,14 @@ export function compile(
     .flatMap((block, i) => {
       const indent = '    '.repeat(block.depth)
       const lines = stagedLines(i)
-      const code = lines.length > 0 ? codeOf(block.text) : undefined
+      const parts = lines.length > 0 ? partsOf(block.text) : undefined
       const nested = lines.flatMap(line => {
         const key = lineKey(i, line)
-        return entry(`${indent}    ${GLYPH[marks[key]!]} ${lineReference(line, code?.lines[line] ?? '')}`, key)
+        return entry(`${indent}    ${GLYPH[marks[key]!]} ${lineReference(parts?.kind ?? 'code', line, parts?.lines[line] ?? '')}`, key)
       })
       if (isStaged(i)) return [...entry(`${indent}${GLYPH[marks[i]!]} "${quote(block.text)}"`, i), ...nested]
       if (!context.has(i)) return []
-      return [`${indent}"${quote(block.text)}"${code ? ' (code block)' : ''}`, ...nested]
+      return [`${indent}"${quote(block.text)}"${parts?.kind === 'code' ? ' (code block)' : ''}`, ...nested]
     })
     .join('\n')
 }

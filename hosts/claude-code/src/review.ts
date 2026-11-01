@@ -47,7 +47,7 @@ export type Key = { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean
 
 // What a step needs to know beyond the review: the blocks it may select, and
 // the staged comments (to reopen one where it was left).
-export type Scope = { first: number; last: number; comments: Readonly<Record<string, string>>; codeLines?: Readonly<Record<string, number>> }
+export type Scope = { first: number; last: number; comments: Readonly<Record<string, string>>; partCounts?: Readonly<Record<string, number>> }
 
 export type Step = { review: Review; actions: Action[] }
 
@@ -153,7 +153,7 @@ export function press(review: Review, key: Key, scope: Scope): Step | undefined 
   if (review.line !== undefined) return pressInCode(review, review.line, key, scope)
   switch (key.key) {
     case 's':
-      return scope.codeLines?.[String(review.selected)] ? stepIn(review) : undefined
+      return scope.partCounts?.[String(review.selected)] ? stepIn(review) : undefined
     case 'up':
       return select(review, review.selected - 1, scope)
     case 'down':
@@ -191,7 +191,7 @@ export function press(review: Review, key: Key, scope: Scope): Step | undefined 
 const STEP = MENU.length
 
 function menuSize(selected: number, scope: Scope): number {
-  return scope.codeLines?.[String(selected)] ? STEP + 1 : STEP
+  return scope.partCounts?.[String(selected)] ? STEP + 1 : STEP
 }
 
 function stepIn(review: Review): Step {
@@ -206,7 +206,7 @@ function stepOut(review: Review): Step {
 // The keys inside a code block: as on a block, with ↑/↓ between its lines, and q
 // one level up.
 function pressInCode(review: Review, line: number, key: Key, scope: Scope): Step | undefined {
-  const last = (scope.codeLines?.[String(review.selected)] ?? 1) - 1
+  const last = (scope.partCounts?.[String(review.selected)] ?? 1) - 1
   const size = STEP + 1
   const moveTo = (to: number) => step(review, { ...review, line: Math.max(0, Math.min(last, to)) })
   switch (key.key) {
