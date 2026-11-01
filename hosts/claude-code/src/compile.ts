@@ -24,6 +24,9 @@ const LINE_QUOTE = 60
 // only its number.
 function lineReference(kind: 'code' | 'table', line: number, text: string): string {
   const trimmed = text.trim()
+  // A row's cells are joined with " · " (src/blocks.ts), so an empty one leaves only
+  // its separators; a trailing empty cell leaves one, the quote not being a literal copy.
+  if (kind === 'table' && /^[·\s]*$/.test(trimmed)) return `row ${line + 1} (blank)`
   if (kind === 'table') return `row ${line + 1}: "${trimmedQuote(trimmed)}"`
   if (trimmed === '') return `line ${line + 1} (blank)`
   return `line ${line + 1}: "${trimmedQuote(trimmed)}"`

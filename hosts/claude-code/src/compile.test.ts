@@ -52,6 +52,13 @@ test('a marked table row nests under the table, with its cells', async () => {
   expect(compile(table, { '0.1': 'reject' }, {})).toBe(['"table: A · B"', '    ✗ row 2: "three ·"'].join('\n'))
 })
 
+test('a table row with no text compiles as blank, with one column or several', async () => {
+  const wide = segment('| A | B |\n|---|---|\n| | |').filter(s => s.isBlock)
+  expect(compile(wide, { '0.0': 'reject' }, {})).toContain('✗ row 1 (blank)')
+  const narrow = segment('| A |\n|---|\n| |').filter(s => s.isBlock)
+  expect(compile(narrow, { '0.0': 'reject' }, {})).toContain('✗ row 1 (blank)')
+})
+
 test('a preview keeps three lines and counts the rest', async () => {
   expect(preview('a\nb\nc')).toBe('a\nb\nc')
   expect(preview('a\nb\nc\nd')).toBe('a\nb\nc\n… (+1 line)')
