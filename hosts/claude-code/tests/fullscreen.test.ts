@@ -626,3 +626,16 @@ test(check(C, "A block's own mark and its lines' marks"), async ($, on) => {
   expect(suggested()).toMatch(/^✓ "\/\* A multi-line comment:.*\n    ✗ line 1: /)
 })
 
+test(check(C, "A table's menu has step in"), async ($, on) => {
+  await start($, on, C)
+  await fullscreen($, C)
+  await review($)
+  const ui = await fullscreen($, C)
+  const clients = await ui.findAll({ type: 'Client' })
+  const table = clients.map((c: FoundElement) => c.props.props as { index: number; text: string }).find((p: { text: string }) => p.text?.startsWith('| Option'))!.index
+  await clickAndPress(ui, table, ['s', 'down'])
+  expect((await hintLines(await band($)))[0]).toMatch(/^Row 2 of 3 · ↑↓ rows/)
+  await clickAndPress(ui, table, ['x'])
+  expect(suggested()).toContain('✗ row 2: "Memcached · low · $"')
+})
+

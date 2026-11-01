@@ -11,7 +11,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Mark } from '../types'
-import { codeLineCounts, quote, segment } from '../src/blocks'
+import { partCounts, partsOf, quote, segment } from '../src/blocks'
 import { lastTurnText } from '../src/turn'
 import { compile as compileTray, GLYPH, PARTLY, preview } from '../src/compile'
 import { clear as clearMark, clearBlock, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, lineMarks, toggle as toggleMark } from '../src/tray'
@@ -421,7 +421,7 @@ async function bandMove($: EngineInterface, by: 1 | -1 | 0) {
 // a / x / c / d, q, and a comment typed in place under its block.
 async function steer($: EngineInterface, key: Key, by: 'hint' | 'band' = 'hint') {
   const count = await blockCount($)
-  const scope = { first: 0, last: count - 1, comments: (await read($, comments)) as Record<string, string>, codeLines: codeLineCounts(await read($, lastText)) }
+  const scope = { first: 0, last: count - 1, comments: (await read($, comments)) as Record<string, string>, partCounts: partCounts(await read($, lastText)) }
   const before = await read($, selected)
   const s = press({ ...held.review, selected: before, isActive: true }, key, scope)
   if (!s) return
@@ -602,7 +602,7 @@ export const register: Register = on => {
       const staged = commented as Record<string, string>
       // A move crosses the reply's pieces: the bounds are the whole reply's.
       const count = await blockCount($)
-      const codeLines = codeLineCounts(target)
+      const stepCounts = partCounts(target)
       let n = offset - 1
       return (
         <Box flexDirection="column" marginTop={1}>
@@ -638,7 +638,7 @@ export const register: Register = on => {
                     review,
                     acked: held.acked,
                     comments: staged,
-                    codeLines,
+                    partCounts: stepCounts,
                     lineMarks: lineMarks(marked, n),
                   },
                 })}
@@ -1043,17 +1043,18 @@ export const register: Register = on => {
     // output, so with several mods in the band it is clear which lines are ours.
     // The last line, just above the prompt: what the keys do right now.
     // Inside a code block, and on one: its lines, and the key that steps in.
-    const codeLines = codeLineCounts(await read($, lastText))
-    const lineOf = held.review.line === undefined ? '' : `Line ${held.review.line + 1} of ${codeLines[String(sel)] ?? 1}`
-    const stepIn = codeLines[String(sel)] ? ' · s step in' : ''
+    const stepCounts = partCounts(await read($, lastText))
+    const partName = partsOf(blocks[sel]?.text ?? '')?.kind === 'table' ? 'Row' : 'Line'
+    const lineOf = held.review.line === undefined ? '' : `${partName} ${held.review.line + 1} of ${stepCounts[String(sel)] ?? 1}`
+    const stepIn = stepCounts[String(sel)] ? ' · s step in' : ''
     const fullscreenAction =
       holder === 'band'
         ? lineOf
-          ? `${lineOf} · j/k lines · ←→ actions · ⏎ apply · q step out`
+          ? `${lineOf} · j/k ${partName.toLowerCase()}s · ←→ actions · ⏎ apply · q step out`
           : `${blockCounter(sel, blocks.length)} · j/k blocks · ←→ actions · ⏎ apply${stepIn} · q done`
         : holder
           ? lineOf
-            ? `${lineOf} · ↑↓ lines · ←→ actions · ⏎ apply · ⌫ unmark · q step out`
+            ? `${lineOf} · ↑↓ ${partName.toLowerCase()}s · ←→ actions · ⏎ apply · ⌫ unmark · q step out`
             : `${blockCounter(sel, blocks.length)} · ↑↓ blocks · ←→ actions · ⏎ apply · ⌫ unmark${stepIn} · q done`
           : `${key} to ${staged ? 'continue reviewing' : 'review the reply'}`
     const action = isFullscreen

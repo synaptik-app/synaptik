@@ -479,6 +479,14 @@ has only its number. The block goes first, for context, even when it has no mark
     ✓ line 5 (blank)
 ```
 
+**A marked table row** nests the same way, with its number from 1, counted from the
+first data row, and its cells joined and trimmed to 60 characters:
+
+```
+"table: Option · Latency · Cost"
+    ✗ row 2: "Memcached · low · $" → too little durability
+```
+
 **No header and no prose scaffolding.** Not "Re your last message", not "the
 user approved step 3", not "the user asked to explain". The agent wrote this
 message one turn ago; a short quote locates anything.
@@ -627,16 +635,17 @@ row only in answer to the person's own input, and a key a `Client` posts does no
 count (`not person-initiated`). After a click, ↑/↓ move the selection and the
 person scrolls with the wheel (#64).
 
-### Stepping into a code block (#105)
+### Stepping into a code block or table (#105)
 
-A code block's menu has a 5th action, `↳ step in`. Inside it the selected line has
+A code block's or table's menu has a 5th action, `↳ step in`. Its parts are a code
+block's lines or a table's data rows (not the header), and the band says `Row 2 of 3`
+for a row; what follows holds for both. Inside it the selected line has
 the background and the menu right under it, whose 5th action is `↰ step out`. Marks
 on lines show in the margin during a review; outside one, a block with only marked
 lines shows `✸`, and a block's own mark takes that place. Backspace on a block takes
 its own mark, then, pressed again, its lines' marks. The band's hint says `Line 4 of
 18`; no line numbers are drawn. Lines are for the keyboard: a click never selects
-one (a mouse's partial mark belongs to text selection, #91). Fullscreen only; a table
-stays one block for now.
+one (a mouse's partial mark belongs to text selection, #91). Fullscreen only.
 
 ### The navigator (classic)
 
