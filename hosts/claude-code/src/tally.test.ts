@@ -17,6 +17,8 @@ test('summary: a comment counts only with text', async () => {
 test('glyphCounts: the heading, in accept, reject, comment order', async () => {
   expect(glyphCounts({ 3: 'comment', 0: 'reject', 1: 'accept', 2: 'accept' })).toBe('✓2 ✗1 ✎1')
   expect(glyphCounts({})).toBe('')
+  expect(glyphCounts({ 0: 'accept' }, 2)).toBe('✓1 💬2')
+  expect(glyphCounts({}, 1)).toBe('💬1')
 })
 
 test('commentCount: marked to comment, with text', async () => {

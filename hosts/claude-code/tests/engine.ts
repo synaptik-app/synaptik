@@ -73,6 +73,11 @@ export const closed: string[] = []
 // Reset by `engine`.
 export const opened: { focus: boolean }[] = []
 
+// Every $.model.fork prompt, in order, and the answer each gets (the text, or
+// a reason it has none). Reset by `engine`.
+export const forks: string[] = []
+export const forkAnswer = { text: 'An answer.' as string | undefined }
+
 // Every slash command Synaptik registered. Reset by `engine`.
 export const registered: string[] = []
 
@@ -93,6 +98,8 @@ export function engine(on: On, rows: Row[]) {
   opened.length = 0
   registered.length = 0
   closed.length = 0
+  forks.length = 0
+  forkAnswer.text = 'An answer.'
   const event = (name: string, fn: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => fn(e)) as never)
   const call = (name: string, value: (e: never) => unknown) =>
@@ -106,6 +113,11 @@ export function engine(on: On, rows: Row[]) {
   call('ui.open', (e: { focus?: boolean }) => {
     opened.push({ focus: e.focus === true })
     return { isPlaced: placement.isPlaced }
+  })
+  call('model.fork', (e: { prompt: string }) => {
+    forks.push(e.prompt)
+    const usage = { input_tokens: 16, output_tokens: 3, cache_read_input_tokens: 50_000, cache_creation_input_tokens: 0 }
+    return forkAnswer.text === undefined ? { isAnswered: false, reason: 'empty-reply', usage } : { isAnswered: true, text: forkAnswer.text, usage }
   })
   call('ui.invalidate', () => undefined)
   call('ui.toast', () => undefined)
@@ -214,6 +226,17 @@ export function pane($: Dollar, placement: 'dock' | 'inline', isFocused = true, 
       scroll: { offset: 1, bodyRows: rows },
       view: {},
     },
+  })
+}
+
+// Mounts a thread's pane (SPEC §8): the block's thread, by index.
+export function threadPane($: Dollar, block: number, isFocused = true) {
+  return $.ui.mount({
+    plugin: PLUGIN,
+    surface: 'terminal',
+    component: 'Pane',
+    requestId: `synaptik-thread-${block}`,
+    props: { title: 'thread', isFocused, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
   })
 }
 

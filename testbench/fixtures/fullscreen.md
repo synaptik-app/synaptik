@@ -94,6 +94,14 @@ x()
   - ctrl+u empties the comment being typed, every line, and it stays open; ⏎ then drops it, ✎ included (the hint names it once there is text); after ctrl+x tab the field is Claude Code's, and ctrl+u empties only the current line
   - A paste while a comment is open goes into the comment, not the prompt box
   - c on a commented block reopens its text
+- **Threads**
+  - d on a block opens its thread pane, its first lines at the top and the keyboard in the field; the review lets go, and a click on a block resumes it
+  - A message gets an answer in the pane, "thinking…" until it comes
+  - d on another block while the first is waiting: both answer, each in its own pane (tabs when docked)
+  - A block with a thread shows 💬 in the margin, in a review and outside one
+  - "○ include in review" turns to "✓ include in review"; Esc then writes the summary, shown in the pane and in the suggestion under 💬 and the block's quote
+  - Below 144 columns, d from the reply says to use the band; ctrl+x tab, then d, opens the thread
+  - Backspace on a block whose thread is included takes it out of the review, and the thread keeps its messages
 - **Ending a review**
   - q ends the review — from the reply, the band or its hint — and the band's legend says "q done"; in a comment, q types a q
   - Typing in the prompt ends the review: the reply is plain again, and its text can be selected

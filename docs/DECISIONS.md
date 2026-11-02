@@ -519,7 +519,7 @@ long Claude Code tolerates a held call.
 ---
 
 ### D14 — Thread isolation via `$.model.fork`
-**Status:** settled
+**Status:** settled · placed by D45
 
 Threads use `$.model.fork` exclusively. A thread **never** calls
 `$.prompt.submit`.
@@ -1578,6 +1578,43 @@ tallest cell, the list a table becomes without room for a grid, and the 200-row 
   grid can wrap again in a narrow terminal, which throws rows off. Inferred from that
   wrap, and hand-tested on top-level tables only.
 - A link in a cell is assumed to draw as its text. Not confirmed.
+
+---
+
+### D45 — Threads in a pane of their own, one per block
+**Status:** settled · added 2026-11-02 · places D14's threads after D41 (#106)
+
+The thread pane was to be the navigator's body (SPEC §8, before). Since D41 a
+fullscreen review happens in the reply and the navigator is classic-only, so a
+thread gets its own pane, **one per block**. The thread doesn't go under its block in
+the reply: a conversation grows, would push the reply around, and the transcript
+can't scroll to a block (#64). A pane gives typing its own field and scroll, and
+sees Esc.
+
+**From the spike, on 2.1.309:**
+- Two forks sent together both answered, 0.8 s apart: they run in parallel, so
+  threads need no queue.
+- A fork reads the main conversation from the cache (~51,000 tokens) and pays for
+  ~16 uncached ones: a thread costs about its own text.
+- `$.ui.focus` moves focus only inside the site that already holds it, so after a
+  thread the keyboard can't go back to the review. Keeping the review on left the
+  band naming ↑/↓ while they recalled prompt history, so **the review lets go**
+  when a thread takes the keyboard or closes; a click on a block resumes it.
+- A pane opened from the reply is unasked, a `Client`'s post: below 144 columns it
+  isn't placed. From the band it is.
+- The pane's own close (`$.ui.close`) raised no `ui.close` in the log. Esc does,
+  which is the one way out.
+
+**Include is a switch, written on close.** A button showing its state; no hotkey,
+since the field holds the keyboard and ↓ reaches the button. The summary is written
+when the pane closes (Esc), not on every message and not when the review ends,
+which the mod can't see. It is written for its use, as the person's instruction to
+the agent; editing it is the prompt box's job, as for every other mark.
+
+**Considered:** `q` or a close button to leave a thread (the field types `q`, and a
+close from the plugin hands the keyboard to the prompt just the same, so Esc does
+it all); a thread inline under its block (above); one pane switching between
+threads (tabs come free when docked).
 
 ---
 

@@ -394,63 +394,80 @@ A thread is a side conversation about one block. **It never touches the main
 conversation.**
 
 - Each message calls `$.model.fork`. `fork` is single-shot, so the mod re-sends
-  the accumulated thread history on every call.
-- A thread **never** calls `$.prompt.submit` — that is the only call that would
-  write into the main conversation.
+  the block and the thread so far on every call.
+- A thread **never** calls `$.prompt.submit`, the only call that would write into
+  the main conversation.
 - Threads are flat. A thread cannot spawn a thread.
-- `?` opens a thread pre-seeded with "explain this"; the discuss key opens an
-  empty one.
+- `d` or `💬 discuss` on a block opens its thread; on a threaded block it reopens
+  that thread with its history. A block's thread shows `💬` in the margin.
 
 ### The pane
 
-`$.ui.open`, then `ui.render` with `{ component: 'Pane' }`. Placement is the
-surface's: docked beside a fullscreen transcript, inline above the prompt
-otherwise.
+One pane per thread (`$.ui.open`, id `synaptik-thread-<block>`), opened with the
+keyboard in its field and closed by Esc. Docked beside the transcript, several
+threads are tabs; inline above the prompt (narrow terminals), one shows at a time.
 
 ```
-┌─ Thread: "Use Redis for the session cache" ──┐
-│ <anchor text, pinned>                         │
-│                                               │
-│ <exchange scrolls here>                       │
-│                                               │
-│ > <Input>                                     │
-│ ○ excluded — <key> to include                 │
-│ ⏎ send · Esc close                            │
-└───────────────────────────────────────────────┘
+┌ 💬 "Use Redis for the session cache" ─────────────┐
+│                                                   │
+│   Use Redis for the session cache, keyed by…      │  the block as the reply draws it, dim, 3 rows at most
+│                                                   │
+│ › why not memcached?                              │  the person's messages at the edge
+│                                                   │
+│   Memcached has no persistence, so…               │  answers and the summary inset 2 columns
+│                                                   │
+│                summary for review                 │  once included and summarised, dim
+│   Keep Redis, with a 5-minute TTL.                │
+│ ───────────────────────────────────────────────── │
+│ ❯ ask about this block                            │  the field, as Claude Code draws its prompt
+│ ───────────────────────────────────────────────── │
+│ [ ○ include in review ] · esc close               │
+└───────────────────────────────────────────────────┘
 ```
 
-**One pane at a time**, switching between threads. The band shows
-`3 threads · 1 unread`.
+**The include switch** is a button: a click, or ↓ to it and ⏎. It shows
+`✓ include in review` when on. No hotkey. ↑/↓ move between the field and the
+switch however long the thread; the wheel and the page keys scroll it. The pane
+follows the thread: after each change it scrolls to its end, once redrawn.
+
+**A fork with no answer** says why in the pane: a resumed session has nothing to
+fork until a turn finishes in it. An answer or summary that arrives after a new
+reply is dropped, with the thread it belonged to.
+
+**Threads run at once.** Forks run in parallel, each thread with one message in
+flight at a time; the field says it is waiting.
+
+**The review lets go** when a thread takes the keyboard and when it closes: Claude
+Code hands the keyboard to the prompt then, and Synaptik can't give it back (#146).
+A click on a block resumes the review.
+
+**Narrow terminals:** below 144 columns a pane is placed only when the person
+opened it. `d` from the band (`ctrl+x tab`) counts; a click or key in the reply
+doesn't, and a toast says to use the band (#146).
 
 ### Include / exclude
 
-**Threads are excluded by default** — most are read-only understanding with
-nothing worth sending.
+**Threads are excluded by default**: most are understanding with nothing worth
+sending. Included, a thread's **summary** goes into the compiled prompt, in
+document order under its block's quote (§9).
 
-The include control is a **toggle showing state**, not a one-way button. On
-include, the mod makes one more `fork` call:
+**The summary is written when the pane closes**, if the thread is included and has
+changed since the last one: one more `fork`, with a prompt that says what it is
+for. It goes into the person's next prompt, so it is written as their instruction
+to the agent: what was decided and what to do, one action per line, an open
+question only if one is left, no recap, no mention of a thread. The mod never
+decides what matters; the model writes it, the person reads it in the suggestion
+and edits it in the prompt box like anything else before sending.
 
-> summarize what was decided here as an instruction to the main agent
-
-The summary lands in the tray, **editable**. The mod never decides what matters;
-the model summarizes and you approve.
-
-Thread history persists within the session in `$.store` (4 MiB, shared by every
-session on the machine — namespace your keys).
+Threads are kept with the tray, in `$.state`, and go with it: a new reply discards
+them and closes their panes. Fullscreen only; classic's `d` still says phase 2.
 
 `$.model.fork({ prompt })` asks one tool-less question over the session's own
-transcript as the main thread last sent it — same model, same system prompt,
-served from the prompt cache. So a thread sees the main conversation for free and
-re-sends only its own side exchange. It resolves `isAnswered: false` with a
-`reason` rather than rejecting (`nothing-to-fork` before a session's first turn).
-
-⚠️ Read from the types, not yet exercised. Whether two calls can be in flight at
-once is still unknown; one focused pane sidesteps it.
-
-The navigator (§10) is the natural home for the thread pane: same pane, a
-different body while a thread is open.
-
----
+transcript as the main thread last sent it: same model, same system prompt, served
+from the prompt cache. Measured on 2.1.309: 16 uncached input tokens, ~51,000 read
+from the cache, 2 s. It resolves `isAnswered: false` with a `reason` rather than
+rejecting (`nothing-to-fork` before a session's first turn completes, and after a
+resume until one does).
 
 ## 9. Compile format
 
@@ -517,7 +534,15 @@ Marks and thread summaries **interleave by position**, never grouped by type —
 document order is the order you read it in and the order the agent wrote it.
 
 A thread contributes **only its summary**. No mention that a discussion
-happened, no transcript.
+happened, no transcript. Its lines nest under the block's quote, after the 💬:
+
+```
+💬 "Use Redis for the session cache"
+    Keep Redis, with a 5-minute TTL on each entry.
+    Drop the memcached fallback.
+```
+
+A block with a mark and an included thread gets both lines, the mark first.
 
 Accepting a parent while rejecting a child is normal refinement — the nesting
 makes it readable. Rejecting a parent while accepting a child is contradictory;

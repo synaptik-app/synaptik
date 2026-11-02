@@ -12,6 +12,9 @@ export const GLYPH: Record<Mark, string> = { accept: '✓', reject: '✗', comme
 // A code block's margin when only lines inside it are marked. Drawn, never sent.
 export const PARTLY = '✸'
 
+// A block with a thread: its margin, and its summary's lead in the prompt.
+export const THREAD_GLYPH = '💬'
+
 // A block as the segmenter gives it: its parent is its enclosing list item's
 // index, or -1.
 export type Block = { text: string; depth: number; parent: number }
@@ -40,16 +43,20 @@ function trimmedQuote(text: string): string {
 // One line per staged block, in document order, nested under its parent. An unmarked
 // block whose descendant is staged is sent too, as a plain quote with no glyph,
 // so a marked child arrives under the parent it belongs to. Marked code lines nest
-// under their block the same way. A comment with no text is never sent.
+// under their block the same way. A comment with no text is never sent. An
+// included thread's summary (src/threads.ts) nests under its block's quote, after
+// the 💬, or under the block's mark when it has one.
 export function compile(
   blocks: readonly Block[],
   marks: Readonly<Record<string, Mark>>,
   comments: Readonly<Record<string, string>>,
+  summaries: Readonly<Record<string, string>> = {},
 ): string {
-  const isStaged = (i: number | string) => {
+  const isMarked = (i: number | string) => {
     const mark = marks[i]
     return mark !== undefined && (mark !== 'comment' || (comments[i]?.trim() ?? '') !== '')
   }
+  const isStaged = (i: number | string) => isMarked(i) || summaries[i] !== undefined
   const stagedLines = (i: number) =>
     Object.keys(lineMarks(marks, i))
       .map(Number)
@@ -81,7 +88,14 @@ export function compile(
         const key = lineKey(i, line)
         return entry(`${indent}    ${GLYPH[marks[key]!]} ${lineReference(parts?.kind ?? 'code', line, parts?.lines[line] ?? '')}`, key)
       })
-      if (isStaged(i)) return [...entry(`${indent}${GLYPH[marks[i]!]} "${quote(block.text)}"`, i), ...nested]
+      const summary = summaries[i]?.split('\n').map(line => line.trim()).filter(Boolean) ?? []
+      if (isMarked(i)) {
+        // Under a mark, the summary leads with its 💬, the rest lined up after it.
+        const pad = ' '.repeat(cells(`${THREAD_GLYPH} `))
+        const thread = summary.map((line, n) => `${indent}    ${n === 0 ? `${THREAD_GLYPH} ` : pad}${line}`)
+        return [...entry(`${indent}${GLYPH[marks[i]!]} "${quote(block.text)}"`, i), ...thread, ...nested]
+      }
+      if (summary.length > 0) return [`${indent}${THREAD_GLYPH} "${quote(block.text)}"`, ...summary.map(line => `${indent}    ${line}`), ...nested]
       if (!context.has(i)) return []
       return [`${indent}"${quote(block.text)}"${parts?.kind === 'code' ? ' (code block)' : ''}`, ...nested]
     })

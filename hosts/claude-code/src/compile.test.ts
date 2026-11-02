@@ -59,6 +59,25 @@ test('a table row with no text compiles as blank, with one column or several', a
   expect(compile(narrow, { '0.0': 'reject' }, {})).toContain('✗ row 1 (blank)')
 })
 
+test("an included thread's summary nests under the block's quote, after the 💬", async () => {
+  const blocks = segment('Use Redis for the session cache.\n\nAnother block.').filter(s => s.isBlock)
+  expect(compile(blocks, {}, {}, { '0': 'Keep Redis.\n\nDrop the fallback.' })).toBe(
+    ['💬 "Use Redis for the session cache."', '    Keep Redis.', '    Drop the fallback.'].join('\n'),
+  )
+})
+
+test('with a mark, the summary comes under the mark, led by its 💬', async () => {
+  const blocks = segment('Use Redis.').filter(s => s.isBlock)
+  expect(compile(blocks, { '0': 'reject' }, {}, { '0': 'Use memcached.\nAdd a TTL.' })).toBe(
+    ['✗ "Use Redis."', '    💬 Use memcached.', '       Add a TTL.'].join('\n'),
+  )
+})
+
+test('a summary on a nested item brings its parent as context', async () => {
+  const blocks = segment('1. Parent\n   - child').filter(s => s.isBlock)
+  expect(compile(blocks, {}, {}, { '1': 'Drop it.' })).toBe(['"1. Parent"', '    💬 "child"', '        Drop it.'].join('\n'))
+})
+
 test('a preview keeps three lines and counts the rest', async () => {
   expect(preview('a\nb\nc')).toBe('a\nb\nc')
   expect(preview('a\nb\nc\nd')).toBe('a\nb\nc\n… (+1 line)')

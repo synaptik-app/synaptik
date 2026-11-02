@@ -2,6 +2,16 @@
 
 export type Mark = 'accept' | 'reject' | 'comment'
 
+// A thread (src/threads.ts keeps the same shape; this contract may import nothing).
+export type Thread = {
+  messages: { role: 'person' | 'agent'; text: string }[]
+  pending: number
+  included: boolean
+  summary?: string
+  summarizedAt: number
+  inputSeq: number
+}
+
 declare module 'claude-code' {
   interface PluginState {
     synaptik: {
@@ -17,6 +27,8 @@ declare module 'claude-code' {
       isPaneShown: boolean
       commentSeed: string
       commentSeq: number
+      // By block index (src/threads.ts).
+      threads: Record<string, Thread>
     }
   }
 }
