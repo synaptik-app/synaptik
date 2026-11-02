@@ -5,7 +5,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { FoundElement } from 'claude-code/testing'
 
-import { forks, fullscreen, log, opened, start, suggested, threadPane } from './engine'
+import { closed, forks, fullscreen, log, opened, placement, start, suggested, threadPane } from './engine'
 
 const F = 'fullscreen'
 const CACHE = 1
@@ -53,6 +53,15 @@ test('d on a block opens its thread pane, with the keyboard', async ($, on) => {
   await openThread($, on)
   expect(opened.at(-1)).toEqual({ focus: true })
   expect(await log($)).toContain(`thread ${CACHE} open {"isPlaced":true}`)
+})
+
+test('too narrow to place it, the thread is closed again rather than left waiting', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  placement.isPlaced = false
+  await clickAndPress(await fullscreen($, F), CACHE, ['d'])
+  expect(closed).toContain(PANE)
 })
 
 test('a message is a fork that carries the block, and its answer shows in the pane', async ($, on) => {

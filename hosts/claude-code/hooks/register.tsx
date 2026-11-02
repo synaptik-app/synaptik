@@ -486,6 +486,8 @@ const threadPane = (key: string) => `${THREAD_PREFIX}${key}`
 const threadFocus = new Map<string, string | undefined>()
 // The thread panes open now: an answer landing in a closed one writes its summary.
 const openThreads = new Set<string>()
+// Threads whose summary is being written, which the band names.
+const summarizing = new Set<string>()
 
 async function blockText($: EngineInterface, key: string): Promise<string | undefined> {
   return segment(await read($, lastText)).filter(s => s.isBlock)[Number(key)]?.text
@@ -518,14 +520,26 @@ async function openThread($: EngineInterface, index: number | string) {
   const key = String(index)
   const text = await blockText($, key)
   if (text === undefined) return
-  const opened = await $.ui
-    .open({ id: threadPane(key), title: `${THREAD_GLYPH} ${quote(text, 6)}`, focus: true, closeOnEscape: true })
-    .catch((err: unknown) => ({ isPlaced: false as const, reason: String(err) }))
+  // Its pane already open behind another tab: opening an open id only retitles it,
+  // and raising it needs the prompt to hold the keys, which the reply does now.
+  // Closed and opened again, it comes up as a new pane does, as the last tab.
+  if (openThreads.has(key)) await $.ui.close({ id: threadPane(key) }).catch(() => undefined)
+  let opened
+  try {
+    opened = await $.ui.open({ id: threadPane(key), title: `${THREAD_GLYPH} ${quote(text, 6)}`, focus: true, closeOnEscape: true })
+  } catch (err) {
+    observe(`thread ${key} open failed: ${String(err)}`)
+    return $.ui.toast("couldn't open the thread")
+  }
   observe(`thread ${key} open ${JSON.stringify(opened)}`)
-  if (!opened.isPlaced && !opened.reason.includes('columns')) return $.ui.toast(`couldn't open the thread: ${opened.reason}`)
-  // From the reply the open isn't the person's own (a Client's post), so a narrow
-  // terminal leaves it undrawn; a press on the band's d counts as theirs (#146).
-  if (!opened.isPlaced) return $.ui.toast(`too narrow to open from the reply: ${ENTRY_CHORD}, then d on the band`)
+  // Open but undrawn. From the reply the open isn't the person's own (a Client's
+  // post), so a narrow terminal leaves it waiting; a press on the band's d counts
+  // as theirs (#146). Closed again, so it doesn't appear later on its own when the
+  // terminal widens.
+  if (!opened.isPlaced) {
+    await $.ui.close({ id: threadPane(key) }).catch(() => undefined)
+    return $.ui.toast(`too narrow to open from the reply: ${ENTRY_CHORD}, then d on the band`)
+  }
   openThreads.add(key)
   releaseReview($)
   void toThreadEnd($, key)
@@ -537,15 +551,23 @@ async function sendInThread($: EngineInterface, key: string, text: string) {
   const prompt = threadPrompt(anchor, (await read($, threads))[key] ?? NEW_THREAD, text)
   await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text }], pending: t.pending + 1, inputSeq: t.inputSeq + 1 }))
   const reply = await read($, lastText)
-  const r = await forkThread($, prompt)
-  observe(`thread ${key} fork: ${r.isAnswered ? `${r.usage.input_tokens} in, ${r.usage.cache_read_input_tokens} cached, ${r.usage.output_tokens} out` : r.reason}`)
-  // A new reply meanwhile discarded the thread: the answer has nowhere to go.
+  // Whatever happens, the message stops waiting: a thread stuck waiting would
+  // never be summarised.
+  let answer = '(no answer: something went wrong, send it again)'
+  try {
+    const r = await forkThread($, prompt)
+    observe(`thread ${key} fork: ${r.isAnswered ? `${r.usage.input_tokens} in, ${r.usage.cache_read_input_tokens} cached, ${r.usage.output_tokens} out` : r.reason}`)
+    answer = r.isAnswered ? r.text : `(${noAnswer(r.reason)})`
+  } finally {
+    // A new reply meanwhile discarded the thread: the answer has nowhere to go.
+    if ((await read($, lastText)) === reply) {
+      await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'agent', text: answer }], pending: t.pending - 1 }))
+    }
+  }
   if ((await read($, lastText)) !== reply) return
-  const answer = r.isAnswered ? r.text : `(${noAnswer(r.reason)})`
-  await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'agent', text: answer }], pending: t.pending - 1 }))
   // Closed while it was waiting: the close couldn't write the summary, so the
   // answer does, or an included thread would be left out with no sign.
-  if (!openThreads.has(key)) await summarize($, key)
+  if (!openThreads.has(key)) await summarize($, key).catch(err => observe(`thread ${key} summary failed: ${String(err)}`))
 }
 
 // On close: the summary that goes into the review, if the thread changed since.
@@ -555,7 +577,13 @@ async function summarize($: EngineInterface, key: string) {
   if (!t || anchor === undefined || !needsSummary(t)) return
   const at = t.messages.length
   const reply = await read($, lastText)
-  const r = await forkThread($, summaryPrompt(anchor, t))
+  // The band says so while it is written: the suggestion lacks it until then.
+  summarizing.add(key)
+  $.ui.invalidate('ui.render')
+  const r = await forkThread($, summaryPrompt(anchor, t)).finally(() => {
+    summarizing.delete(key)
+    $.ui.invalidate('ui.render')
+  })
   if ((await read($, lastText)) !== reply) return
   observe(`thread ${key} summary: ${r.isAnswered ? `${r.text.split('\n').length} lines` : r.reason}`)
   if (!r.isAnswered) return $.ui.toast("couldn't summarise the thread: open it and close it again to retry")
@@ -933,7 +961,7 @@ export const register: Register = on => {
     // Synaptik's own close comes with a new reply, whose review isn't the thread's
     // to end; its threads are gone, so there is nothing to summarise.
     if (e.origin.kind === 'plugin') return next(e)
-    void summarize($, key)
+    void summarize($, key).catch(err => observe(`thread ${key} summary failed: ${String(err)}`))
     releaseReview($)
     return next(e)
   }).catch(($, e, next) => next(e))
@@ -972,7 +1000,10 @@ export const register: Register = on => {
     return ThreadView(
       { Box, Text, Button, Input, Markdown },
       { id: e.requestId, anchor, columns: e.props.bodyColumns, thread: (await read($, threads))[key] ?? NEW_THREAD },
-      { send: text => sendInThread($, key, text), toggleInclude: () => toggleInclude($, key) },
+      {
+        send: text => sendInThread($, key, text).catch(err => observe(`thread ${key} send failed: ${String(err)}`)),
+        toggleInclude: () => toggleInclude($, key).catch(err => observe(`thread ${key} include failed: ${String(err)}`)),
+      },
     )
   }).catch(($, e, next) => next(e))
 
@@ -1217,7 +1248,8 @@ export const register: Register = on => {
     const isShown = await read($, isPaneShown)
     const reviewing = isNavigatorFocused
     const key = ENTRY_CHORD
-    const staged = glyphCounts(await read($, marks), Object.keys(summaries(await read($, threads))).length)
+    const counted = glyphCounts(await read($, marks), Object.keys(summaries(await read($, threads))).length)
+    const staged = summarizing.size > 0 ? [counted, `${THREAD_GLYPH} summarising…`].filter(Boolean).join(' · ') : counted
     const compiled = await compile($)
     const box = await $.prompt.read()
 
