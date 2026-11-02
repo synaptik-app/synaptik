@@ -1,7 +1,7 @@
 // What is staged, counted: the band's summary and the navigator's heading.
 // The tray's marks and comments in, text out.
 
-import { GLYPH } from './compile'
+import { GLYPH, THREAD_GLYPH } from './compile'
 import type { Mark } from './compile'
 
 type Marks = Readonly<Record<string, Mark>>
@@ -27,11 +27,15 @@ export function summary(marks: Marks, comments: Comments): string {
 }
 
 // The navigator's heading: "✓2 ✗1 ✎1", zero counts left out.
-export function glyphCounts(marks: Marks): string {
+// Threads sent with the review count after the marks: "✓2 💬1".
+export function glyphCounts(marks: Marks, threads = 0): string {
   const marked = Object.values(marks)
-  return (['accept', 'reject', 'comment'] as const)
-    .map(m => [m, marked.filter(x => x === m).length] as const)
+  return [
+    ...(['accept', 'reject', 'comment'] as const)
+      .map(m => [GLYPH[m], marked.filter(x => x === m).length] as const),
+    [THREAD_GLYPH, threads] as const,
+  ]
     .filter(([, n]) => n > 0)
-    .map(([m, n]) => `${GLYPH[m]}${n}`)
+    .map(([glyph, n]) => `${glyph}${n}`)
     .join(' ')
 }

@@ -13,7 +13,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Mark } from '../types'
 import { partCounts, partsOf, quote, segment } from '../src/blocks'
 import { lastTurnText } from '../src/turn'
-import { compile as compileTray, GLYPH, PARTLY, preview } from '../src/compile'
+import { compile as compileTray, GLYPH, PARTLY, preview, THREAD_GLYPH } from '../src/compile'
 import { clear as clearMark, clearBlock, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, lineMarks, toggle as toggleMark } from '../src/tray'
 import type { Part, Tray } from '../src/tray'
 import { apply as applyMenu, closed, letGo, paste, press, receive, START } from '../src/review'
@@ -22,6 +22,8 @@ import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
 import { decorate } from '../src/decorate'
+import { hasThread, needsSummary, NEW_THREAD, summaries, summaryPrompt, threadPrompt } from '../src/threads'
+import type { Thread } from '../src/threads'
 import {
   BAND_COMMENT_PREFIX,
   BULLET,
@@ -45,6 +47,7 @@ import { ClassicView, EmptyView } from './views/navigator'
 import type { NavigatorActions } from './views/navigator'
 import { ReplyView } from './views/reply'
 import { BandKeysView, BandView } from './views/band'
+import { threadFieldKey, threadSwitchKey, ThreadView } from './views/thread'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
 const isWorking = atom({ plugin: 'synaptik', key: 'isWorking' } as const, false)
@@ -59,6 +62,8 @@ const isPaneShown = atom({ plugin: 'synaptik', key: 'isPaneShown' } as const, fa
 // from the live comment: a redraw replaces what the person typed (InputProps).
 const commentSeed = atom({ plugin: 'synaptik', key: 'commentSeed' } as const, '')
 const commentSeq = atom({ plugin: 'synaptik', key: 'commentSeq' } as const, 0)
+// Threads by block index (src/threads.ts), discarded with the tray.
+const threads = atom({ plugin: 'synaptik', key: 'threads' } as const, {} as Record<string, Thread>)
 
 // Synaptik draws only in the terminal renderer (D40): every render hook passes
 // any other surface (the Desktop app, the mobile app, VS Code) to next(e).
@@ -213,6 +218,8 @@ async function adoptLastReply($: EngineInterface) {
     const count = segment(text).filter(s => s.isBlock).length
     await update($, selected, () => Math.max(0, count - 1))
     await writeTray($, () => EMPTY)
+    for (const key of Object.keys(await read($, threads))) void $.ui.close({ id: threadPane(key) }).catch(() => undefined)
+    await update($, threads, () => ({}))
     await update($, isCommenting, () => false)
     held = { review: { ...START, selected: Math.max(0, count - 1), epoch: held.review.epoch + 1 }, acked: held.acked }
     holder = undefined
@@ -327,7 +334,7 @@ async function finishComment($: EngineInterface) {
 async function compile($: EngineInterface): Promise<string> {
   const blocks = segment(await read($, lastText)).filter(s => s.isBlock)
   const tray = await readTray($)
-  return compileTray(blocks, tray.marks, tray.comments)
+  return compileTray(blocks, tray.marks, tray.comments, summaries(await read($, threads)))
 }
 
 // Brings the selected block into view, as far as the transcript allows.
@@ -377,13 +384,17 @@ async function blockCount($: EngineInterface): Promise<number> {
 async function applyAction($: EngineInterface, a: Action) {
   if (a.kind === 'end') return releaseReview($)
   if (a.kind === 'mark') return toggle($, a.index, a.verb)
-  if (a.kind === 'discuss') return $.ui.toast('discuss: phase 2')
+  if (a.kind === 'discuss') return openThread($, a.index)
   if (a.kind === 'comment') {
     const { index, text } = a
     await writeTray($, tray => finishTrayComment(draftComment(tray, index, text), index))
   } else if (a.kind === 'unmark') {
     const { index } = a
     await writeTray($, tray => (typeof index === 'number' ? clearBlock(tray, index) : clearMark(tray, index)))
+    // The thread stays, out of the review (SPEC §5: clearing never destroys).
+    if (typeof index === 'number' && (await read($, threads))[String(index)]?.included) {
+      await update($, threads, all => ({ ...all, [String(index)]: { ...all[String(index)]!, included: false } }))
+    }
   } else {
     const { index } = a
     await writeTray($, tray => dropComment(tray, index))
@@ -465,6 +476,94 @@ async function bandComment($: EngineInterface, text: string, isDone: boolean) {
   await applyAction($, { kind: 'comment', index: open.index, text })
   await $.ui.focus({ requestId: bandRequestId, key: generational(VERBS[2]!.key, bandGeneration) }).catch(() => undefined)
   $.ui.invalidate('ui.render')
+}
+
+// --- Threads (SPEC §8, D45): one pane per block, each message a fork.
+
+const THREAD_PREFIX = 'synaptik-thread-'
+const threadPane = (key: string) => `${THREAD_PREFIX}${key}`
+// Which element of each thread's pane holds the keyboard, as its focus moves say.
+const threadFocus = new Map<string, string | undefined>()
+
+async function blockText($: EngineInterface, key: string): Promise<string | undefined> {
+  return segment(await read($, lastText)).filter(s => s.isBlock)[Number(key)]?.text
+}
+
+async function changeThread($: EngineInterface, key: string, change: (t: Thread) => Thread) {
+  await update($, threads, all => ({ ...all, [key]: change(all[key] ?? NEW_THREAD) }))
+  $.ui.invalidate('ui.render')
+  void toThreadEnd($, key)
+}
+
+// The pane's window to its end: a pane keeps its offset as the thread grows, so
+// the newest answer and the field would fall below it. Scrolled once the change
+// is drawn: right after it, the window still measures the old tree.
+const THREAD_REDRAW_MS = 80
+async function toThreadEnd($: EngineInterface, key: string) {
+  try {
+    await $.clock.sleep(THREAD_REDRAW_MS)
+    const scrolled = await $.ui.scroll({ in: threadPane(key), to: 'end' })
+    observe(`thread ${key} to its end: ${JSON.stringify(scrolled)}`)
+  } catch (err) {
+    observe(`thread ${key} to its end: ${String(err)}`)
+  }
+}
+
+// d or 💬 discuss on a block: its pane, with the keyboard in the field. The
+// review lets go, since the keyboard can't come back to it (D45).
+async function openThread($: EngineInterface, index: number | string) {
+  if (typeof index !== 'number') return $.ui.toast('discuss works on whole blocks for now')
+  const key = String(index)
+  const text = await blockText($, key)
+  if (text === undefined) return
+  const opened = await $.ui.open({ id: threadPane(key), title: `${THREAD_GLYPH} ${quote(text, 6)}`, focus: true, closeOnEscape: true })
+  observe(`thread ${key} open ${JSON.stringify(opened)}`)
+  // From the reply the open isn't the person's own (a Client's post), so a narrow
+  // terminal leaves it undrawn; a press on the band's d counts as theirs (#146).
+  if (!opened.isPlaced) return $.ui.toast(`too narrow to open from the reply: ${ENTRY_CHORD}, then d on the band`)
+  releaseReview($)
+  void toThreadEnd($, key)
+}
+
+async function sendInThread($: EngineInterface, key: string, text: string) {
+  const anchor = await blockText($, key)
+  if (anchor === undefined || !text.trim()) return
+  const prompt = threadPrompt(anchor, (await read($, threads))[key] ?? NEW_THREAD, text)
+  await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text }], pending: t.pending + 1, inputSeq: t.inputSeq + 1 }))
+  const reply = await read($, lastText)
+  const r = await $.model.fork({ prompt })
+  observe(`thread ${key} fork: ${r.isAnswered ? `${r.usage.input_tokens} in, ${r.usage.cache_read_input_tokens} cached, ${r.usage.output_tokens} out` : r.reason}`)
+  // A new reply meanwhile discarded the thread: the answer has nowhere to go.
+  if ((await read($, lastText)) !== reply) return
+  const answer = r.isAnswered ? r.text : `(${noAnswer(r.reason)})`
+  await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'agent', text: answer }], pending: t.pending - 1 }))
+}
+
+// On close: the summary that goes into the review, if the thread changed since.
+async function summarize($: EngineInterface, key: string) {
+  const t = (await read($, threads))[key]
+  const anchor = await blockText($, key)
+  if (!t || anchor === undefined || !needsSummary(t)) return
+  const at = t.messages.length
+  const reply = await read($, lastText)
+  const r = await $.model.fork({ prompt: summaryPrompt(anchor, t) })
+  if ((await read($, lastText)) !== reply) return
+  observe(`thread ${key} summary: ${r.isAnswered ? `${r.text.split('\n').length} lines` : r.reason}`)
+  if (!r.isAnswered) return $.ui.toast("couldn't summarise the thread: open it and close it again to retry")
+  await changeThread($, key, now => ({ ...now, summary: r.text.trim(), summarizedAt: at }))
+  await suggestTray($)
+}
+
+// Why a fork gave no answer, in the person's words.
+function noAnswer(reason: string): string {
+  if (reason === 'nothing-to-fork') return 'no answer: a resumed session can be discussed once a turn has finished in it'
+  if (reason === 'api-error') return 'no answer: the request failed, send it again'
+  return `no answer: ${reason}`
+}
+
+async function toggleInclude($: EngineInterface, key: string) {
+  await changeThread($, key, t => ({ ...t, included: !t.included }))
+  await suggestTray($)
 }
 
 export const register: Register = on => {
@@ -576,6 +675,7 @@ export const register: Register = on => {
     const offset = segment(target.slice(0, target.indexOf(text.trim()))).filter(s => s.isBlock).length
     const sel = await read($, selected)
     const marked = await read($, marks)
+    const threadsNow = await read($, threads)
     const commented = (await read($, comments)) as Record<number, string>
     const isTyping = await read($, isCommenting)
     const cursor = isNavigatorFocused ? await read($, focusedVerb) : ''
@@ -631,7 +731,7 @@ export const register: Register = on => {
                     index: n,
                     text: seg.text,
                     indent: seg.indent,
-                    ...(mark ? { glyph: GLYPH[mark] } : {}),
+                    ...(mark ? { glyph: GLYPH[mark] } : hasThread(threadsNow, n) ? { glyph: THREAD_GLYPH } : {}),
                     ...(bullet ? { bullet } : {}),
                     first: 0,
                     last: count - 1,
@@ -649,7 +749,9 @@ export const register: Register = on => {
       )
     }
 
-    const isMarkedHere = Object.keys(marked).some(k => Number(k) >= offset && Number(k) < offset + pieceBlocks)
+    const isMarkedHere = [...Object.keys(marked), ...Object.keys(threadsNow).filter(k => hasThread(threadsNow, k))].some(
+      k => Number(k) >= offset && Number(k) < offset + pieceBlocks,
+    )
     const isTypingHere = isTyping && sel >= offset && sel < offset + pieceBlocks
     if (!isNavigatorFocused && !isMarkedHere && !isTypingHere) return next(e)
 
@@ -671,7 +773,13 @@ export const register: Register = on => {
             isBlock: true,
             indent: seg.indent,
             hasGapBefore: seg.hasGapBefore,
-            glyph: mark ? GLYPH[mark] : Object.keys(lineMarks(marked, i)).length > 0 ? PARTLY : undefined,
+            glyph: mark
+              ? GLYPH[mark]
+              : hasThread(threadsNow, i)
+                ? THREAD_GLYPH
+                : Object.keys(lineMarks(marked, i)).length > 0
+                  ? PARTLY
+                  : undefined,
             // Background and menu only while the navigator holds the keyboard:
             // after Esc the reply reads as a plain reply again.
             isSelected: isSelected && isNavigatorFocused,
@@ -792,6 +900,57 @@ export const register: Register = on => {
     if (box.text === '') void suggestTray($)
     $.ui.invalidate('ui.render')
     return box
+  }).catch(($, e, next) => next(e))
+
+  // --- Threads: a pane per block (SPEC §8) ------------------------------------
+
+  // Esc closes a thread: its summary is written then, and the keyboard goes to
+  // the prompt, so the review lets go.
+  on('ui.close', async ($, e, next) => {
+    if (!e.id.startsWith(THREAD_PREFIX)) return next(e)
+    const key = e.id.slice(THREAD_PREFIX.length)
+    observe(`thread ${key} closed by ${e.origin.kind}`)
+    void summarize($, key)
+    releaseReview($)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // A click into a thread's pane takes the keyboard from the review as well.
+  on('ui.focus', { component: 'Pane' }, async ($, e, next) => {
+    if (!e.requestId.startsWith(THREAD_PREFIX)) return next(e)
+    releaseReview($)
+    const result = await next(e)
+    if (!result.deny) threadFocus.set(e.requestId, e.element)
+    return result
+  }).catch(($, e, next) => next(e))
+
+  // ↑/↓ move between the field and the switch, as they do while the thread fits.
+  // A thread taller than the pane would scroll on them instead and strand the
+  // keyboard; the wheel and the page keys still scroll it.
+  on('ui.scroll', { component: 'Pane' }, async ($, e, next) => {
+    if (!e.requestId.startsWith(THREAD_PREFIX) || e.origin.kind !== 'person' || e.pointer || Math.abs(e.by) !== 1) return next(e)
+    const key = e.requestId.slice(THREAD_PREFIX.length)
+    const field = threadFieldKey(e.requestId, (await read($, threads))[key]?.inputSeq ?? 0)
+    const onSwitch = threadFocus.get(e.requestId) === threadSwitchKey(e.requestId)
+    const to = e.by > 0 && !onSwitch ? threadSwitchKey(e.requestId) : e.by < 0 && onSwitch ? field : undefined
+    if (to) {
+      const moved = await $.ui.focus({ requestId: e.requestId, key: to }).catch((err: unknown) => ({ deny: String(err) }))
+      observe(`thread ${key} ${e.by > 0 ? '↓' : '↑'} → ${to}: ${JSON.stringify(moved)}`)
+    }
+    return next({ ...e, offset: e.offset - e.by })
+  }).catch(($, e, next) => next(e))
+
+  on('ui.render', { component: 'Pane' }, async ($, e, next) => {
+    if (e.surface !== 'terminal' || !e.requestId.startsWith(THREAD_PREFIX)) return next(e)
+    const key = e.requestId.slice(THREAD_PREFIX.length)
+    const anchor = await blockText($, key)
+    if (anchor === undefined) return next(e)
+    const { Box, Text, Button, Input, Markdown } = $.ui.resolve(e)
+    return ThreadView(
+      { Box, Text, Button, Input, Markdown },
+      { id: e.requestId, anchor, columns: e.props.bodyColumns, thread: (await read($, threads))[key] ?? NEW_THREAD },
+      { send: text => sendInThread($, key, text), toggleInclude: () => toggleInclude($, key) },
+    )
   }).catch(($, e, next) => next(e))
 
   // --- The pane: classic's block viewer, ↑↓ via scroll, ←→ via the focus ring --
@@ -1035,7 +1194,7 @@ export const register: Register = on => {
     const isShown = await read($, isPaneShown)
     const reviewing = isNavigatorFocused
     const key = ENTRY_CHORD
-    const staged = glyphCounts(await read($, marks))
+    const staged = glyphCounts(await read($, marks), Object.keys(summaries(await read($, threads))).length)
     const compiled = await compile($)
     const box = await $.prompt.read()
 
