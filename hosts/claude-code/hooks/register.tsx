@@ -484,6 +484,8 @@ const THREAD_PREFIX = 'synaptik-thread-'
 const threadPane = (key: string) => `${THREAD_PREFIX}${key}`
 // Which element of each thread's pane holds the keyboard, as its focus moves say.
 const threadFocus = new Map<string, string | undefined>()
+// The thread panes open now: an answer landing in a closed one writes its summary.
+const openThreads = new Set<string>()
 
 async function blockText($: EngineInterface, key: string): Promise<string | undefined> {
   return segment(await read($, lastText)).filter(s => s.isBlock)[Number(key)]?.text
@@ -516,11 +518,15 @@ async function openThread($: EngineInterface, index: number | string) {
   const key = String(index)
   const text = await blockText($, key)
   if (text === undefined) return
-  const opened = await $.ui.open({ id: threadPane(key), title: `${THREAD_GLYPH} ${quote(text, 6)}`, focus: true, closeOnEscape: true })
+  const opened = await $.ui
+    .open({ id: threadPane(key), title: `${THREAD_GLYPH} ${quote(text, 6)}`, focus: true, closeOnEscape: true })
+    .catch((err: unknown) => ({ isPlaced: false as const, reason: String(err) }))
   observe(`thread ${key} open ${JSON.stringify(opened)}`)
+  if (!opened.isPlaced && !opened.reason.includes('columns')) return $.ui.toast(`couldn't open the thread: ${opened.reason}`)
   // From the reply the open isn't the person's own (a Client's post), so a narrow
   // terminal leaves it undrawn; a press on the band's d counts as theirs (#146).
   if (!opened.isPlaced) return $.ui.toast(`too narrow to open from the reply: ${ENTRY_CHORD}, then d on the band`)
+  openThreads.add(key)
   releaseReview($)
   void toThreadEnd($, key)
 }
@@ -531,12 +537,15 @@ async function sendInThread($: EngineInterface, key: string, text: string) {
   const prompt = threadPrompt(anchor, (await read($, threads))[key] ?? NEW_THREAD, text)
   await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text }], pending: t.pending + 1, inputSeq: t.inputSeq + 1 }))
   const reply = await read($, lastText)
-  const r = await $.model.fork({ prompt })
+  const r = await forkThread($, prompt)
   observe(`thread ${key} fork: ${r.isAnswered ? `${r.usage.input_tokens} in, ${r.usage.cache_read_input_tokens} cached, ${r.usage.output_tokens} out` : r.reason}`)
   // A new reply meanwhile discarded the thread: the answer has nowhere to go.
   if ((await read($, lastText)) !== reply) return
   const answer = r.isAnswered ? r.text : `(${noAnswer(r.reason)})`
   await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'agent', text: answer }], pending: t.pending - 1 }))
+  // Closed while it was waiting: the close couldn't write the summary, so the
+  // answer does, or an included thread would be left out with no sign.
+  if (!openThreads.has(key)) await summarize($, key)
 }
 
 // On close: the summary that goes into the review, if the thread changed since.
@@ -546,12 +555,22 @@ async function summarize($: EngineInterface, key: string) {
   if (!t || anchor === undefined || !needsSummary(t)) return
   const at = t.messages.length
   const reply = await read($, lastText)
-  const r = await $.model.fork({ prompt: summaryPrompt(anchor, t) })
+  const r = await forkThread($, summaryPrompt(anchor, t))
   if ((await read($, lastText)) !== reply) return
   observe(`thread ${key} summary: ${r.isAnswered ? `${r.text.split('\n').length} lines` : r.reason}`)
   if (!r.isAnswered) return $.ui.toast("couldn't summarise the thread: open it and close it again to retry")
   await changeThread($, key, now => ({ ...now, summary: r.text.trim(), summarizedAt: at }))
   await suggestTray($)
+}
+
+// One fork; a call that throws (an older Claude Code, a refusal) is an answer
+// that didn't come, never a thread left waiting.
+async function forkThread($: EngineInterface, prompt: string) {
+  try {
+    return await $.model.fork({ prompt })
+  } catch (err) {
+    return { isAnswered: false as const, reason: `failed: ${String(err)}` }
+  }
 }
 
 // Why a fork gave no answer, in the person's words.
@@ -910,6 +929,10 @@ export const register: Register = on => {
     if (!e.id.startsWith(THREAD_PREFIX)) return next(e)
     const key = e.id.slice(THREAD_PREFIX.length)
     observe(`thread ${key} closed by ${e.origin.kind}`)
+    openThreads.delete(key)
+    // Synaptik's own close comes with a new reply, whose review isn't the thread's
+    // to end; its threads are gone, so there is nothing to summarise.
+    if (e.origin.kind === 'plugin') return next(e)
     void summarize($, key)
     releaseReview($)
     return next(e)
