@@ -4,7 +4,7 @@
 
 import { expect, mock, test } from 'claude-code/testing'
 
-import { log, session, start, synaptik, transcriptOf } from './engine'
+import { fullscreen, log, session, start, suggested, synaptik, transcriptOf } from './engine'
 
 const F = 'fullscreen'
 
@@ -38,4 +38,22 @@ test('until the id changes, nothing is adopted again', async ($, on) => {
   await end($, 'resume')
   await clock.advance(1000)
   expect(await log($)).not.toContain('readopt after the session ended')
+})
+
+test('after /clear the box no longer offers the review of the reply that is gone', async ($, on) => {
+  const clock = mock.clock(on)
+  const rows = await start($, on, F)
+  await fullscreen($, F)
+  await $.ui.focus({ component: 'AbovePrompt', requestId: 'band', element: 'verb-accept', origin: { kind: 'person' } })
+  const ui = await fullscreen($, F)
+  const clients = await ui.findAll({ type: 'Client' })
+  const into = String(clients[1]!.key)
+  await ui.pointer({ type: 'down', x: 4, y: 0, button: 'left', in: into })
+  await ui.key({ key: 'a', in: into })
+  expect(suggested()).toContain('✓')
+  rows.splice(0, rows.length)
+  session.id = 'session-2'
+  await end($, 'clear')
+  await clock.advance(300)
+  expect(suggested()).not.toContain('✓')
 })

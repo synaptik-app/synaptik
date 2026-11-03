@@ -240,6 +240,9 @@ async function readoptAfter($: EngineInterface, ended: string) {
       if ((await $.session.id()) === ended) continue
       await adoptLastReply($)
       observe(`readopt after the session ended: ${(await read($, lastText)).length} chars`)
+      // The box may still offer the review of the reply that is gone: offer the
+      // new tray's instead (nothing staged: the placeholder).
+      if (isSuggested) await suggestTray($)
       $.ui.invalidate('ui.render')
       return
     } catch (err) {
