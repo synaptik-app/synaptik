@@ -228,6 +228,31 @@ async function adoptLastReply($: EngineInterface) {
   if (text) await openPane($)
 }
 
+// `/resume` and `/clear` end the conversation, and the process goes on under
+// another session id with no session.start for it (SessionEndInput). So once the
+// id has changed, the new transcript's reply is adopted, or a cleared one's none.
+const READOPT_EVERY_MS = 250
+const READOPT_TRIES = 20
+async function readoptAfter($: EngineInterface, ended: string) {
+  for (let n = 0; n < READOPT_TRIES; n += 1) {
+    try {
+      await $.clock.sleep(READOPT_EVERY_MS)
+      if ((await $.session.id()) === ended) continue
+      await adoptLastReply($)
+      observe(`readopt after the session ended: ${(await read($, lastText)).length} chars`)
+      // The box may still offer the review of the reply that is gone: offer the
+      // new tray's instead (nothing staged: the placeholder).
+      if (isSuggested) await suggestTray($)
+      $.ui.invalidate('ui.render')
+      return
+    } catch (err) {
+      observe(`readopt: ${String(err)}`)
+      return
+    }
+  }
+  observe('readopt: the session id never changed')
+}
+
 // Opened unasked (a new reply, a reload) the pane waits undrawn below 144
 // columns; opened from the person's press it is placed at any width. When it
 // waits or is closed, the band offers that press.
@@ -627,6 +652,12 @@ export const register: Register = on => {
     // A resumed session (and every reload of this mod) already has a reply.
     await adoptLastReply($)
     return next(e)
+  }).catch(($, e, next) => next(e))
+
+  on('session.end', async ($, e, next) => {
+    const result = await next(e)
+    if (!isHeadless && (e.reason === 'resume' || e.reason === 'clear')) void readoptAfter($, e.sessionId)
+    return result
   }).catch(($, e, next) => next(e))
 
   // `/synaptik` and its subcommands (D39, SPEC §10).

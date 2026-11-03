@@ -51,6 +51,11 @@ transcript (`$.session.messages()`) and adopts its last turn. A resume ends the
 transcript with an engine-written `No response requested.` row, which is
 skipped.
 
+`/resume` and `/clear` inside a running session raise no `session.start`: the
+session ends (`session.end`, reason `resume` or `clear`) and the process goes on
+under another id. So after either, once `$.session.id()` has changed, the mod
+adopts the new transcript's last turn, or a cleared one's none (#147).
+
 ⚠️ That row is recognised by its text: `SessionMessage` carries no flag for rows
 the engine writes itself.
 
