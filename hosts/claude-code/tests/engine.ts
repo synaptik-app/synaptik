@@ -78,6 +78,10 @@ export const opened: { focus: boolean }[] = []
 export const forks: string[] = []
 export const forkAnswer = { text: 'An answer.' as string | undefined }
 
+// The session's id, as $.session.id answers it: a test changes it, as /resume
+// and /clear do. Reset by `engine`.
+export const session = { id: 'session-1' }
+
 // Every slash command Synaptik registered. Reset by `engine`.
 export const registered: string[] = []
 
@@ -99,6 +103,7 @@ export function engine(on: On, rows: Row[]) {
   registered.length = 0
   closed.length = 0
   forks.length = 0
+  session.id = 'session-1'
   forkAnswer.text = 'An answer.'
   const event = (name: string, fn: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => fn(e)) as never)
@@ -106,6 +111,8 @@ export function engine(on: On, rows: Row[]) {
     on(name as never, ((_$: unknown, e: never) => ({ value: value(e) })) as never)
 
   call('session.messages', () => rows)
+  call('session.id', () => session.id)
+  event('session.end', (e: { sessionId: string }) => ({ sessionId: e.sessionId }))
   call('command.register', (e: { name: string }) => {
     registered.push(e.name)
     return { command: e.name }
