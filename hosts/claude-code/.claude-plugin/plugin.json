@@ -1,14 +1,14 @@
 {
   "name": "synaptik",
   "displayName": "Synaptik",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Review the agent’s reply in place. Synaptik turns your review into one prompt.",
   "author": {
     "name": "Synaptik",
     "email": "hello@synaptik.app",
-    "url": "https://github.com/synaptik-app"
+    "url": "https://synaptik.app"
   },
-  "homepage": "https://github.com/synaptik-app/synaptik",
+  "homepage": "https://synaptik.app",
   "repository": "https://github.com/synaptik-app/synaptik",
   "supportUrl": "https://github.com/synaptik-app/synaptik/issues",
   "documentationUrl": "https://github.com/synaptik-app/synaptik#readme",

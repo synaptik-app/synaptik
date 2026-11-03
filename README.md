@@ -19,9 +19,11 @@ interferes with the prompt/response flow.
 
 ## Status
 
-**v0.2.2, early.** Used daily by its author: accept, reject and comment on any
+**v0.3.0, early.** Used daily by its author: accept, reject and comment on any
 block of the last reply — in fullscreen right in the reply, in the default
-renderer from the navigator above the prompt. What comes next is on the
+renderer from the navigator above the prompt. In fullscreen, step into a code
+block or a table to mark its lines and rows, and discuss a block in a private
+thread whose summary you can send with your review. What comes next is on the
 [roadmap](https://github.com/orgs/synaptik-app/projects/2).
 
 ## Install
