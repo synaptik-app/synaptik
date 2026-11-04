@@ -222,6 +222,11 @@ async function adoptLastReply($: EngineInterface) {
     await writeTray($, () => EMPTY)
     for (const key of Object.keys(await read($, threads))) void $.ui.close({ id: threadPane(key) }).catch(() => undefined)
     await update($, threads, () => ({}))
+    // What was typed in the old reply's threads, keyed by block number, would
+    // otherwise land in the new reply's thread on the same block.
+    threadDrafts.clear()
+    threadSeeds.clear()
+    threadFocus.clear()
     await update($, isCommenting, () => false)
     held = { review: { ...START, selected: Math.max(0, count - 1), epoch: held.review.epoch + 1 }, acked: held.acked }
     holder = undefined
@@ -618,7 +623,8 @@ async function summarize($: EngineInterface, key: string) {
   if ((await read($, lastText)) !== reply) return
   observe(`thread ${key} summary: ${r.isAnswered ? `${r.text.split('\n').length} lines` : r.reason}`)
   if (!r.isAnswered) return $.ui.toast("couldn't summarise the thread: open it and close it again to retry")
-  await changeThread($, key, now => ({ ...now, summary: r.text.trim(), summarizedAt: at }))
+  // An answer meanwhile may have brought a fresher summary: it stays.
+  await changeThread($, key, now => (now.summarizedAt > at ? now : { ...now, summary: r.text.trim(), summarizedAt: at }))
   await suggestTray($)
 }
 

@@ -5,7 +5,8 @@
 import { expect, test } from 'claude-code/testing'
 import type { FoundElement } from 'claude-code/testing'
 
-import { closed, forkAnswer, forks, fullscreen, log, opened, placement, start, suggested, synaptik, threadPane } from './engine'
+import { closed, forkAnswer, forks, fullscreen, log, opened, placement, start, suggested, synaptik, threadPane, turn } from './engine'
+import type { Row } from './engine'
 
 const F = 'fullscreen'
 const CACHE = 1
@@ -155,4 +156,16 @@ test('a \\ then ⏎ in the field is a line break, not a send', async ($, on) => 
   expect(field.props.rows).toBeGreaterThan(1)
   await send($, 'first line\nsecond')
   expect(forks[0]).toContain('Their message:\nfirst line\nsecond')
+})
+
+test("a new reply drops what was typed in the old reply's threads", async ($, on) => {
+  const rows = await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  await clickAndPress(await fullscreen($, F), CACHE, ['d'])
+  await send($, 'fix the name\\')
+  expect(await inPane($, async pane => (await pane.find({ type: 'Input' }))!.props.value)).toBe('fix the name\n')
+  const row = (role: Row['role'], text: string): Row => ({ role, text, toolUses: [] }) as Row
+  await turn($, rows, [row('user', 'and then?'), row('assistant', 'First new point.\n\nSecond new point.')])
+  expect(await inPane($, async pane => (await pane.find({ type: 'Input' }))?.props.value)).toBeUndefined()
 })
