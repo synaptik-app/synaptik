@@ -28,6 +28,7 @@ When the person asks to run a test — "run the rendering test", "run split",
 | fullscreen | `fixtures/fullscreen.md` — rendering and reviewing, fullscreen only |
 | classic | `fixtures/classic.md` — the navigator, the default renderer only |
 | code | `fixtures/code.md` — stepping into code blocks and tables, fullscreen only |
+| threads | `fixtures/threads.md` — discussing blocks in threads, their summaries and include, fullscreen only |
 | split | `fixtures/split.md` |
 | nesting | `fixtures/nesting.md` |
 | long | `fixtures/long.md` |
