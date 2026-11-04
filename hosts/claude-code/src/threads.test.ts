@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { hasThread, needsSummary, NEW_THREAD, summaries, summaryPrompt, threadPrompt } from './threads'
+import { hasThread, needsSummary, NEW_THREAD, parseAnswer, summaries, summaryPrompt, threadPrompt, withAnswer } from './threads'
 import type { Thread } from './threads'
 
 const talked: Thread = {
@@ -17,7 +17,10 @@ test('a thread message carries the block, the thread so far and the new message'
   const prompt = threadPrompt('Use Redis', talked, 'and the TTL?')
   expect(prompt).toContain('"""\nUse Redis\n"""')
   expect(prompt).toContain('Person: why not memcached?\n\nYou: No persistence.')
-  expect(prompt.endsWith('Their message:\nand the TTL?')).toBe(true)
+  expect(prompt).toContain('Their message:\nand the TTL?')
+  // It asks for the summary and the verdict after the answer.
+  expect(prompt).toContain('<verdict>include</verdict> or <verdict>exclude</verdict>')
+  expect(prompt).toContain('Work to carry out')
 })
 
 test('the first message has no thread so far', () => {
@@ -26,7 +29,7 @@ test('the first message has no thread so far', () => {
 
 test('the summary prompt says what the summary is for, and carries the thread', () => {
   const prompt = summaryPrompt('Use Redis', talked)
-  expect(prompt).toContain('goes into their next prompt to you')
+  expect(prompt).toContain("for the person's next prompt to you")
   expect(prompt).toContain('Person: why not memcached?')
 })
 
@@ -50,4 +53,42 @@ test('a block has a thread once a message was sent', () => {
   expect(hasThread({ '1': talked, '2': NEW_THREAD }, 1)).toBe(true)
   expect(hasThread({ '1': talked, '2': NEW_THREAD }, 2)).toBe(false)
   expect(hasThread({}, 3)).toBe(false)
+})
+
+const RAW = 'Use a TTL.\n\n<summary>\nAdd a 5-minute TTL.\n</summary>\n<verdict>include</verdict>'
+
+test('an answer splits into what the person reads, the summary and the verdict', () => {
+  expect(parseAnswer(RAW)).toEqual({ text: 'Use a TTL.', summary: 'Add a 5-minute TTL.', verdict: 'include' })
+})
+
+test('without both parts the answer is all text, with no summary', () => {
+  expect(parseAnswer('Just text.')).toEqual({ text: 'Just text.' })
+  expect(parseAnswer('Text.\n<summary>x</summary>')).toEqual({ text: 'Text.\n<summary>x</summary>' })
+})
+
+test('an empty summary with exclude is a thread with nothing to send', () => {
+  expect(parseAnswer('It caches.\n<summary>\n</summary>\n<verdict>exclude</verdict>')).toEqual({ text: 'It caches.', summary: '', verdict: 'exclude' })
+})
+
+test("the answer's verdict sets the switch, until the person sets it", () => {
+  const waiting = { ...talked, pending: 1, messages: [...talked.messages, { role: 'person' as const, text: 'TTL?' }] }
+  const answered = withAnswer(waiting, RAW)
+  expect(answered).toMatchObject({ included: true, summary: 'Add a 5-minute TTL.', summarizedAt: 4, pending: 0 })
+  expect(needsSummary(answered)).toBe(false)
+  expect(withAnswer({ ...waiting, included: false, isIncludeSet: true }, RAW).included).toBe(false)
+})
+
+test('an answer without its summary leaves the last one, to be rewritten on close', () => {
+  const summarised = { ...talked, included: true, summary: 'Keep Redis.', summarizedAt: 2, pending: 1 }
+  const answered = withAnswer({ ...summarised, messages: [...summarised.messages, { role: 'person' as const, text: 'and?' }] }, 'Plain.')
+  expect(answered.summary).toBe('Keep Redis.')
+  expect(needsSummary(answered)).toBe(true)
+})
+
+test('an empty summary, included by the person, is written anyway', () => {
+  const empty = { ...talked, summary: '', summarizedAt: 2 }
+  expect(needsSummary(empty)).toBe(false)
+  expect(needsSummary({ ...empty, included: true })).toBe(true)
+  expect(summaryPrompt('Use Redis', { ...empty, included: true })).toContain('chose to include this thread')
+  expect(summaryPrompt('Use Redis', talked)).not.toContain('chose to include this thread')
 })

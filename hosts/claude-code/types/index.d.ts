@@ -7,6 +7,7 @@ export type Thread = {
   messages: { role: 'person' | 'agent'; text: string }[]
   pending: number
   included: boolean
+  isIncludeSet: boolean
   summary?: string
   summarizedAt: number
   inputSeq: number

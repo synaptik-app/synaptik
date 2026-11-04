@@ -22,7 +22,7 @@ import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
 import { decorate } from '../src/decorate'
-import { hasThread, needsSummary, NEW_THREAD, summaries, summaryPrompt, threadPrompt } from '../src/threads'
+import { hasThread, needsSummary, NEW_THREAD, summaries, summaryPrompt, threadPrompt, withAnswer } from '../src/threads'
 import type { Thread } from '../src/threads'
 import {
   BAND_COMMENT_PREFIX,
@@ -166,6 +166,8 @@ const HELP = [
 // as Claude Code proposes its own: → or Tab takes it, the box is where it is
 // edited and sent, ctrl+c clears it (SPEC §7, *Sending*).
 async function suggestTray($: EngineInterface) {
+  // Off, Synaptik proposes nothing, not even a thread's late summary.
+  if (!(await read($, isOn))) return
   try {
     const text = await compile($)
     if (!text) {
@@ -220,6 +222,11 @@ async function adoptLastReply($: EngineInterface) {
     await writeTray($, () => EMPTY)
     for (const key of Object.keys(await read($, threads))) void $.ui.close({ id: threadPane(key) }).catch(() => undefined)
     await update($, threads, () => ({}))
+    // What was typed in the old reply's threads, keyed by block number, would
+    // otherwise land in the new reply's thread on the same block.
+    threadDrafts.clear()
+    threadSeeds.clear()
+    threadFocus.clear()
     await update($, isCommenting, () => false)
     held = { review: { ...START, selected: Math.max(0, count - 1), epoch: held.review.epoch + 1 }, acked: held.acked }
     holder = undefined
@@ -418,7 +425,7 @@ async function applyAction($: EngineInterface, a: Action) {
     await writeTray($, tray => (typeof index === 'number' ? clearBlock(tray, index) : clearMark(tray, index)))
     // The thread stays, out of the review (SPEC §5: clearing never destroys).
     if (typeof index === 'number' && (await read($, threads))[String(index)]?.included) {
-      await update($, threads, all => ({ ...all, [String(index)]: { ...all[String(index)]!, included: false } }))
+      await update($, threads, all => ({ ...all, [String(index)]: { ...all[String(index)]!, included: false, isIncludeSet: true } }))
     }
   } else {
     const { index } = a
@@ -509,6 +516,10 @@ const THREAD_PREFIX = 'synaptik-thread-'
 const threadPane = (key: string) => `${THREAD_PREFIX}${key}`
 // Which element of each thread's pane holds the keyboard, as its focus moves say.
 const threadFocus = new Map<string, string | undefined>()
+// What is typed in each thread's field, for its height; a send clears it. And
+// what the field reopens with after a \ then ⏎.
+const threadDrafts = new Map<string, string>()
+const threadSeeds = new Map<string, string>()
 // The thread panes open now: an answer landing in a closed one writes its summary.
 const openThreads = new Set<string>()
 // Threads whose summary is being written, which the band names.
@@ -585,11 +596,11 @@ async function sendInThread($: EngineInterface, key: string, text: string) {
     answer = r.isAnswered ? r.text : `(${noAnswer(r.reason)})`
   } finally {
     // A new reply meanwhile discarded the thread: the answer has nowhere to go.
-    if ((await read($, lastText)) === reply) {
-      await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'agent', text: answer }], pending: t.pending - 1 }))
-    }
+    if ((await read($, lastText)) === reply) await changeThread($, key, t => withAnswer(t, answer))
   }
   if ((await read($, lastText)) !== reply) return
+  // The answer brought the summary and the switch's default: the review follows.
+  await suggestTray($)
   // Closed while it was waiting: the close couldn't write the summary, so the
   // answer does, or an included thread would be left out with no sign.
   if (!openThreads.has(key)) await summarize($, key).catch(err => observe(`thread ${key} summary failed: ${String(err)}`))
@@ -612,7 +623,8 @@ async function summarize($: EngineInterface, key: string) {
   if ((await read($, lastText)) !== reply) return
   observe(`thread ${key} summary: ${r.isAnswered ? `${r.text.split('\n').length} lines` : r.reason}`)
   if (!r.isAnswered) return $.ui.toast("couldn't summarise the thread: open it and close it again to retry")
-  await changeThread($, key, now => ({ ...now, summary: r.text.trim(), summarizedAt: at }))
+  // An answer meanwhile may have brought a fresher summary: it stays.
+  await changeThread($, key, now => (now.summarizedAt > at ? now : { ...now, summary: r.text.trim(), summarizedAt: at }))
   await suggestTray($)
 }
 
@@ -634,8 +646,11 @@ function noAnswer(reason: string): string {
 }
 
 async function toggleInclude($: EngineInterface, key: string) {
-  await changeThread($, key, t => ({ ...t, included: !t.included }))
+  await changeThread($, key, t => ({ ...t, included: !t.included, isIncludeSet: true }))
   await suggestTray($)
+  // Switched on with nothing to send: the person wants it sent, so it is
+  // written now, not on close.
+  if ((await read($, threads))[key]?.summary === '') await summarize($, key)
 }
 
 export const register: Register = on => {
@@ -676,6 +691,8 @@ export const register: Register = on => {
       const wanted = args === 'on'
       const was = await read($, isOn)
       await update($, isOn, () => wanted)
+      // Off, threads close too; they are kept, and on brings them back with d.
+      if (!wanted) for (const key of [...openThreads]) await $.ui.close({ id: threadPane(key) }).catch(() => undefined)
       // Redraw at once: the reply, band and navigator read it.
       $.ui.invalidate('ui.render')
       const now = wanted ? 'on' : 'off for this session'
@@ -1012,9 +1029,11 @@ export const register: Register = on => {
   on('ui.scroll', { component: 'Pane' }, async ($, e, next) => {
     if (!e.requestId.startsWith(THREAD_PREFIX) || e.origin.kind !== 'person' || e.pointer || Math.abs(e.by) !== 1) return next(e)
     const key = e.requestId.slice(THREAD_PREFIX.length)
-    const field = threadFieldKey(e.requestId, (await read($, threads))[key]?.inputSeq ?? 0)
-    const onSwitch = threadFocus.get(e.requestId) === threadSwitchKey(e.requestId)
-    const to = e.by > 0 && !onSwitch ? threadSwitchKey(e.requestId) : e.by < 0 && onSwitch ? field : undefined
+    const t = (await read($, threads))[key] ?? NEW_THREAD
+    // The pane's stops, top to bottom: the field, then the switch under it.
+    const stops = [threadFieldKey(e.requestId, t.inputSeq), threadSwitchKey(e.requestId)]
+    const at = Math.max(0, stops.indexOf(threadFocus.get(e.requestId) ?? stops[0]!))
+    const to = stops[at + Math.sign(e.by)]
     if (to) {
       const moved = await $.ui.focus({ requestId: e.requestId, key: to }).catch((err: unknown) => ({ deny: String(err) }))
       observe(`thread ${key} ${e.by > 0 ? '↓' : '↑'} → ${to}: ${JSON.stringify(moved)}`)
@@ -1030,9 +1049,37 @@ export const register: Register = on => {
     const { Box, Text, Button, Input, Markdown } = $.ui.resolve(e)
     return ThreadView(
       { Box, Text, Button, Input, Markdown },
-      { id: e.requestId, anchor, columns: e.props.bodyColumns, thread: (await read($, threads))[key] ?? NEW_THREAD },
       {
-        send: text => sendInThread($, key, text).catch(err => observe(`thread ${key} send failed: ${String(err)}`)),
+        id: e.requestId,
+        anchor,
+        columns: e.props.bodyColumns,
+        draft: threadDrafts.get(key) ?? '',
+        ...(threadSeeds.has(key) ? { seed: threadSeeds.get(key)! } : {}),
+        isSummarizing: summarizing.has(key),
+        thread: (await read($, threads))[key] ?? NEW_THREAD,
+      },
+      {
+        send: async text => {
+          // A \ then ⏎ is a line break, not a send: the field reopens with it,
+          // several rows tall from then on.
+          if (text.endsWith('\\')) {
+            const draft = `${text.slice(0, -1)}\n`
+            threadDrafts.set(key, draft)
+            threadSeeds.set(key, draft)
+            await changeThread($, key, t => ({ ...t, inputSeq: t.inputSeq + 1 }))
+            await $.clock.sleep(THREAD_REDRAW_MS).catch(() => undefined)
+            const seq = (await read($, threads))[key]?.inputSeq ?? 0
+            await $.ui.focus({ requestId: e.requestId, key: threadFieldKey(e.requestId, seq) }).catch(() => undefined)
+            return
+          }
+          threadDrafts.delete(key)
+          threadSeeds.delete(key)
+          return sendInThread($, key, text).catch(err => observe(`thread ${key} send failed: ${String(err)}`))
+        },
+        type: text => {
+          threadDrafts.set(key, text)
+          $.ui.invalidate('ui.render')
+        },
         toggleInclude: () => toggleInclude($, key).catch(err => observe(`thread ${key} include failed: ${String(err)}`)),
       },
     )

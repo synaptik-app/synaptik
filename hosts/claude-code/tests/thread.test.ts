@@ -5,7 +5,8 @@
 import { expect, test } from 'claude-code/testing'
 import type { FoundElement } from 'claude-code/testing'
 
-import { closed, forks, fullscreen, log, opened, placement, start, suggested, threadPane } from './engine'
+import { closed, forkAnswer, forks, fullscreen, log, opened, placement, start, suggested, synaptik, threadPane, turn } from './engine'
+import type { Row } from './engine'
 
 const F = 'fullscreen'
 const CACHE = 1
@@ -107,4 +108,64 @@ test('Backspace on the block takes its thread out of the review, and keeps it', 
   await clickAndPress(await fullscreen($, F), CACHE, ['backspace'])
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '○ include in review' })))).toBe(true)
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '› why Redis?' })))).toBe(true)
+})
+
+test("an answer's summary and include verdict reach the review at once", async ($, on) => {
+  await openThread($, on)
+  forkAnswer.text = 'Use a TTL.\n\n<summary>\nAdd a 5-minute TTL.\n</summary>\n<verdict>include</verdict>'
+  await send($, 'and the TTL?')
+  expect(suggested()).toBe(['💬 "1. Cache sessions in Redis"', '    Add a 5-minute TTL.'].join('\n'))
+  // The person reads the answer without the summary's tags.
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Markdown', text: 'Use a TTL.' })))).toBe(true)
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '✓ include in review' })))).toBe(true)
+})
+
+test('an exclude verdict sends nothing, and the switch set by hand stays as set', async ($, on) => {
+  await openThread($, on)
+  forkAnswer.text = 'It caches.\n<summary>\n</summary>\n<verdict>exclude</verdict>'
+  await send($, 'what does it do?')
+  expect(suggested()).not.toContain('💬')
+  await include($)
+  forkAnswer.text = 'Fine.\n<summary>\nKeep it.\n</summary>\n<verdict>exclude</verdict>'
+  await send($, 'keep it then')
+  expect(suggested()).toContain('    Keep it.')
+})
+
+test('/synaptik off closes the open threads', async ($, on) => {
+  await openThread($, on)
+  await synaptik($, 'off')
+  expect(closed).toContain(PANE)
+})
+
+test('switching on a thread with nothing to send writes its summary at once', async ($, on) => {
+  await openThread($, on)
+  forkAnswer.text = 'It caches.\n<summary>\n</summary>\n<verdict>exclude</verdict>'
+  await send($, 'what does it do?')
+  forkAnswer.text = 'Keep in mind that it caches per user.'
+  await include($)
+  expect(forks.at(-1)).toContain('chose to include this thread')
+  expect(suggested()).toContain('    Keep in mind that it caches per user.')
+})
+
+test('a \\ then ⏎ in the field is a line break, not a send', async ($, on) => {
+  await openThread($, on)
+  await send($, 'first line\\')
+  expect(forks).toHaveLength(0)
+  const field = await inPane($, async pane => (await pane.find({ type: 'Input' }))!)
+  expect(field.props.value).toBe('first line\n')
+  expect(field.props.rows).toBeGreaterThan(1)
+  await send($, 'first line\nsecond')
+  expect(forks[0]).toContain('Their message:\nfirst line\nsecond')
+})
+
+test("a new reply drops what was typed in the old reply's threads", async ($, on) => {
+  const rows = await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  await clickAndPress(await fullscreen($, F), CACHE, ['d'])
+  await send($, 'fix the name\\')
+  expect(await inPane($, async pane => (await pane.find({ type: 'Input' }))!.props.value)).toBe('fix the name\n')
+  const row = (role: Row['role'], text: string): Row => ({ role, text, toolUses: [] }) as Row
+  await turn($, rows, [row('user', 'and then?'), row('assistant', 'First new point.\n\nSecond new point.')])
+  expect(await inPane($, async pane => (await pane.find({ type: 'Input' }))?.props.value)).toBeUndefined()
 })

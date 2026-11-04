@@ -421,14 +421,19 @@ threads are tabs; inline above the prompt (narrow terminals), one shows at a tim
 │                                                   │
 │   Memcached has no persistence, so…               │  answers and the summary inset 2 columns
 │                                                   │
-│                summary for review                 │  once included and summarised, dim
+│   Summary:                                        │  after each answer, dim
 │   Keep Redis, with a 5-minute TTL.                │
 │ ───────────────────────────────────────────────── │
-│ ❯ ask about this block                            │  the field, as Claude Code draws its prompt
+│ ❯ ask about this block · \⏎ new line      ⏎ send  │  the field: one row until the text has a line break
 │ ───────────────────────────────────────────────── │
-│ [ ○ include in review ] · esc close               │
+│ [ ✓ include in review ]                           │  Esc closes the pane, as any pane
 └───────────────────────────────────────────────────┘
 ```
+
+**The field is one row** until the text has a line break: Claude Code then draws
+only `⏎ send` beside it, where from two rows it adds a hint row under every field.
+A line break comes from `\` then ⏎, as in a comment; the field reopens with it and
+grows, up to 8 rows.
 
 **The include switch** is a button: a click, or ↓ to it and ⏎. It shows
 `✓ include in review` when on. No hotkey. ↑/↓ move between the field and the
@@ -452,17 +457,33 @@ doesn't, and a toast says to use the band (#146).
 
 ### Include / exclude
 
-**Threads are excluded by default**: most are understanding with nothing worth
-sending. Included, a thread's **summary** goes into the compiled prompt, in
-document order under its block's quote (§9).
+**Each answer brings the thread's summary and a verdict** (#156). The thread's
+fork is asked to answer, then to add, in tags the pane strips, a summary of the
+whole thread so far and `include` or `exclude`. No second call: it costs the
+summary's few output tokens and a second or two on the answer. The prompts are in
+`src/prompts.ts`.
 
-**The summary is written when the pane closes**, if the thread is included and has
-changed since the last one: one more `fork`, with a prompt that says what it is
-for. It goes into the person's next prompt, so it is written as their instruction
-to the agent: what was decided and what to do, one action per line, an open
-question only if one is left, no recap, no mention of a thread. The mod never
-decides what matters; the model writes it, the person reads it in the suggestion
-and edits it in the prompt box like anything else before sending.
+**The summary is written for its use**: the person's next prompt to the agent,
+under the block's quote. It holds changes to make, work to carry out (commands to
+run, files to edit, tests to run: a thread can't run them, so they go to the main
+conversation), decisions taken, and an open question only if one is left. Not what
+was only explained; no recap, no mention of a thread. A thread that only explained
+has an empty summary and `exclude`.
+
+**The verdict is the switch's default**, until the person sets the switch; it never
+overrides them. Included, the summary goes into the compiled prompt in document
+order under its block's quote (§9). The pane shows the summary whichever way the
+switch is set, so a wrong verdict is visible. The mod never decides what matters:
+the model writes the summary and suggests the verdict, the person sees both. To
+change the summary they ask in the thread ("drop the second point"), and the next
+answer rewrites it; or they edit it in the prompt box like anything else before
+sending. There is no editor in the pane.
+
+**If an answer comes without its tags**, the summary is written when the pane
+closes, with one more fork, as before; the band says `💬 summarising…` meanwhile.
+
+`/synaptik off` closes the open threads and proposes nothing; the threads are kept,
+and `d` opens them again once Synaptik is on.
 
 Threads are kept with the tray, in `$.state`, and go with it: a new reply discards
 them and closes their panes. Fullscreen only; classic's `d` still says phase 2.

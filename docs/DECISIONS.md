@@ -1582,7 +1582,7 @@ tallest cell, the list a table becomes without room for a grid, and the 200-row 
 ---
 
 ### D45 — Threads in a pane of their own, one per block
-**Status:** settled · added 2026-11-02 · places D14's threads after D41 (#106)
+**Status:** settled · added 2026-11-02 · revised 2026-11-04 · places D14's threads after D41 (#106, #156)
 
 The thread pane was to be the navigator's body (SPEC §8, before). Since D41 a
 fullscreen review happens in the reply and the navigator is classic-only, so a
@@ -1611,7 +1611,26 @@ when the pane closes (Esc), not on every message and not when the review ends,
 which the mod can't see. It is written for its use, as the person's instruction to
 the agent; editing it is the prompt box's job, as for every other mark.
 
-**Considered:** `q` or a close button to leave a thread (the field types `q`, and a
+**Revised 2026-11-04 (#156): the summary comes with each answer, and so does the
+switch's default.** Written on close, the summary appeared only after the person
+had left, and every thread needed the switch set by hand. Now the thread's own fork
+adds a summary and an `include`/`exclude` verdict after its answer, in tags the pane
+strips: one call, about a tenth more per message. A separate fork per answer would
+have doubled it (each re-reads ~74,000 cached tokens). The verdict sets the switch
+until the person touches it. Closing writes a summary only when an answer came
+without one. The summary prompt asks for changes, work to carry out, decisions and
+open questions, not a recap, since a thread can't run commands and the main
+conversation has to (`src/prompts.ts`). Settles E6, by a verdict in the same call
+rather than `$.model.classify`.
+
+**No summary editor in the pane** (tried and dropped 2026-11-04). A field holding
+the summary needs its height from how its lines wrap beside Claude Code's key
+hint, which can't be measured: too short, it hid the person's text; one-row fields
+per line wrapped and were cut; a fixed height worked but cost a lot of a narrow
+pane. Asking the thread to change the summary does the same with nothing to build,
+and the prompt box is there for exact wording.
+
+**Considered:** a summary editor in the pane (above); `q` or a close button to leave a thread (the field types `q`, and a
 close from the plugin hands the keyboard to the prompt just the same, so Esc does
 it all); a thread inline under its block (above); one pane switching between
 threads (tabs come free when docked).
@@ -1761,6 +1780,7 @@ wrong, with no clean fix visible from the docs.
 of it.
 
 ### E6 — Auto-classify thread outcomes
+**Status:** done 2026-11-04 (#156), as D45's revision: a verdict in the thread's own fork, as the switch's default.
 Decide automatically whether a thread has something worth appending, removing
 the manual commit step.
 **Primitive exists:** `$.model.classify`, alongside `complete` and `fork` — a
