@@ -52,8 +52,8 @@ export function clear(tray: Tray, i: Part): Tray {
   return withMark(tray, i, undefined)
 }
 
-// The marks on a code block's lines, by line.
-export function lineMarks(marks: Readonly<Record<string, Mark>>, block: number): Record<string, Mark> {
+// What a code block's or table's lines hold (marks, summaries), by line.
+export function lineMarks<T = Mark>(marks: Readonly<Record<string, T>>, block: number): Record<string, T> {
   const prefix = `${block}.`
   return Object.fromEntries(
     Object.entries(marks)

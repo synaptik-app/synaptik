@@ -99,7 +99,7 @@ x()
   - A message gets an answer in the pane, "thinking…" until it comes
   - d on another block while the first is waiting: both answer, each in its own pane (tabs when docked)
   - A block with a thread shows 💬 in the margin, in a review and outside one
-  - After each answer the pane shows "Summary:": changes, work to carry out and decisions, not a recap; an explain-only thread says "nothing to send from this thread"
+  - After each answer the summary shows under the include switch, in sections (`Actions:`, `Decisions:`…), not a recap; an explain-only thread shows none, and switched on says "writing…" beside the switch until its `Context:` comes
   - The switch follows the answer's verdict until you click it; included, the summary is in the suggestion under 💬 and the block's quote, and Esc writes nothing new
   - /synaptik off closes the open threads; /synaptik on, then d, opens them again with their messages
   - Below 144 columns, d from the reply says to use the band; ctrl+x tab, then d, opens the thread

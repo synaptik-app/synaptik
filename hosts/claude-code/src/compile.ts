@@ -25,7 +25,7 @@ const LINE_QUOTE = 60
 // A code line or table row in the prompt: its number from 1, counted from the
 // block's first line of code or data row, and the text, trimmed. A blank line has
 // only its number.
-function lineReference(kind: 'code' | 'table', line: number, text: string): string {
+export function lineReference(kind: 'code' | 'table', line: number, text: string): string {
   const trimmed = text.trim()
   // A row's cells are joined with " · " (src/blocks.ts), so an empty one leaves only
   // its separators; a trailing empty cell leaves one, the quote not being a literal copy.
@@ -44,8 +44,8 @@ function trimmedQuote(text: string): string {
 // block whose descendant is staged is sent too, as a plain quote with no glyph,
 // so a marked child arrives under the parent it belongs to. Marked code lines nest
 // under their block the same way. A comment with no text is never sent. An
-// included thread's summary (src/threads.ts) nests under its block's quote, after
-// the 💬, or under the block's mark when it has one.
+// included thread's summary (src/threads.ts) nests under its block's or line's
+// quote, after the 💬, or under its mark when it has one.
 export function compile(
   blocks: readonly Block[],
   marks: Readonly<Record<string, Mark>>,
@@ -57,8 +57,9 @@ export function compile(
     return mark !== undefined && (mark !== 'comment' || (comments[i]?.trim() ?? '') !== '')
   }
   const isStaged = (i: number | string) => isMarked(i) || summaries[i] !== undefined
+  // A block's staged lines: marked, or with an included thread of their own.
   const stagedLines = (i: number) =>
-    Object.keys(lineMarks(marks, i))
+    [...new Set([...Object.keys(lineMarks(marks, i)), ...Object.keys(lineMarks(summaries, i))])]
       .map(Number)
       .filter(line => isStaged(lineKey(i, line)))
       .sort((a, b) => a - b)
@@ -79,23 +80,29 @@ export function compile(
     return [`${lead}${first}`, ...rest.map(line => (line.trim() ? `${pad}${line.trimEnd()}` : ''))]
   }
 
+  // A block or line as staged: its mark, then its thread's summary under it, led
+  // by the 💬 and the rest lined up after it; with no mark, the 💬 leads the quote.
+  const staged = (key: number | string, indent: string, reference: string) => {
+    const summary = summaries[key]?.split('\n').map(line => line.trim()).filter(Boolean) ?? []
+    if (isMarked(key)) {
+      const pad = ' '.repeat(cells(`${THREAD_GLYPH} `))
+      const thread = summary.map((line, n) => `${indent}    ${n === 0 ? `${THREAD_GLYPH} ` : pad}${line}`)
+      return [...entry(`${indent}${GLYPH[marks[key]!]} ${reference}`, key), ...thread]
+    }
+    if (summary.length > 0) return [`${indent}${THREAD_GLYPH} ${reference}`, ...summary.map(line => `${indent}    ${line}`)]
+    return []
+  }
+
   return blocks
     .flatMap((block, i) => {
       const indent = '    '.repeat(block.depth)
       const lines = stagedLines(i)
       const parts = lines.length > 0 ? partsOf(block.text) : undefined
-      const nested = lines.flatMap(line => {
-        const key = lineKey(i, line)
-        return entry(`${indent}    ${GLYPH[marks[key]!]} ${lineReference(parts?.kind ?? 'code', line, parts?.lines[line] ?? '')}`, key)
-      })
-      const summary = summaries[i]?.split('\n').map(line => line.trim()).filter(Boolean) ?? []
-      if (isMarked(i)) {
-        // Under a mark, the summary leads with its 💬, the rest lined up after it.
-        const pad = ' '.repeat(cells(`${THREAD_GLYPH} `))
-        const thread = summary.map((line, n) => `${indent}    ${n === 0 ? `${THREAD_GLYPH} ` : pad}${line}`)
-        return [...entry(`${indent}${GLYPH[marks[i]!]} "${quote(block.text)}"`, i), ...thread, ...nested]
-      }
-      if (summary.length > 0) return [`${indent}${THREAD_GLYPH} "${quote(block.text)}"`, ...summary.map(line => `${indent}    ${line}`), ...nested]
+      const nested = lines.flatMap(line =>
+        staged(lineKey(i, line), `${indent}    `, lineReference(parts?.kind ?? 'code', line, parts?.lines[line] ?? '')),
+      )
+      const own = staged(i, indent, `"${quote(block.text)}"`)
+      if (own.length > 0) return [...own, ...nested]
       if (!context.has(i)) return []
       return [`${indent}"${quote(block.text)}"${parts?.kind === 'code' ? ' (code block)' : ''}`, ...nested]
     })

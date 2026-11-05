@@ -78,6 +78,14 @@ test('a summary on a nested item brings its parent as context', async () => {
   expect(compile(blocks, {}, {}, { '1': 'Drop it.' })).toBe(['"1. Parent"', '    💬 "child"', '        Drop it.'].join('\n'))
 })
 
+test("a line's summary nests under it, its block quoted as context", async () => {
+  const blocks = segment('```ts\nconst a = 1\nconst b = 2\n```').filter(s => s.isBlock)
+  expect(compile(blocks, {}, {}, { '0.1': 'Rename b.' })).toBe(
+    ['"const a = 1 const b =..." (code block)', '    💬 line 2: "const b = 2"', '        Rename b.'].join('\n'),
+  )
+  expect(compile(blocks, { '0.1': 'reject' }, {}, { '0.1': 'Rename b.' })).toContain('    ✗ line 2: "const b = 2"\n        💬 Rename b.')
+})
+
 test('a preview keeps three lines and counts the rest', async () => {
   expect(preview('a\nb\nc')).toBe('a\nb\nc')
   expect(preview('a\nb\nc\nd')).toBe('a\nb\nc\n… (+1 line)')

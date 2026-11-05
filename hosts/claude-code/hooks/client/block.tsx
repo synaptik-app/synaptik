@@ -8,7 +8,7 @@
 import type { ClientModule } from 'claude-code'
 
 import { chunk, lineKey, partsOf } from '../../src/blocks'
-import { GLYPH, oneLine, PARTLY } from '../../src/compile'
+import { oneLine, PARTLY } from '../../src/compile'
 import type { Mark } from '../../src/compile'
 import { COMMENT_HINT } from '../ui'
 import { cells, click, current, itemAt, MENU, press, queue } from '../../src/review'
@@ -32,7 +32,9 @@ export type BlockProps = {
   comments: Record<string, string>
   // How many parts each steppable block in the reply has: a block's keys steer them all.
   partCounts: Record<string, number>
-  // The marks on this block's own lines, by line.
+  // The margin of this block's own lines, by line: a mark's glyph, or 💬.
+  lineGlyphs: Record<string, string>
+  // The marks on them, by line: a comment is drawn under its line.
   lineMarks: Record<string, Mark>
 }
 
@@ -184,7 +186,7 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
   // line's glyph on that line's row, past what is drawn under the selected line.
   const margin = () => {
     const first = props.glyph ?? props.bullet ?? ''
-    const marked = Object.entries(props.lineMarks).map(([line, mark]) => [Number(line), GLYPH[mark]] as const)
+    const marked = Object.entries(props.lineGlyphs).map(([line, glyph]) => [Number(line), glyph] as const)
     if (!parts || marked.length === 0) return [Text({ children: [first] })]
     const under = stepped ? (lineEditing ? lineEditing.text.split('\n').length : 1) + (lineStaged ? 1 : 0) : 0
     const glyphs = new Map(marked.map(([line, glyph]) => [rowOf(line) + (stepped && line > stepped.at ? under : 0), glyph]))

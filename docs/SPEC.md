@@ -395,8 +395,8 @@ When the box holds exactly the taken suggestion, the summary reads
 
 ## 8. Threads
 
-A thread is a side conversation about one block. **It never touches the main
-conversation.**
+A thread is a side conversation about one block, or about one code line or table
+row in it. **It never touches the main conversation.**
 
 - Each message calls `$.model.fork`. `fork` is single-shot, so the mod re-sends
   the block and the thread so far on every call.
@@ -405,10 +405,16 @@ conversation.**
 - Threads are flat. A thread cannot spawn a thread.
 - `d` or `💬 discuss` on a block opens its thread; on a threaded block it reopens
   that thread with its history. A block's thread shows `💬` in the margin.
+- **Stepped into a code block or table** (`s`, SPEC §10), `d` opens a thread on the
+  selected line or row, its own and apart from the block's. The pane shows the
+  part alone: a code line in its block's fences, a row under its table's header.
+  The fork gets the whole block and which part (`The thread is about line 2:
+  "…" of this block`). The line's margin shows `💬`, the block's `✸`.
 
 ### The pane
 
-One pane per thread (`$.ui.open`, id `synaptik-thread-<block>`), opened with the
+One pane per thread (`$.ui.open`, id `synaptik-thread-<block>`, or
+`synaptik-thread-<block>_<line>` for a part: an id takes no dot), opened with the
 keyboard in its field and closed by Esc. Docked beside the transcript, several
 threads are tabs; inline above the prompt (narrow terminals), one shows at a time.
 
@@ -421,19 +427,25 @@ threads are tabs; inline above the prompt (narrow terminals), one shows at a tim
 │                                                   │
 │   Memcached has no persistence, so…               │  answers and the summary inset 2 columns
 │                                                   │
-│   Summary:                                        │  after each answer, dim
-│   Keep Redis, with a 5-minute TTL.                │
 │ ───────────────────────────────────────────────── │
-│ ❯ ask about this block · \⏎ new line      ⏎ send  │  the field: one row until the text has a line break
+│ ❯ ask about this block   ⏎ send · \⏎ new line     │  the field: 6 rows, whatever it holds
 │ ───────────────────────────────────────────────── │
 │ [ ✓ include in review ]                           │  Esc closes the pane, as any pane
+│   ⎿  Actions: Add a 5-minute TTL to each entry.   │  the summary under the switch, dim
 └───────────────────────────────────────────────────┘
 ```
 
-**The field is one row** until the text has a line break: Claude Code then draws
-only `⏎ send` beside it, where from two rows it adds a hint row under every field.
-A line break comes from `\` then ⏎, as in a comment; the field reopens with it and
-grows, up to 8 rows.
+**The field is 6 rows**, empty or not; a longer text scrolls within it. `\` then ⏎
+(or Shift+⏎ where the terminal tells it apart) is a new line, as in the prompt box.
+A field that grew with its text had to predict how Claude Code wraps it beside its
+key hint; counted a row short, the text hid, and some wraps hid it whatever the
+count (2026-11-06). A fixed height leaves wrapping and scrolling to Claude Code.
+
+**The summary hangs under the switch** (`⎿`), while it is on, with no heading:
+its sections' labels say what each line is, and the field keeps it apart from the
+answers. Its state, when it has one, is a dim note beside the switch: `writing…`,
+`updated with the answer`, `rewritten when you close this`, `nothing to send from
+this thread`.
 
 **The include switch** is a button: a click, or ↓ to it and ⏎. It shows
 `✓ include in review` when on. No hotkey. ↑/↓ move between the field and the
@@ -464,16 +476,21 @@ summary's few output tokens and a second or two on the answer. The prompts are i
 `src/prompts.ts`.
 
 **The summary is written for its use**: the person's next prompt to the agent,
-under the block's quote. It holds changes to make, work to carry out (commands to
-run, files to edit, tests to run: a thread can't run them, so they go to the main
-conversation), decisions taken, and an open question only if one is left. Not what
-was only explained; no recap, no mention of a thread. A thread that only explained
-has an empty summary and `exclude`.
+under the block's quote. It comes in sections, each label once and only when it
+has something: `Actions:` (changes to make and work to carry out: commands to run,
+files to edit, tests to run; a thread can't run them, so they go to the main
+conversation), `Decisions:`, and `Open questions:` only if one is left. A section
+with one point keeps it on the label's line; with several, each follows as a
+`- ` line. It sticks to what the thread discussed, and may refer to other parts of
+the reply. Not what was only explained; no recap, no mention of a thread. A thread
+that only explained has an empty summary and `exclude`; switched on anyway, it
+gets a `Context:` section of a sentence or two.
 
 **The verdict is the switch's default**, until the person sets the switch; it never
 overrides them. Included, the summary goes into the compiled prompt in document
-order under its block's quote (§9). The pane shows the summary whichever way the
-switch is set, so a wrong verdict is visible. The mod never decides what matters:
+order under its block's quote (§9). The pane shows the summary only while the
+switch is on: what it shows is what goes. Switching on a thread the verdict left
+out shows its summary, or writes one. The mod never decides what matters:
 the model writes the summary and suggests the verdict, the person sees both. To
 change the summary they ask in the thread ("drop the second point"), and the next
 answer rewrites it; or they edit it in the prompt box like anything else before
@@ -564,11 +581,22 @@ happened, no transcript. Its lines nest under the block's quote, after the 💬:
 
 ```
 💬 "Use Redis for the session cache"
-    Keep Redis, with a 5-minute TTL on each entry.
-    Drop the memcached fallback.
+    Actions:
+    - Add a 5-minute TTL to each entry.
+    - Drop the memcached fallback.
+    Decisions: Keep Redis; durability isn't needed.
 ```
 
 A block with a mark and an included thread gets both lines, the mark first.
+
+A line's or row's thread nests under its block as a marked line does, the block
+quoted first for context:
+
+```
+"const routes = [ { path: '/api/v1/users'," (code block)
+    💬 line 4: "{ path: '/api/v1/resource/004', method: 'GET' },"
+        Actions: Drop this route; nothing calls it.
+```
 
 Accepting a parent while rejecting a child is normal refinement — the nesting
 makes it readable. Rejecting a parent while accepting a child is contradictory;

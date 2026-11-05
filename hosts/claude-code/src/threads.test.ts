@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { hasThread, needsSummary, NEW_THREAD, parseAnswer, summaries, summaryPrompt, threadPrompt, withAnswer } from './threads'
+import { anchorOf, hasThread, needsSummary, NEW_THREAD, parseAnswer, summaries, summaryPrompt, threadPrompt, withAnswer } from './threads'
 import type { Thread } from './threads'
 
 const talked: Thread = {
@@ -14,21 +14,21 @@ const talked: Thread = {
 }
 
 test('a thread message carries the block, the thread so far and the new message', () => {
-  const prompt = threadPrompt('Use Redis', talked, 'and the TTL?')
+  const prompt = threadPrompt({ block: 'Use Redis' }, talked, 'and the TTL?')
   expect(prompt).toContain('"""\nUse Redis\n"""')
   expect(prompt).toContain('Person: why not memcached?\n\nYou: No persistence.')
   expect(prompt).toContain('Their message:\nand the TTL?')
   // It asks for the summary and the verdict after the answer.
   expect(prompt).toContain('<verdict>include</verdict> or <verdict>exclude</verdict>')
-  expect(prompt).toContain('Work to carry out')
+  expect(prompt).toContain('Actions: what to do')
 })
 
 test('the first message has no thread so far', () => {
-  expect(threadPrompt('Use Redis', NEW_THREAD, 'why?')).not.toContain('The thread so far')
+  expect(threadPrompt({ block: 'Use Redis' }, NEW_THREAD, 'why?')).not.toContain('The thread so far')
 })
 
 test('the summary prompt says what the summary is for, and carries the thread', () => {
-  const prompt = summaryPrompt('Use Redis', talked)
+  const prompt = summaryPrompt({ block: 'Use Redis' }, talked)
   expect(prompt).toContain("for the person's next prompt to you")
   expect(prompt).toContain('Person: why not memcached?')
 })
@@ -89,6 +89,35 @@ test('an empty summary, included by the person, is written anyway', () => {
   const empty = { ...talked, summary: '', summarizedAt: 2 }
   expect(needsSummary(empty)).toBe(false)
   expect(needsSummary({ ...empty, included: true })).toBe(true)
-  expect(summaryPrompt('Use Redis', { ...empty, included: true })).toContain('chose to include this thread')
-  expect(summaryPrompt('Use Redis', talked)).not.toContain('chose to include this thread')
+  expect(summaryPrompt({ block: 'Use Redis' }, { ...empty, included: true })).toContain('chose to include this thread')
+  expect(summaryPrompt({ block: 'Use Redis' }, talked)).not.toContain('chose to include this thread')
+})
+
+const CODE = '```ts\nconst a = 1\nconst b = 2\n```'
+const TABLE = '| Option | Latency |\n|---|---|\n| Redis | low |\n| Postgres | medium |'
+
+test('a block key anchors on the block; a line key on that line, in its fences', () => {
+  expect(anchorOf(CODE, '3')).toEqual({ block: CODE })
+  expect(anchorOf(CODE, '3.1')).toEqual({
+    block: CODE,
+    part: { source: '```ts\nconst b = 2\n```', text: 'const b = 2', reference: 'line 2: "const b = 2"' },
+  })
+  expect(anchorOf(CODE, '3.2')).toBeUndefined()
+  expect(anchorOf('Plain text.', '3.0')).toBeUndefined()
+})
+
+test('a table row anchors under its table\'s header', () => {
+  expect(anchorOf(TABLE, '0.1')?.part).toEqual({
+    source: '| Option | Latency |\n|---|---|\n| Postgres | medium |',
+    text: 'Postgres · medium',
+    reference: 'row 2: "Postgres · medium"',
+  })
+})
+
+test('a thread on a line tells the fork which line, with the whole block', () => {
+  const prompt = threadPrompt(anchorOf(CODE, '3.1')!, NEW_THREAD, 'why?')
+  expect(prompt).toContain('const a = 1\nconst b = 2')
+  expect(prompt).toContain('The thread is about line 2: "const b = 2" of this block')
+  expect(summaryPrompt(anchorOf(CODE, '3.1')!, talked)).toContain('The thread is about line 2')
+  expect(threadPrompt({ block: CODE }, NEW_THREAD, 'why?')).not.toContain('The thread is about')
 })

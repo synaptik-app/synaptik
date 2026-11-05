@@ -236,13 +236,13 @@ export function pane($: Dollar, placement: 'dock' | 'inline', isFocused = true, 
   })
 }
 
-// Mounts a thread's pane (SPEC §8): the block's thread, by index.
-export function threadPane($: Dollar, block: number, isFocused = true) {
+// Mounts a thread's pane (SPEC §8): the thread of a block or of a line in one, by key.
+export function threadPane($: Dollar, block: number | string, isFocused = true) {
   return $.ui.mount({
     plugin: PLUGIN,
     surface: 'terminal',
     component: 'Pane',
-    requestId: `synaptik-thread-${block}`,
+    requestId: `synaptik-thread-${String(block).replace(".", "_")}`,
     props: { title: 'thread', isFocused, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
   })
 }
