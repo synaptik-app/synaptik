@@ -607,9 +607,10 @@ async function sendInThread($: EngineInterface, key: string, text: string) {
   if ((await read($, lastText)) !== reply) return
   // The answer brought the summary and the switch's default: the review follows.
   await suggestTray($)
-  // Closed while it was waiting: the close couldn't write the summary, so the
-  // answer does, or an included thread would be left out with no sign.
-  if (!openThreads.has(key)) await summarize($, key).catch(err => observe(`thread ${key} summary failed: ${String(err)}`))
+  // Included and the answer came without a summary: closed while it waited (the
+  // close couldn't write it), or switched on while it waited (the message, sent
+  // while off, asked for none). Written now, or it would wait for the close.
+  await summarize($, key).catch(err => observe(`thread ${key} summary failed: ${String(err)}`))
 }
 
 // On close: the summary that goes into the review, if the thread changed since.
@@ -654,9 +655,10 @@ function noAnswer(reason: string): string {
 async function toggleInclude($: EngineInterface, key: string) {
   await changeThread($, key, t => ({ ...t, included: !t.included, isIncludeSet: true }))
   await suggestTray($)
-  // Switched on with nothing to send: the person wants it sent, so it is
-  // written now, not on close.
-  if ((await read($, threads))[key]?.summary === '') await summarize($, key)
+  // Switched on, it has to send something: a summary that is empty, or older than
+  // the thread (answered while off, with none), is written now, not on close.
+  const t = (await read($, threads))[key]
+  if (t?.included && needsSummary(t)) await summarize($, key)
 }
 
 export const register: Register = on => {

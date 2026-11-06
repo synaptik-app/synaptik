@@ -81,8 +81,10 @@ test('the switch includes the thread, and shows it', async ($, on) => {
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '○ include in review' })))).toBe(true)
   await include($)
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '✓ include in review' })))).toBe(true)
-  // No summary yet: it is written when the pane closes, so nothing is sent.
-  expect(suggested()).not.toContain('💬')
+  // The answer came with no summary: switched on, it is written at once.
+  expect(forks).toHaveLength(2)
+  expect(forks[1]).toContain('chose to include this thread')
+  expect(suggested()).toContain('💬 "1. Cache sessions in Redis"')
 })
 
 test('a block with a thread shows 💬 in the margin, in a review and outside one', async ($, on) => {
@@ -128,6 +130,31 @@ test('an exclude verdict sends nothing, and the switch set by hand stays as set'
   forkAnswer.text = 'Fine.\n<summary>\nKeep it.\n</summary>\n<verdict>exclude</verdict>'
   await send($, 'keep it then')
   expect(suggested()).toContain('    Keep it.')
+})
+
+test('switched on by hand, later answers keep it on and bring a summary, with no verdict asked', async ($, on) => {
+  await openThread($, on)
+  forkAnswer.text = 'It caches.\n<summary>\n</summary>\n<verdict>exclude</verdict>'
+  await send($, 'what does it do?')
+  forkAnswer.text = 'Context: Redis holds the sessions.'
+  await include($)
+  expect(suggested()).toContain('    Context: Redis holds the sessions.')
+  forkAnswer.text = 'A minute.\n<summary>\nContext: Redis holds the sessions, for a minute each.\n</summary>'
+  await send($, 'for how long?')
+  expect(forks.at(-1)).not.toContain('<verdict>')
+  expect(forks.at(-1)).toContain('chose to include this thread')
+  expect(suggested()).toContain('    Context: Redis holds the sessions, for a minute each.')
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '✓ include in review' })))).toBe(true)
+})
+
+test('switched off by hand, a message asks for the answer alone', async ($, on) => {
+  await openThread($, on)
+  forkAnswer.text = 'Use a TTL.\n<summary>\nAdd a TTL.\n</summary>\n<verdict>include</verdict>'
+  await send($, 'and the TTL?')
+  await include($)
+  await send($, 'thanks')
+  expect(forks.at(-1)).not.toContain('<summary>')
+  expect(suggested()).not.toContain('💬')
 })
 
 test('/synaptik off closes the open threads', async ($, on) => {

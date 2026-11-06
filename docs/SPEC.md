@@ -487,7 +487,11 @@ that only explained has an empty summary and `exclude`; switched on anyway, it
 gets a `Context:` section of a sentence or two.
 
 **The verdict is the switch's default**, until the person sets the switch; it never
-overrides them. Included, the summary goes into the compiled prompt in document
+overrides them. Once they set it, no verdict is asked for, since none would change
+it. Switched on by them, each answer brings a summary that always sends something
+(a `Context:` section when nothing is to be done), and switching on writes one at
+once if the last answers came without. Switched off by them, a message asks for the
+answer alone. Included, the summary goes into the compiled prompt in document
 order under its block's quote (§9). The pane shows the summary only while the
 switch is on: what it shows is what goes. Switching on a thread the verdict left
 out shows its summary, or writes one. The mod never decides what matters:

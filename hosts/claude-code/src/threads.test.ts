@@ -61,9 +61,35 @@ test('an answer splits into what the person reads, the summary and the verdict',
   expect(parseAnswer(RAW)).toEqual({ text: 'Use a TTL.', summary: 'Add a 5-minute TTL.', verdict: 'include' })
 })
 
-test('without both parts the answer is all text, with no summary', () => {
+test('without a summary the answer is all text; a summary needs no verdict', () => {
   expect(parseAnswer('Just text.')).toEqual({ text: 'Just text.' })
-  expect(parseAnswer('Text.\n<summary>x</summary>')).toEqual({ text: 'Text.\n<summary>x</summary>' })
+  expect(parseAnswer('Text.\n<summary>x</summary>')).toEqual({ text: 'Text.', summary: 'x' })
+})
+
+test('what a message asks after the answer follows the switch', () => {
+  const ask = (t: Thread) => threadPrompt({ block: 'Use Redis' }, t, 'and?')
+  // Untouched: the summary and a verdict.
+  expect(ask(talked)).toContain('<verdict>include</verdict> or <verdict>exclude</verdict>')
+  // Switched on by the person: the summary, something to send, no verdict.
+  const on = ask({ ...talked, included: true, isIncludeSet: true })
+  expect(on).toContain('<summary>')
+  expect(on).toContain('chose to include this thread')
+  expect(on).not.toContain('<verdict>')
+  // Switched off by them: the answer alone.
+  const off = ask({ ...talked, included: false, isIncludeSet: true })
+  expect(off).not.toContain('<summary>')
+  expect(off).not.toContain('<verdict>')
+  expect(off.trimEnd().endsWith('and?')).toBe(true)
+})
+
+test('an answer with a summary and no verdict leaves the switch as it is', () => {
+  const set = { ...talked, included: true, isIncludeSet: true, pending: 1 }
+  expect(withAnswer(set, 'Sure.\n<summary>\nContext: Redis only.\n</summary>')).toMatchObject({ included: true, summary: 'Context: Redis only.' })
+  expect(withAnswer({ ...talked, pending: 1 }, 'Sure.\n<summary>\nKeep it.\n</summary>').included).toBe(false)
+})
+
+test('a summary written for a thread the person switched on sends something', () => {
+  expect(summaryPrompt({ block: 'Use Redis' }, { ...talked, included: true, isIncludeSet: true, summary: 'Keep it.' })).toContain('chose to include this thread')
 })
 
 test('an empty summary with exclude is a thread with nothing to send', () => {

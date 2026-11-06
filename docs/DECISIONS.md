@@ -1643,6 +1643,13 @@ counted short hid the text, and some wraps hide it whatever the count: an `Input
 collapses when a row is filled exactly by a word and its space (#146). Fixed,
 Claude Code wraps and scrolls it, and `\` then ⏎ is its own new line.
 
+**Revised 2026-11-06: once the person sets the switch, the prompt follows it.**
+Switched on by hand, a later answer's verdict still came back `exclude` with an empty
+summary, and the pane said "nothing to send" under a switch that was on. Now a
+switch set by hand gets no verdict asked for; on, every answer's summary is written
+as one the person chose to send (`INCLUDED_ANYWAY`); off, only the answer is asked
+for, and switching on writes the summary then.
+
 **No summary editor in the pane** (tried and dropped 2026-11-04). A field holding
 the summary needs its height from how its lines wrap beside Claude Code's key
 hint, which can't be measured: too short, it hid the person's text; one-row fields

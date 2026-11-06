@@ -43,6 +43,9 @@ Next, I'll add the rate limiter to the login endpoint and run `npm test` once it
 - **A thread on a table row** (the table): `s`, `d` on the Postgres row; ask "is medium latency a problem for sessions?"
   - The pane shows the header and that row only
   - Whatever the verdict, switching it on puts the summary under `💬 row 2: "Postgres · medium · full"`
+- **A switch set by hand**
+  - In the blockquote thread, switch it on: a `Context:` line comes; ask another question: the switch stays on and the `Context:` is rewritten, never "nothing to send"
+  - In a thread the verdict switched on, switch it off and ask again: the switch stays off, and no summary is written
 - **Sections**
   - In a thread with several kinds of point, each label (`Actions:`, `Decisions:`, `Open questions:`) appears once; several points under one label are `- ` lines
 - **Changing the summary**
