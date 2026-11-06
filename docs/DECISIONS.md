@@ -1050,6 +1050,17 @@ it keeps to "never behind their back". `⏎` on the empty box sends nothing (che
 the plugin directory doesn't list yet: dropping that hook means finding another
 way to do this repair.
 
+#### Revision 2026-11-06 — whole again, without `prompt.change`
+
+The plugin directory flags `prompt.change` (its list of events lacks it), and
+mods will soon be accepted from Verified organizations only, keeping a version
+already live. To get one live, Synaptik drops the hook: the suggestion is whole
+during a review again, so nothing can be taken shortened, and an emptied box gets
+it back at the next keystroke or action rather than at once. First on a
+`directory` branch, then on `main` too (2026-11-07), so one branch serves both.
+The hook and the shortened suggestion come back once the directory lists the
+event (#178).
+
 ---
 
 ### D31 — The navigator: a docked pane that maps the reply
