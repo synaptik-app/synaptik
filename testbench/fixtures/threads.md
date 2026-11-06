@@ -23,19 +23,28 @@ Next, I'll add the rate limiter to the login endpoint and run `npm test` once it
 
 - **A thread that ends in a change** (the Redis paragraph): ask "should the TTL be longer for admins?", then "ok, 30 minutes for admins"
   - The answer says what to do, and doesn't claim to have done it: the thread can't change files
-  - The pane's summary is an instruction to the agent, e.g. "Use a 30-minute TTL for admin sessions", not a recap
+  - The pane's summary is an instruction to the agent, e.g. "Actions: Use a 30-minute TTL for admin sessions.", not a recap
   - The switch turns itself on, and the suggestion has the summary under 💬 and the block's quote
 - **A thread that ends in work to carry out** (the code block): ask "this retries with no delay, can you add a backoff?", then "yes, exponential, starting at 100 ms"
-  - The summary names the work: the file or function to change and what to do, e.g. "Edit retry: add exponential backoff starting at 100 ms"
+  - The summary names the work under `Actions:`: the file or function to change and what to do, e.g. "Edit retry: add exponential backoff starting at 100 ms"
   - The switch turns itself on
 - **A thread that only explains** (the blockquote paragraph): ask "what is a blockquote?"
   - The pane shows no summary, and the switch stays off
   - Nothing is added to the suggestion
-  - Switching it on writes a summary that starts with "Context:", not an instruction
+  - Switching it on writes a `Context:` section of a sentence or two, not an instruction
 - **A thread that settles a choice** (the table): ask "which one for sessions?", then "Redis then, durability isn't needed"
-  - The summary records the decision, with its reason in a few words
+  - The summary records it under `Decisions:`, with its reason in a few words
 - **A thread that leaves a question open** (the last paragraph): ask "should the limiter count per IP or per account?", and don't answer the agent's question back
-  - The summary has the open question for the agent, or the switch stays off if nothing was decided
+  - The summary has it under `Open questions:`, or the switch stays off if nothing was decided
+- **A thread on a code line** (the code block): `s`, ↓ to the `return` line, `d`; ask "why does it recurse?", then "make it a loop instead"
+  - The pane's title and anchor are that line alone, coloured as code
+  - The line's margin shows 💬, the block's ✸; `d` on the block itself opens a different thread
+  - The suggestion has the block quoted, then `💬 line 2: "return fn()..."` with the summary under it
+- **A thread on a table row** (the table): `s`, `d` on the Postgres row; ask "is medium latency a problem for sessions?"
+  - The pane shows the header and that row only
+  - Whatever the verdict, switching it on puts the summary under `💬 row 2: "Postgres · medium · full"`
+- **Sections**
+  - In a thread with several kinds of point, each label (`Actions:`, `Decisions:`, `Open questions:`) appears once; several points under one label are `- ` lines
 - **Changing the summary**
   - In a thread with a summary, ask "drop the last point from the summary": the next answer's summary leaves it out, and the suggestion follows
 - **Several threads**

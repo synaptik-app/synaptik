@@ -52,8 +52,8 @@ export function clear(tray: Tray, i: Part): Tray {
   return withMark(tray, i, undefined)
 }
 
-// The marks on a code block's lines, by line.
-export function lineMarks(marks: Readonly<Record<string, Mark>>, block: number): Record<string, Mark> {
+// What a code block's or table's lines hold (marks, summaries), by line.
+export function lineMarks<T = Mark>(marks: Readonly<Record<string, T>>, block: number): Record<string, T> {
   const prefix = `${block}.`
   return Object.fromEntries(
     Object.entries(marks)
@@ -63,9 +63,10 @@ export function lineMarks(marks: Readonly<Record<string, Mark>>, block: number):
 }
 
 // Backspace on a block: its own mark first; with none, the marks on its lines.
-// Unstages, as clear does: comments' texts stay.
-export function clearBlock(tray: Tray, block: number): Tray {
-  if (tray.marks[block]) return clear(tray, block)
+// Its own included thread counts as its own (src/threads.ts, clearedThreads), so
+// then its lines stay too. Unstages, as clear does: comments' texts stay.
+export function clearBlock(tray: Tray, block: number, hasOwnThread = false): Tray {
+  if (tray.marks[block] || hasOwnThread) return clear(tray, block)
   const prefix = `${block}.`
   return { ...tray, marks: Object.fromEntries(Object.entries(tray.marks).filter(([key]) => !key.startsWith(prefix))) }
 }

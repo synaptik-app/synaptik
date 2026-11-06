@@ -242,10 +242,11 @@ export function tableCells(row: string): string[] {
 
 // A table's data rows, each as its cells joined; undefined for any other block.
 // Claude Code draws the first 200, so the rest can't be stepped to.
+const MAX_TABLE_ROWS = 200
 export function tableRows(text: string): string[] | undefined {
   const lines = text.trim().split('\n')
   if (lines.length < 2 || !TABLE_DELIMITER.test(lines[1]!)) return undefined
-  return lines.slice(2, 202).map(row => tableCells(row).join(' · '))
+  return lines.slice(2, 2 + MAX_TABLE_ROWS).map(row => tableCells(row).join(' · '))
 }
 
 // What a block can be stepped into: a code block's lines or a table's rows.
@@ -254,6 +255,16 @@ export function partsOf(text: string): { kind: 'code' | 'table'; lines: string[]
   if (code) return { kind: 'code', lines: code.lines }
   const rows = tableRows(text)
   return rows ? { kind: 'table', lines: rows } : undefined
+}
+
+// One part as Markdown that draws on its own: a code line in its block's fences,
+// a table row under its table's header. Undefined past the last part.
+export function partSource(text: string, line: number): string | undefined {
+  const code = codeOf(text)
+  if (code) return code.lines[line] === undefined ? undefined : [code.open, code.lines[line], code.close].join('\n')
+  const lines = text.trim().split('\n')
+  if (!tableRows(text) || line >= MAX_TABLE_ROWS || lines[2 + line] === undefined) return undefined
+  return [lines[0]!, lines[1]!, lines[2 + line]!].join('\n')
 }
 
 // How many parts each steppable block has, by block index.

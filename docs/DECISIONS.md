@@ -1623,6 +1623,26 @@ open questions, not a recap, since a thread can't run commands and the main
 conversation has to (`src/prompts.ts`). Settles E6, by a verdict in the same call
 rather than `$.model.classify`.
 
+**Revised 2026-11-05: the summary comes in sections.** A label on every line
+(`Context:` three times over) read as noise. Now each kind of point has one
+label, `Actions:`, `Decisions:`, `Open questions:`, and `Context:` for a thread
+switched on with nothing else to send, kept to a sentence or two. Changes and
+work to carry out share `Actions:`: both are what the agent does next. The summary
+sticks to the thread's discussion but may name other parts of the reply, since a
+row is often weighed against its neighbours.
+
+**Revised 2026-11-06: the summary hangs under the switch, and only while it is
+on.** A `Summary:` heading repeated what the sections' labels say. Under the switch,
+led by `⎿` as a tool's result hangs from its call, what is shown is what goes; the
+summary's state is a note beside the switch.
+
+**Revised 2026-11-06: the thread's field is a fixed 6 rows.** It grew with its text,
+which meant predicting how Claude Code wraps it beside its key hint (measured: by
+word, beside `⏎ send` on one row and ` ⏎ send · \⏎ new line` from two). A row
+counted short hid the text, and some wraps hide it whatever the count: an `Input`
+collapses when a row is filled exactly by a word and its space (#146). Fixed,
+Claude Code wraps and scrolls it, and `\` then ⏎ is its own new line.
+
 **No summary editor in the pane** (tried and dropped 2026-11-04). A field holding
 the summary needs its height from how its lines wrap beside Claude Code's key
 hint, which can't be measured: too short, it hid the person's text; one-row fields
@@ -1634,6 +1654,29 @@ and the prompt box is there for exact wording.
 close from the plugin hands the keyboard to the prompt just the same, so Esc does
 it all); a thread inline under its block (above); one pane switching between
 threads (tabs come free when docked).
+
+### D46 — A thread on a code line or table row
+**Status:** settled · added 2026-11-05 · extends D43, D44 and D45
+
+Stepped into a code block or table, `d` used to toast "discuss works on whole
+blocks for now". It now opens a thread on that part, keyed as its mark is
+(`3.5`). It is the block's thread's sibling, not part of it: a code block can hold
+a thread on line 4 and another on line 12, each with its own summary and switch.
+
+**The fork reads the whole block, and which part.** A line alone loses what it is
+in, so the prompt quotes the block and names the part as the review would
+(`line 4: "…"`). **The pane shows the part alone**, as Markdown that draws on its
+own: a code line in its block's fences (keeping its colours), a row under its
+table's header, drawn whole rather than cut at three rows.
+
+**In the review** the summary nests under the line's reference, as a mark on the
+line does, and its block is quoted first for context (SPEC §9). Clearing follows
+the marks: Backspace on the block takes out its own mark or included thread first,
+then its lines' marks and included threads, so nothing cleared is still sent.
+
+**Considered:** a range of lines (no way to select one yet); a thread on the
+block with the line quoted in the first message (the person would type what
+stepping in already said, and the margin couldn't show where it is).
 
 ---
 

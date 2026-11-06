@@ -5,8 +5,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { FoundElement } from 'claude-code/testing'
 
-import { closed, forkAnswer, forks, fullscreen, log, opened, placement, start, suggested, synaptik, threadPane, turn } from './engine'
-import type { Row } from './engine'
+import { closed, forkAnswer, forks, fullscreen, log, opened, placement, start, suggested, synaptik, threadPane } from './engine'
 
 const F = 'fullscreen'
 const CACHE = 1
@@ -147,25 +146,63 @@ test('switching on a thread with nothing to send writes its summary at once', as
   expect(suggested()).toContain('    Keep in mind that it caches per user.')
 })
 
-test('a \\ then ⏎ in the field is a line break, not a send', async ($, on) => {
+test('the field is a fixed height, whatever is typed', async ($, on) => {
   await openThread($, on)
-  await send($, 'first line\\')
-  expect(forks).toHaveLength(0)
-  const field = await inPane($, async pane => (await pane.find({ type: 'Input' }))!)
-  expect(field.props.value).toBe('first line\n')
-  expect(field.props.rows).toBeGreaterThan(1)
-  await send($, 'first line\nsecond')
-  expect(forks[0]).toContain('Their message:\nfirst line\nsecond')
+  const rows = async () => inPane($, async pane => (await pane.find({ type: 'Input' }))!.props.rows)
+  expect(await rows()).toBe(6)
+  await send($, 'a message long enough to wrap onto a second row, and then onto a third one as well')
+  expect(await rows()).toBe(6)
 })
 
-test("a new reply drops what was typed in the old reply's threads", async ($, on) => {
-  const rows = await start($, on, F)
-  await fullscreen($, F)
+// --- A thread on a code line or table row (fixtures/code.md) -----------------
+
+const TS = 1
+const LINE = `${TS}.1`
+
+test('d on a code line opens its own thread, about that line of the block', async ($, on) => {
+  await start($, on, 'code')
+  await fullscreen($, 'code')
   await review($)
-  await clickAndPress(await fullscreen($, F), CACHE, ['d'])
-  await send($, 'fix the name\\')
-  expect(await inPane($, async pane => (await pane.find({ type: 'Input' }))!.props.value)).toBe('fix the name\n')
-  const row = (role: Row['role'], text: string): Row => ({ role, text, toolUses: [] }) as Row
-  await turn($, rows, [row('user', 'and then?'), row('assistant', 'First new point.\n\nSecond new point.')])
-  expect(await inPane($, async pane => (await pane.find({ type: 'Input' }))?.props.value)).toBeUndefined()
+  await clickAndPress(await fullscreen($, 'code'), TS, ['s', 'down', 'd'])
+  expect(await log($)).toContain(`thread ${LINE} open {"isPlaced":true}`)
+  forkAnswer.text = 'It wraps.\n\n<summary>\nShorten line 2.\n</summary>\n<verdict>include</verdict>'
+  const pane = await threadPane($, LINE)
+  try {
+    // The pane shows the line alone, in its block's fences.
+    expect(await pane.find({ type: 'Markdown', text: /^```ts\n.*step onto this line, and the next\..*\n```$/ })).toBeDefined()
+    await pane.input({ key: String((await pane.find({ type: 'Input' }))!.key), text: 'too long?' })
+  } finally {
+    await pane.unmount()
+  }
+  // The fork reads the whole block and which line.
+  expect(forks[0]).toContain('The thread is about line 2: "step onto this line, and the next."')
+  expect(suggested()).toContain('    💬 line 2: "step onto this line, and the next."\n        Shorten line 2.')
+  // The line's margin has the 💬; the block's has none of its own.
+  await review($)
+  const ui = await fullscreen($, 'code')
+  const clients = await ui.findAll({ type: 'Client' })
+  const ts = clients.find((c: FoundElement) => (c.props.props as { index: number }).index === TS)!.props.props as {
+    glyph?: string
+    lineGlyphs: Record<string, string>
+  }
+  expect(ts.glyph).toBeUndefined()
+  expect(ts.lineGlyphs).toEqual({ '1': '💬' })
+})
+
+test('clearing a code block takes its included line threads out of the review', async ($, on) => {
+  await start($, on, 'code')
+  await fullscreen($, 'code')
+  await review($)
+  await clickAndPress(await fullscreen($, 'code'), TS, ['s', 'down', 'd'])
+  forkAnswer.text = 'It wraps.\n\n<summary>\nShorten line 2.\n</summary>\n<verdict>include</verdict>'
+  const pane = await threadPane($, LINE)
+  try {
+    await pane.input({ key: String((await pane.find({ type: 'Input' }))!.key), text: 'too long?' })
+  } finally {
+    await pane.unmount()
+  }
+  expect(suggested()).toContain('💬 line 2')
+  await review($)
+  await clickAndPress(await fullscreen($, 'code'), TS, ['backspace'])
+  expect(suggested()).not.toContain('💬')
 })

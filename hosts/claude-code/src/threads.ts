@@ -3,7 +3,9 @@
 // block and the thread so far, and its answer brings the thread's summary and a
 // verdict with it (#156). Plain data in, prompts and summaries out.
 
-import { INCLUDED_ANYWAY, SUMMARY_PROMPT, THREAD_PROMPT, THREAD_SO_FAR } from './prompts'
+import { partsOf, partSource } from './blocks'
+import { lineReference } from './compile'
+import { INCLUDED_ANYWAY, PART, SUMMARY_PROMPT, THREAD_PROMPT, THREAD_SO_FAR } from './prompts'
 
 export type ThreadMessage = { role: 'person' | 'agent'; text: string }
 
@@ -27,6 +29,22 @@ export type Thread = {
 
 export const NEW_THREAD: Thread = { messages: [], pending: 0, included: false, isIncludeSet: false, summarizedAt: 0, inputSeq: 0 }
 
+// What a thread is about, by its key: a block ("3"), or a code line or table row
+// in one ("3.5"). The fork reads the whole block and which part; the pane shows
+// the part alone, as Markdown that draws on its own.
+export type Anchor = { block: string; part?: { source: string; text: string; reference: string } }
+
+export function anchorOf(block: string, key: string): Anchor | undefined {
+  const [, line] = key.split('.')
+  if (line === undefined) return { block }
+  const n = Number(line)
+  const parts = partsOf(block)
+  const source = partSource(block, n)
+  const text = parts?.lines[n]
+  if (!parts || source === undefined || text === undefined) return undefined
+  return { block, part: { source, text, reference: lineReference(parts.kind, n, text) } }
+}
+
 const transcript = (messages: readonly ThreadMessage[]) =>
   messages.map(m => `${m.role === 'person' ? 'Person' : 'You'}: ${m.text}`).join('\n\n')
 
@@ -34,15 +52,17 @@ const fill = (template: string, values: Record<string, string>) =>
   template.replace(/\{\{(\w+)\}\}/g, (_, name: string) => values[name] ?? '')
 
 // One message of the thread, as the fork is asked it (src/prompts.ts).
-export function threadPrompt(anchor: string, thread: Thread, message: string): string {
+export function threadPrompt(anchor: Anchor, thread: Thread, message: string): string {
   const so = thread.messages.length > 0 ? fill(THREAD_SO_FAR, { thread: transcript(thread.messages) }) : ''
-  return fill(THREAD_PROMPT, { block: anchor, thread: so, message })
+  return fill(THREAD_PROMPT, { block: anchor.block, part: partOf(anchor), thread: so, message })
 }
+
+const partOf = (anchor: Anchor) => (anchor.part ? fill(PART, { reference: anchor.part.reference }) : '')
 
 // The summary alone: when an answer came without one, or when the person
 // included a thread whose summary was empty.
-export function summaryPrompt(anchor: string, thread: Thread): string {
-  const prompt = fill(SUMMARY_PROMPT, { block: anchor, thread: transcript(thread.messages) })
+export function summaryPrompt(anchor: Anchor, thread: Thread): string {
+  const prompt = fill(SUMMARY_PROMPT, { block: anchor.block, part: partOf(anchor), thread: transcript(thread.messages) })
   return thread.summary === '' ? `${prompt}\n\n${INCLUDED_ANYWAY}` : prompt
 }
 
@@ -89,6 +109,15 @@ export function summaries(threads: Readonly<Record<string, Thread>>): Record<str
   const out: Record<string, string> = {}
   for (const [key, t] of Object.entries(threads)) if (t.included && t.summary?.trim()) out[key] = t.summary.trim()
   return out
+}
+
+// The included threads a clear takes out of the review, as the tray's clear
+// takes marks (src/tray.ts, clearBlock): a line's own; on a block, its own if
+// it has a mark or an included thread, else every one on its lines.
+export function clearedThreads(threads: Readonly<Record<string, Thread>>, hasMark: boolean, index: number | string): string[] {
+  const included = (key: string) => threads[key]?.included === true
+  if (typeof index === 'string' || hasMark || included(String(index))) return included(String(index)) ? [String(index)] : []
+  return Object.keys(threads).filter(key => key.startsWith(`${index}.`) && included(key))
 }
 
 // A block has a thread once a message was sent in it.
