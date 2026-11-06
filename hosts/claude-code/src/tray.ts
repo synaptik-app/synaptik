@@ -63,9 +63,10 @@ export function lineMarks<T = Mark>(marks: Readonly<Record<string, T>>, block: n
 }
 
 // Backspace on a block: its own mark first; with none, the marks on its lines.
-// Unstages, as clear does: comments' texts stay.
-export function clearBlock(tray: Tray, block: number): Tray {
-  if (tray.marks[block]) return clear(tray, block)
+// Its own included thread counts as its own (src/threads.ts, clearedThreads), so
+// then its lines stay too. Unstages, as clear does: comments' texts stay.
+export function clearBlock(tray: Tray, block: number, hasOwnThread = false): Tray {
+  if (tray.marks[block] || hasOwnThread) return clear(tray, block)
   const prefix = `${block}.`
   return { ...tray, marks: Object.fromEntries(Object.entries(tray.marks).filter(([key]) => !key.startsWith(prefix))) }
 }

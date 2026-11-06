@@ -722,7 +722,8 @@ for a row; what follows holds for both. Inside it the selected line has
 the background and the menu right under it, whose 5th action is `↰ step out`. Marks
 on lines show in the margin during a review; outside one, a block with only marked
 lines shows `✸`, and a block's own mark takes that place. Backspace on a block takes
-its own mark, then, pressed again, its lines' marks. The band's hint says `Line 4 of
+its own mark, then, pressed again, its lines' marks. An included thread counts as
+a mark here: the block's own goes out of the review first, then its lines' (D46). The band's hint says `Line 4 of
 18`; no line numbers are drawn. Lines are for the keyboard: a click never selects
 one (a mouse's partial mark belongs to text selection, #91). Fullscreen only.
 

@@ -188,3 +188,21 @@ test('d on a code line opens its own thread, about that line of the block', asyn
   expect(ts.glyph).toBeUndefined()
   expect(ts.lineGlyphs).toEqual({ '1': '💬' })
 })
+
+test('clearing a code block takes its included line threads out of the review', async ($, on) => {
+  await start($, on, 'code')
+  await fullscreen($, 'code')
+  await review($)
+  await clickAndPress(await fullscreen($, 'code'), TS, ['s', 'down', 'd'])
+  forkAnswer.text = 'It wraps.\n\n<summary>\nShorten line 2.\n</summary>\n<verdict>include</verdict>'
+  const pane = await threadPane($, LINE)
+  try {
+    await pane.input({ key: String((await pane.find({ type: 'Input' }))!.key), text: 'too long?' })
+  } finally {
+    await pane.unmount()
+  }
+  expect(suggested()).toContain('💬 line 2')
+  await review($)
+  await clickAndPress(await fullscreen($, 'code'), TS, ['backspace'])
+  expect(suggested()).not.toContain('💬')
+})

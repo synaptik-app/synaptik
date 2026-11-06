@@ -111,6 +111,15 @@ export function summaries(threads: Readonly<Record<string, Thread>>): Record<str
   return out
 }
 
+// The included threads a clear takes out of the review, as the tray's clear
+// takes marks (src/tray.ts, clearBlock): a line's own; on a block, its own if
+// it has a mark or an included thread, else every one on its lines.
+export function clearedThreads(threads: Readonly<Record<string, Thread>>, hasMark: boolean, index: number | string): string[] {
+  const included = (key: string) => threads[key]?.included === true
+  if (typeof index === 'string' || hasMark || included(String(index))) return included(String(index)) ? [String(index)] : []
+  return Object.keys(threads).filter(key => key.startsWith(`${index}.`) && included(key))
+}
+
 // A block has a thread once a message was sent in it.
 export function hasThread(threads: Readonly<Record<string, Thread>>, key: number | string): boolean {
   return (threads[String(key)]?.messages.length ?? 0) > 0

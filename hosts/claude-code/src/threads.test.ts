@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { anchorOf, hasThread, needsSummary, NEW_THREAD, parseAnswer, summaries, summaryPrompt, threadPrompt, withAnswer } from './threads'
+import { anchorOf, clearedThreads, hasThread, needsSummary, NEW_THREAD, parseAnswer, summaries, summaryPrompt, threadPrompt, withAnswer } from './threads'
 import type { Thread } from './threads'
 
 const talked: Thread = {
@@ -120,4 +120,16 @@ test('a thread on a line tells the fork which line, with the whole block', () =>
   expect(prompt).toContain('The thread is about line 2: "const b = 2" of this block')
   expect(summaryPrompt(anchorOf(CODE, '3.1')!, talked)).toContain('The thread is about line 2')
   expect(threadPrompt({ block: CODE }, NEW_THREAD, 'why?')).not.toContain('The thread is about')
+})
+
+test("a clear takes out a line's own thread, or a block's, or else its lines'", () => {
+  const on = { ...talked, included: true }
+  const threads = { '3': on, '3.1': on, '3.2': on, '3.4': talked, '4.1': on }
+  expect(clearedThreads(threads, false, '3.1')).toEqual(['3.1'])
+  // The block's own included thread is its own: its lines stay.
+  expect(clearedThreads(threads, false, 3)).toEqual(['3'])
+  // So is its mark: nothing of its own to take out, its lines stay.
+  expect(clearedThreads({ '3.1': on }, true, 3)).toEqual([])
+  // Nothing of its own: every included thread on its lines.
+  expect(clearedThreads({ '3.1': on, '3.2': on, '3.4': talked, '4.1': on }, false, 3)).toEqual(['3.1', '3.2'])
 })

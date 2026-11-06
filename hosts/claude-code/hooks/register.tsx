@@ -22,7 +22,7 @@ import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
 import { decorate } from '../src/decorate'
-import { anchorOf, hasThread, needsSummary, NEW_THREAD, summaries, summaryPrompt, threadPrompt, withAnswer } from '../src/threads'
+import { anchorOf, clearedThreads, hasThread, needsSummary, NEW_THREAD, summaries, summaryPrompt, threadPrompt, withAnswer } from '../src/threads'
 import type { Anchor, Thread } from '../src/threads'
 import {
   BAND_COMMENT_PREFIX,
@@ -418,10 +418,13 @@ async function applyAction($: EngineInterface, a: Action) {
     await writeTray($, tray => finishTrayComment(draftComment(tray, index, text), index))
   } else if (a.kind === 'unmark') {
     const { index } = a
-    await writeTray($, tray => (typeof index === 'number' ? clearBlock(tray, index) : clearMark(tray, index)))
-    // The thread stays, out of the review (SPEC §5: clearing never destroys).
-    if ((await read($, threads))[String(index)]?.included) {
-      await update($, threads, all => ({ ...all, [String(index)]: { ...all[String(index)]!, included: false, isIncludeSet: true } }))
+    const all = await read($, threads)
+    const cleared = clearedThreads(all, (await read($, marks))[index] !== undefined, index)
+    const hasOwnThread = cleared.includes(String(index))
+    await writeTray($, tray => (typeof index === 'number' ? clearBlock(tray, index, hasOwnThread) : clearMark(tray, index)))
+    // The threads stay, out of the review (SPEC §5: clearing never destroys).
+    if (cleared.length > 0) {
+      await update($, threads, now => ({ ...now, ...Object.fromEntries(cleared.map(key => [key, { ...now[key]!, included: false, isIncludeSet: true }])) }))
     }
   } else {
     const { index } = a
