@@ -351,19 +351,17 @@ suggestion showing sends nothing (checked 2026-10-28); `ctrl+c` clears it.
   until the suggestion is taken; a leading space to avoid that looked worse.
 - **Once taken, the feedback's glyphs are coloured** in the box — ✓ green, ✗
   red, ✎ in the suggestion colour — as prompt decorations, which never change the
-  draft. From the first keystroke only: taking the suggestion is a
-  `prompt.change`, which carries no decorations, and Synaptik never writes the
-  box to add them (it writes the box only to expand a shortened suggestion the
-  person took, below). A line not led by a glyph, and any prompt of the person's own,
+  draft. From the first keystroke only: taking the suggestion carries no
+  decorations, and Synaptik never writes the box to add them. A line not led by a glyph, and any prompt of the person's own,
   is left alone.
 - **A suggestion cannot be withdrawn**: there is no call for it, a blank one
   cannot show, and writing to the box does not dismiss it. When the last mark is
   cleared, the mod proposes a harmless placeholder instead — currently `Give me a
   sec to read through this.` (wording provisional).
-- **Shortened during a fullscreen review**: the first 3 lines, then `… (+9
-  lines)`, so the box doesn't grow with every mark. Ending the review with `q`
-  brings the full text back. Esc raises nothing, so the short text can stay after
-  it; taking it (`→`/`Tab`) puts the full text in the box.
+- **Whole during a fullscreen review too**, so the box grows with the review.
+  A shortened one could outlive the review (Esc raises nothing) and be taken
+  with most of it missing; repairing that needs `prompt.change`, which the
+  plugin directory doesn't list (D29, revised 2026-11-06).
 - **The mod never sends.** Taking the suggestion and pressing `⏎` is the only
   way the compiled prompt goes (D30). There is no send key.
 
@@ -708,8 +706,9 @@ Synaptik's controls does, after a short grace (300 ms) in which a click into a
 block — which also takes the focus from the band — keeps it going.
 
 **The suggestion** is proposed after every action, and again whenever the prompt
-box becomes empty (`prompt.edit`, `prompt.change`): it cannot show while the box
-holds text.
+box is emptied by typing (`prompt.edit`): it cannot show while the box holds
+text. Emptied otherwise (a clear, an undo, a recalled entry), it comes back with
+the next action.
 
 **Revealing the reply** as the selection moves works as for the pane (below):
 entering the first or last third of the blocks scrolls the reply's top or end
@@ -1003,7 +1002,7 @@ importing from `./src/` stays inside it. Keep it that way — imports *above* th
 plugin root may not resolve, which is the reason `src/` lives under the host
 rather than at the top level.
 
-Requires Claude Code **v2.1.301+**, in the terminal (D40): the fullscreen review watches the prompt box with `prompt.change` (2.1.300), and multi-line comments use `Input`'s `rows` (2.1.301, #16). `Raster` and `Image`
+Requires Claude Code **v2.1.301+**, in the terminal (D40): the fullscreen review watches the prompt box with `prompt.edit`, and multi-line comments use `Input`'s `rows` (2.1.301, #16). `Raster` and `Image`
 are terminal-only and unused; the mod draws with `Box`, `Text`, `Button`,
 `Input` and `Markdown`.
 

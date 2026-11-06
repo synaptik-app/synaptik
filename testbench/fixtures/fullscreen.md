@@ -109,7 +109,6 @@ x()
   - Typing in the prompt ends the review: the reply is plain again, and its text can be selected
   - Esc does not end the review (known limit: a mod never sees it, #23) — q does
 - **The prompt and the band**
-  - The suggestion in the prompt box follows every mark, and comes back when the prompt box is emptied
-  - During a review a long suggestion shows 3 lines and "… (+N lines)"; q brings the full text back
-  - Esc during a review, then Tab on the short suggestion: the box holds the full text, with no "… (+N lines)" line
+  - The suggestion in the prompt box follows every mark, and comes back when the prompt box is emptied by typing
+  - During a review the suggestion is the whole review, never shortened: Esc, then Tab, puts all of it in the box
   - The band: header "Synaptik"; the staged line counts ✓ ✗ ✎ and, outside a review only, says "tab, then ⏎ to send", "⏎ sends your feedback", or in yellow "⏎ sends what you typed"
