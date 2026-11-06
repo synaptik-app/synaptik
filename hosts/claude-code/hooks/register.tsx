@@ -654,9 +654,10 @@ function noAnswer(reason: string): string {
 async function toggleInclude($: EngineInterface, key: string) {
   await changeThread($, key, t => ({ ...t, included: !t.included, isIncludeSet: true }))
   await suggestTray($)
-  // Switched on with nothing to send: the person wants it sent, so it is
-  // written now, not on close.
-  if ((await read($, threads))[key]?.summary === '') await summarize($, key)
+  // Switched on, it has to send something: a summary that is empty, or older than
+  // the thread (answered while off, with none), is written now, not on close.
+  const t = (await read($, threads))[key]
+  if (t?.included && needsSummary(t)) await summarize($, key)
 }
 
 export const register: Register = on => {

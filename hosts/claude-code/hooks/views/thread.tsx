@@ -48,12 +48,15 @@ export function ThreadView(
   const t = m.thread
   const isStale = t.summary !== undefined && t.summarizedAt < t.messages.length
   // The summary's state, beside the switch, only when it has one.
+  // Off, there is nothing to say: the summary isn't shown, or written.
   const note = m.isSummarizing
     ? 'writing…'
-    : t.pending > 0 && t.summary
-      ? 'updated with the answer'
-      : isStale
-        ? 'rewritten when you close this'
+    : !t.included
+      ? undefined
+      : t.pending > 0 && t.summary
+        ? 'updated with the answer'
+        : isStale
+          ? 'rewritten when you close this'
         : t.included && t.summary === undefined
           ? 'summarised when you close this'
           : t.included && t.summary === ''

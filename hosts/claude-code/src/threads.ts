@@ -5,7 +5,7 @@
 
 import { partsOf, partSource } from './blocks'
 import { lineReference } from './compile'
-import { INCLUDED_ANYWAY, PART, SUMMARY_PROMPT, THREAD_PROMPT, THREAD_SO_FAR } from './prompts'
+import { INCLUDED_ANYWAY, PART, SUMMARY_PROMPT, THREAD_PROMPT, THREAD_SO_FAR, WITH_NOTHING, WITH_SUMMARY, WITH_VERDICT } from './prompts'
 
 export type ThreadMessage = { role: 'person' | 'agent'; text: string }
 
@@ -52,18 +52,22 @@ const fill = (template: string, values: Record<string, string>) =>
   template.replace(/\{\{(\w+)\}\}/g, (_, name: string) => values[name] ?? '')
 
 // One message of the thread, as the fork is asked it (src/prompts.ts).
+// What it asks after the answer follows the switch: once the person set it, no
+// verdict, since none would change it; set off, no summary either, written when
+// they switch it on.
 export function threadPrompt(anchor: Anchor, thread: Thread, message: string): string {
   const so = thread.messages.length > 0 ? fill(THREAD_SO_FAR, { thread: transcript(thread.messages) }) : ''
-  return fill(THREAD_PROMPT, { block: anchor.block, part: partOf(anchor), thread: so, message })
+  const after = !thread.isIncludeSet ? WITH_VERDICT : thread.included ? WITH_SUMMARY.replace('{{included}}', INCLUDED_ANYWAY) : WITH_NOTHING
+  return fill(THREAD_PROMPT, { block: anchor.block, part: partOf(anchor), thread: so, message, after })
 }
 
 const partOf = (anchor: Anchor) => (anchor.part ? fill(PART, { reference: anchor.part.reference }) : '')
 
 // The summary alone: when an answer came without one, or when the person
-// included a thread whose summary was empty.
+// switched a thread on, which then has to send something.
 export function summaryPrompt(anchor: Anchor, thread: Thread): string {
   const prompt = fill(SUMMARY_PROMPT, { block: anchor.block, part: partOf(anchor), thread: transcript(thread.messages) })
-  return thread.summary === '' ? `${prompt}\n\n${INCLUDED_ANYWAY}` : prompt
+  return thread.summary === '' || (thread.isIncludeSet && thread.included) ? `${prompt}\n\n${INCLUDED_ANYWAY}` : prompt
 }
 
 export type Answer = { text: string; summary?: string; verdict?: 'include' | 'exclude' }
@@ -71,14 +75,15 @@ export type Answer = { text: string; summary?: string; verdict?: 'include' | 'ex
 const SUMMARY = /<summary>([\s\S]*?)<\/summary>/
 const VERDICT = /<verdict>\s*(include|exclude)\s*<\/verdict>/
 
-// An answer as the fork wrote it: what the person reads, and the summary and
-// verdict after it. Without both parts the answer is all text, no summary.
+// An answer as the fork wrote it: what the person reads, and the summary, and
+// the verdict when one was asked for, after it. Without a summary the answer is
+// all text.
 export function parseAnswer(raw: string): Answer {
   const summary = raw.match(SUMMARY)
   const verdict = raw.match(VERDICT)
-  if (!summary || !verdict) return { text: raw.trim() }
-  const at = Math.min(summary.index!, verdict.index!)
-  return { text: raw.slice(0, at).trim(), summary: summary[1]!.trim(), verdict: verdict[1] as 'include' | 'exclude' }
+  if (!summary) return { text: raw.trim() }
+  const at = Math.min(summary.index!, verdict?.index ?? Infinity)
+  return { text: raw.slice(0, at).trim(), summary: summary[1]!.trim(), ...(verdict ? { verdict: verdict[1] as 'include' | 'exclude' } : {}) }
 }
 
 // The thread with an answer added: its summary when it carried one, and the
@@ -93,7 +98,7 @@ export function withAnswer(thread: Thread, raw: string): Thread {
     pending: thread.pending - 1,
     summary: a.summary,
     summarizedAt: messages.length,
-    included: thread.isIncludeSet ? thread.included : a.verdict === 'include',
+    included: thread.isIncludeSet || a.verdict === undefined ? thread.included : a.verdict === 'include',
   }
 }
 

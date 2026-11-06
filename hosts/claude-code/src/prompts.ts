@@ -2,7 +2,8 @@
 // the logic so it reads and changes like a document. The mod loader takes only
 // code files, so it lives here rather than in a .md file.
 //
-// Placeholders, filled by src/threads.ts: {{block}}, {{part}}, {{thread}}, {{message}}.
+// Placeholders, filled by src/threads.ts: {{block}}, {{part}}, {{thread}},
+// {{message}}, {{after}}.
 
 // What the summary is for, and what goes in it. Shared by the thread prompt and
 // the fallback that asks for the summary alone.
@@ -10,6 +11,7 @@ const SUMMARY_GUIDANCE = `The summary is for the person's next prompt to you in 
 Actions: what to do, add, drop or redo, and work to carry out: commands to run, files to edit or create, tests to run. Each starts with a verb and is specific enough to act on without this thread, with the exact command or path when the thread settled one (e.g. "Run npm test -- greet", "Edit src/greet.ts: …").
 Decisions: what was settled that isn't itself something to do, with the reason in a few words if it isn't obvious.
 Open questions: only one the thread left unresolved that you need answered.
+The main conversation never sees this thread: the summary is all it gets. Make it stand on its own: name what you mean, with the specifics the thread settled, and never point at the thread or at what was said in it ("the equivalents", "as discussed", "the version above"). It is rewritten after every answer, but read once: write it as the whole thread at once, not as it went ("now", "then", "also", "and later").
 Write each section's label once, with its colon. A section with one point keeps it on the label's line ("Decisions: Keep Redis; durability isn't needed."); with several, the label stands alone and each point follows on a line of its own starting with "- ". Say each point once: a decision that is a change goes under Actions, with its reason after it. Stick to what the thread discussed, though it may refer to other parts of your reply. Leave out what the thread only explained or confirmed. No recap of the conversation, no mention that a thread happened, no preamble. Keep it short: one line per point, each as brief as it can be and still be acted on. If nothing in the thread changes what you should do, write nothing.`
 
 const VERDICT_GUIDANCE = `The verdict: include when the summary holds a change, work to carry out, or a decision the main conversation doesn't have yet. Exclude when the thread only explained, confirmed or explored, and the summary is empty.`
@@ -23,7 +25,12 @@ The block:
 """
 {{part}}
 {{thread}}Their message:
-{{message}}
+{{message}}{{after}}`
+
+// What follows the answer, by the switch (SPEC §8): untouched, the summary and a
+// verdict that sets it; switched on by the person, the summary alone, something to
+// send whatever the thread holds; switched off by them, nothing (WITH_NOTHING).
+export const WITH_VERDICT = `
 
 After your answer, add the two parts below, exactly in this form. The person doesn't see them as part of your answer.
 
@@ -35,6 +42,20 @@ After your answer, add the two parts below, exactly in this form. The person doe
 ${SUMMARY_GUIDANCE}
 
 ${VERDICT_GUIDANCE}`
+
+export const WITH_SUMMARY = `
+
+After your answer, add the summary below, exactly in this form. The person doesn't see it as part of your answer.
+
+<summary>
+...
+</summary>
+
+${SUMMARY_GUIDANCE}
+
+{{included}}`
+
+export const WITH_NOTHING = ''
 
 // When the thread is about one code line or table row of the block, after it.
 export const PART = `The thread is about {{reference}} of this block, not the whole of it.
@@ -66,4 +87,4 @@ Reply with the summary alone.`
 
 // Added to SUMMARY_PROMPT when the person switched a thread on that its verdict
 // left out: they want something from it sent.
-export const INCLUDED_ANYWAY = `The person chose to include this thread in their review, so write something even if it holds no change: a Context section, with what from the thread you should keep in mind when you act on their review. Keep it simple and short, from what the thread discussed: a sentence or two. Use Actions instead only if the thread asked for a change.`
+export const INCLUDED_ANYWAY = `The person chose to include this thread in their review, so write something even if it holds no change: a Context section, in the person's voice, saying what they looked into and what they took from it, so that the main conversation, which never saw the thread, knows it. Not an instruction to keep things as they are, and not a reference to the thread's content without its substance: "Context: I asked how greet would look in Java, C# and C++; just curious, no change." Keep it simple and short: a sentence or two. Use Actions instead only if the thread asked for a change.`
