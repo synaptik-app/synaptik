@@ -2,8 +2,9 @@
 // coloured, as prompt decorations — Claude Code paints them; the draft is not
 // changed. Plain data: the box's text in, the runs to paint out.
 //
-// Only from the first keystroke: taking the suggestion is a `prompt.change`,
-// which cannot carry decorations, and Synaptik never writes the box to add them.
+// Only from the first keystroke: taking the suggestion is no edit (it raises
+// no `prompt.edit`, where decorations are added), and Synaptik never writes the
+// box to add them.
 
 export type Paint = { start: number; end: number; color: 'success' | 'error' | 'suggestion'; bold: true }
 
