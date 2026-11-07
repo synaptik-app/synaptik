@@ -1,6 +1,6 @@
 ## Threads test
 
-Discussing a block in a thread (`d`): the pane, its field, several threads at once, and threads on a code line or table row. What the summaries say is the summaries test. Fullscreen (`/tui fullscreen`), at least 144 columns.
+Discussing a block in a thread (`d`): the pane, its field, several threads at once, and threads on a code line or table row. What the summaries say is the summaries test. Fullscreen (`/tui fullscreen`), at least 144 columns. A thread takes the keyboard, and the review lets go: if a click on a block doesn't select it afterwards, click the band's "click here to review the reply" first.
 
 For the session store, use Redis with a 5-minute TTL on every entry, keyed by user id.
 
@@ -25,7 +25,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 
 **One thread**
 
-1. **Do:** click the Redis paragraph, press `d`
+1. **Do:** click the band's "click here to review the reply", then click the Redis paragraph, press `d`
    - **Expect:** a pane opens beside the transcript, titled `💬 "For the session store…"`, with the paragraph dim at its top
    - **Expect:** the keyboard is in the pane's field, and the review let go: the band no longer says "Block N of M"
 2. **Do:** type `why Redis?`, press `⏎`
@@ -36,7 +36,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
    - **Expect:** `↓` moves to the include switch, `↑` back to the field
 5. **Do:** press `Esc`
    - **Expect:** the pane closes, and the paragraph has 💬 in its margin
-6. **Do:** click a block
+6. **Do:** click the band's "click here to review the reply"
    - **Expect:** the review resumes: the band says "Block N of M" again
 7. **Do:** click the Redis paragraph, press `d`
    - **Expect:** the thread opens again with its messages

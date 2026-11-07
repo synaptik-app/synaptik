@@ -22,7 +22,7 @@ A table with a long cell, which may wrap:
 
 Each step says what to **do**, then what to **expect**. Mark each expectation: ✓ if you saw it, ✗ with a comment if not. Marks on the reply above are part of the test, not results.
 
-1. **Do:** click the first table
+1. **Do:** click the band's "click here to review the reply", then click the first table
    - **Expect:** its menu has a fifth action, `↳ step in`
 2. **Do:** press `s`
    - **Expect:** the first data row is selected, not the header; only that row has the background

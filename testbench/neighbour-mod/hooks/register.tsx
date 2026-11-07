@@ -2,7 +2,8 @@
 // shares every surface Synaptik uses, so anything that breaks points at
 // Synaptik. It always calls next(e) and never takes what is not its own.
 //
-//   band        a line of its own plus a button (n), composed with next(e)
+//   band        a line of its own plus two buttons, composed with next(e):
+//               ping (n), and clash (a), on Synaptik's accept key
 //   reply       the reply as drawn beneath it, plus a dim footer line
 //   suggestion  /neighbour suggest proposes one
 //
@@ -59,6 +60,9 @@ export const register: Register = on => {
         <Box flexDirection="row">
           <Text dimColor>neighbour · band </Text>
           <Button key="ping" hotkey="n" plain dimColor label="ping" onPress={() => $.ui.toast('neighbour: ping')} />
+          {/* The same hotkey as Synaptik's accept, to see which mod a press reaches. */}
+          <Text dimColor> · </Text>
+          <Button key="clash" hotkey="a" plain dimColor label="clash" onPress={() => $.ui.toast('neighbour: clash (a)')} />
         </Box>
         {beneath}
       </Box>

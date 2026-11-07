@@ -1296,10 +1296,10 @@ export const register: Register = on => {
   // --- The band: read-only. Says what you can do now, never names a component.
   //
   // The band is shared by every mod: a hook that answers without next(e) hides
-  // every mod beneath it. Outside review, Synaptik draws whatever the chain
-  // beneath returns and adds its lines below it, last, just above the prompt.
-  // While the navigator holds the keyboard the band is the key legend for that
-  // mode, and Synaptik's stands alone (issue #12).
+  // every mod beneath it. Synaptik draws whatever the chain beneath returns and
+  // adds its lines below it, last, just above the prompt — during a review too,
+  // so another mod's buttons stay in the band's ring (#171): `ctrl+x tab` is the
+  // band's, not Synaptik's.
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (!(await read($, isOn)) || e.props.hasSurvey || e.props.isWorking) return next(e)
@@ -1347,7 +1347,7 @@ export const register: Register = on => {
     // else (what to say then is an open decision; for now, the warning).
     const isTaken = boxText !== '' && boxText === compiled.trim()
     const isTyping = boxText !== '' && !isTaken
-    const beneath = reviewing || holder === 'band' ? null : await next(e)
+    const beneath = await next(e)
     bandRequestId = e.requestId
     // Fullscreen: the hint line is a Client, outside a review cycling between the
     // two ways in; a click on it starts the review and hands it the raw keys, so
@@ -1399,6 +1399,7 @@ export const register: Register = on => {
       band,
       {
         generation: bandGeneration,
+        hasHotkeys: holder === 'band',
         ...(open ? { comment: { key: `${BAND_COMMENT_PREFIX}${bandCommentSeq}`, text: open.text } } : {}),
       },
       {

@@ -20,7 +20,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 
 1. **Do:** while the agent is still writing (during the pause), look at the band and click the reply
    - **Expect:** the band offers no review, and the reply stays Claude Code's own: no selection, no menu
-2. **Do:** once it's done, click "Part one, a paragraph…", then press `↓` down to "Part two, another bullet"
+2. **Do:** once it's done, click the band's "click here to review the reply", then click "Part one, a paragraph…", then press `↓` down to "Part two, another bullet"
    - **Expect:** `↓` crosses the tool call, and the band's "Block N of M" counts the blocks of both parts
 3. **Do:** press `Home`, then `End`
    - **Expect:** `Home` goes to part one's first block, `End` to the reply's last, across the tool call
