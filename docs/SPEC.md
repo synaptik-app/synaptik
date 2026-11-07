@@ -464,7 +464,8 @@ flight at a time; the field says it is waiting.
 
 **The review lets go** when a thread takes the keyboard and when it closes: Claude
 Code hands the keyboard to the prompt then, and Synaptik can't give it back (#146).
-A click on a block resumes the review.
+A click on a block doesn't bring it back: outside a review the reply's blocks take
+no click. `ctrl+x tab` or a click on the band's hint starts it again.
 
 **Narrow terminals:** below 144 columns a pane is placed only when the person
 opened it. `d` from the band (`ctrl+x tab`) counts; a click or key in the reply
