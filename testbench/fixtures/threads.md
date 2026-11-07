@@ -1,6 +1,6 @@
 ## Threads test
 
-Discussing a block in a thread (`d`): the pane, its field, several threads at once, and threads on a code line or table row. What the summaries say is the summaries test. Fullscreen (`/tui fullscreen`), at least 144 columns. A thread takes the keyboard, and the review lets go: if a click on a block doesn't select it afterwards, click the band's "click here to review the reply" first.
+Discussing a block in a thread (`d`): the pane, its field, several threads at once, and threads on a code line or table row. What the summaries say is the summaries test. Fullscreen (`/tui fullscreen`), at least 144 columns. A thread takes the keyboard, and the review lets go; `Esc` on the pane gives the keyboard to the prompt box. To click a block afterwards, click the band's "click here to review the reply" first.
 
 For the session store, use Redis with a 5-minute TTL on every entry, keyed by user id.
 
