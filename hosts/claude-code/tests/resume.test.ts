@@ -6,7 +6,7 @@ import { expect, mock, test } from 'claude-code/testing'
 
 import { fullscreen, log, session, start, suggested, synaptik, transcriptOf } from './engine'
 
-const F = 'fullscreen'
+const F = 'review'
 
 const end = ($: Parameters<typeof start>[0], reason: 'resume' | 'clear') =>
   $.session.end({ reason, sessionId: 'session-1', resume: { id: 'session-1' } } as never)

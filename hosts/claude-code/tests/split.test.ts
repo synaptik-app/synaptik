@@ -1,18 +1,17 @@
-// The split fixture's checklist (testbench/fixtures/split.md), as tests. Its
-// reply comes in three pieces around two tool calls, as a real run leaves it.
+// The split fixture (testbench/fixtures/split.md), as tests. Its
+// reply comes in two pieces around a tool call, as a real run leaves it.
 
 import { expect, test } from 'claude-code/testing'
 
-import { fullscreen, check, pane, position, select, start, suggested, walk } from './engine'
+import { fullscreen, pane, position, select, start, suggested, walk } from './engine'
 
 const F = 'split'
 
 for (const [part, match] of [
   ['Part one', /^Part one, a paragraph/],
   ['Part two', /^Part two, a paragraph/],
-  ['Part three', /^Part three, a paragraph/],
 ] as const) {
-  test(check(F, `${part} can be selected and marked`), async ($, on) => {
+  test(`${part} can be selected and marked`, async ($, on) => {
     await start($, on, F)
     const ui = await pane($, 'inline')
     await select($, ui, match)
@@ -21,7 +20,7 @@ for (const [part, match] of [
   })
 }
 
-test(check(F, 'Block N of M counts all three parts'), async ($, on) => {
+test('Block N of M counts both parts', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   const { of } = await position(ui)
@@ -29,23 +28,22 @@ test(check(F, 'Block N of M counts all three parts'), async ($, on) => {
   expect(blocks.length).toBe(of)
   expect(blocks.some(t => t.startsWith('Part one'))).toBe(true)
   expect(blocks.some(t => t.startsWith('Part two'))).toBe(true)
-  expect(blocks.some(t => t.startsWith('Part three'))).toBe(true)
 })
 
-test(check(F, 'Marks in different parts all reach the suggestion'), async ($, on) => {
+test('Marks in different parts all reach the suggestion', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   // Marked last-to-first; the suggestion must still read first-to-last.
-  await select($, ui, /^Part three, a paragraph/)
+  await select($, ui, /^Part two, a paragraph/)
   await ui.press({ key: 'verb-accept' })
   await select($, ui, /^Part one, a paragraph/)
   await ui.press({ key: 'verb-reject' })
   const lines = suggested().split('\n')
   expect(lines[0]).toMatch(/^✗ "Part one/)
-  expect(lines[1]).toMatch(/^✓ "Part three/)
+  expect(lines[1]).toMatch(/^✓ "Part two/)
 })
 
-test(check(F, 'Nothing can be marked while the tool calls run'), async ($, on) => {
+test('Nothing can be marked while the tool call runs', async ($, on) => {
   await start($, on, F)
   await $.turn.start({ text: 'run split', turnId: 'turn-2' })
   const ui = await pane($, 'inline')
@@ -53,7 +51,7 @@ test(check(F, 'Nothing can be marked while the tool calls run'), async ($, on) =
   expect(await ui.find({ type: 'Text', text: /Block \d+ of \d+/ })).toBeUndefined()
 })
 
-test(check(F, 'After a click on a block, ↑/↓ and Home/End cross the tool calls'), async ($, on) => {
+test('After a click on a block, ↑/↓ and Home/End cross the tool call', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await $.ui.focus({ component: 'AbovePrompt', requestId: 'band', element: 'verb-accept', origin: { kind: 'person' } })
@@ -66,8 +64,8 @@ test(check(F, 'After a click on a block, ↑/↓ and Home/End cross the tool cal
   expect(suggested()).toContain('✓ "Part two, a paragraph')
   await ui.key({ key: 'end', in: into })
   await ui.key({ key: 'x', in: into })
-  expect(suggested()).toContain('✗ "Nothing can be marked')
+  expect(suggested()).toContain('✗ "When you\'re done: click the first')
   await ui.key({ key: 'home', in: into })
   await ui.key({ key: 'x', in: into })
-  expect(suggested().split('\n')[0]).toMatch(/^✗ "Part one, a paragraph/)
+  expect(suggested().split('\n')[0]).toMatch(/^✗ "A reply split around a real tool/)
 })

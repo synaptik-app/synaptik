@@ -1,14 +1,14 @@
-// The long fixture's checklist (testbench/fixtures/long.md), as tests.
+// A reply taller than the screen (testbench/fixtures/long.md), as tests.
 // Manual only: the transcript's scrolling
 // (top/end reveals, the middle third) — they need a real screen.
 
 import { expect, test } from 'claude-code/testing'
 
-import { arrow, check, pane, position, select, start, suggested, walk } from './engine'
+import { arrow, pane, position, select, start, suggested, walk } from './engine'
 
 const F = 'long'
 
-test(check(F, '↑/↓ reach every block'), async ($, on) => {
+test('↑/↓ reach every block', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   const { of } = await position(ui)
@@ -18,7 +18,7 @@ test(check(F, '↑/↓ reach every block'), async ($, on) => {
   expect(await position(ui)).toEqual({ at: of, of })
 })
 
-test(check(F, 'Block N of M counts every block'), async ($, on) => {
+test('Block N of M counts every block', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   const { of } = await position(ui)
@@ -27,14 +27,14 @@ test(check(F, 'Block N of M counts every block'), async ($, on) => {
   expect(blocks.some(t => t.trimStart().startsWith('#'))).toBe(false)
 })
 
-test(check(F, 'Review starts on the last block'), async ($, on) => {
+test('Review starts on the last block', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   const { at, of } = await position(ui)
   expect(at).toBe(of)
 })
 
-test(check(F, 'Marks spread across sections all reach the suggestion'), async ($, on) => {
+test('Marks spread across sections all reach the suggestion', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   await select($, ui, /^8\. Remove the old columns/)
@@ -46,7 +46,7 @@ test(check(F, 'Marks spread across sections all reach the suggestion'), async ($
   expect(lines[1]).toMatch(/^✓ "8\. Remove the old columns/)
 })
 
-test(check(F, 'The pane shows the selected block in full'), async ($, on) => {
+test('The pane shows the selected block in full', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   await select($, ui, /^- Log every cache miss/)
@@ -57,7 +57,7 @@ test(check(F, 'The pane shows the selected block in full'), async ($, on) => {
   expect(await ui.find({ type: 'Button', key: 'verb-accept' })).toBeDefined()
 })
 
-test(check(F, 'The tall paragraph in section two is trimmed'), async ($, on) => {
+test('The tall paragraph in section two is trimmed', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline', true, 9) // a short pane: 3 rows of text
   await select($, ui, /^A much longer paragraph/)

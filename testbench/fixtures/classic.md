@@ -30,29 +30,25 @@ function greet(name: string): string {
 
 A closing paragraph after a horizontal rule.
 
-### What to check
+### Steps
 
-- **The reply**
-  - Mod on and off look the same apart from marks and the selection — compare with `/synaptik off` and `/synaptik on`
-  - Numbered list keeps its numbers 1. 2. 3.
-  - Nested bullets sit under their parent
-  - The table draws as a table
-  - The code block keeps its styling
-- **Opening the navigator**
-  - The band says "ctrl+x tab to review the reply"; ctrl+x tab puts the keyboard in the navigator
-  - `/synaptik` opens the navigator too
-  - Below about 144 columns the navigator waits after a reply, and the band offers "⏎ to review the reply"
-- **Moving between blocks**
-  - The heading is skipped by ↑/↓ — it is not a block
-  - The selected block shows the selection background, and only while the navigator has focus
-  - The navigator shows the selected block, and the band says "Block N of M · ↑↓ blocks · tab/⇧tab actions · ⏎ apply · esc done"
-  - Selecting the table shows it whole in the pane, and a neighbouring table reads as "table: Option · Latency · Cost"
-- **Marking**
-  - Tab / ⇧Tab walk the actions and ⏎ applies the one chosen; a / x / c act directly
-  - Marking a block puts its glyph before it, and unmarked blocks do not move
-  - c opens a comment field in the pane, with "ok · \⏎ new line": backslash then ⏎ starts a new line, up to 3 rows show, ⏎ stages it
-- **The prompt**
-  - The suggestion in the prompt box follows every mark; Tab takes it and ⏎ sends it
-  - The band counts ✓ ✗ ✎ and says "tab, then ⏎ to send", "⏎ sends your feedback", or in yellow "⏎ sends what you typed"
-- **Ending a review**
-  - Esc ends the review and gives the keyboard back; q does too, unadvertised
+The basics of the classic renderer, nothing more. Each step says what to **do**, then what to **expect**. Mark each expectation: ✓ if you saw it, ✗ with a comment if not. Marks on the reply above are part of the test, not results.
+
+1. **Do:** run `/synaptik off`, look at the reply, then `/synaptik on`
+   - **Expect:** the reply looks the same both ways: list numbers, nesting, the table, the code's colours
+2. **Do:** press `ctrl+x tab`
+   - **Expect:** the navigator opens above the band, the keyboard in it, showing the reply's last block
+   - **Expect:** the band says "Block N of M · ↑↓ blocks · tab/⇧tab actions · ⏎ apply · esc done"
+3. **Do:** press `↑` up through the reply
+   - **Expect:** the selected block has the background in the reply, and the navigator shows it; the heading is skipped
+   - **Expect:** on the table, the navigator shows it whole
+4. **Do:** press `a` on a block, `x` on another; on a third, `Tab` to "comment", `⏎`, type `why?`, `⏎`
+   - **Expect:** each glyph before its block; no other block moves
+   - **Expect:** the suggestion in the prompt box follows every mark
+5. **Do:** press `Esc`
+   - **Expect:** the navigator gives the keyboard back to the prompt box
+   - **Expect:** the band counts the marks and says "tab, then ⏎ to send"
+6. **Do:** run `/synaptik`
+   - **Expect:** the navigator opens again
+
+When you're done: press `Esc`, `Tab` to take the suggestion with your marks on these steps, then `⏎`. The test session answers with a table of your results.
