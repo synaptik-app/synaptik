@@ -31,14 +31,14 @@ test('after review, a marked reply keeps its glyphs (D35)', async ($, on) => {
   expect(await drawn.find({ type: 'Text', text: '✓' })).toBeDefined()
 })
 
-test('in a reply split around tool calls, only the marked piece is redrawn', async ($, on) => {
+test('in a reply split around a tool call, only the marked piece is redrawn', async ($, on) => {
   await start($, on, 'split')
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' }) // the last block, in the last piece
   await ui.unmount()
   await pane($, 'inline', false)
   expect(await isOwn(await reply($, 'split', 0))).toBe(true)
-  expect(await isOwn(await reply($, 'split', 2))).toBe(false)
+  expect(await isOwn(await reply($, 'split', 1))).toBe(false)
 })
 
 test('a reply other than the adopted one is left alone', async ($, on) => {

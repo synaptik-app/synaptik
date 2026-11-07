@@ -1,6 +1,6 @@
 ## Code test
 
-The awkward cases for stepping into code. Run it in fullscreen.
+Stepping into code blocks: the colours, the margins, marks on lines, and how they compile. Fullscreen (`/tui fullscreen`).
 
 ```ts
 /* A multi-line comment:
@@ -46,46 +46,54 @@ plain text
 in a fence
 ```
 
-A table to step into:
+### Steps
 
-| Option | Latency | Cost |
-|---|---|---|
-| Redis | low | $$ |
-| Memcached | low | $ |
-| Postgres | medium | $ |
+Each step says what to **do**, then what to **expect**. Mark each expectation: ✓ if you saw it, ✗ with a comment if not. Marks on the reply above are part of the test, not results.
 
-A table with a long cell, which may wrap:
+**Stepping in and out**
 
-| Name | Notes |
-|---|---|
-| short | fine |
-| long | a cell with enough text in it that it has to wrap onto a second row in most terminals, and then some more of it to be certain |
-| after | the row after the long one |
+1. **Do:** click the TypeScript block, then the paragraph under it
+   - **Expect:** the code block's menu has a fifth action, `↳ step in`; the paragraph's has four
+2. **Do:** click the TypeScript block again, press `s`
+   - **Expect:** its first line is selected, the menu under it ending `↰ step out`
+   - **Expect:** the band says "Line 1 of N · ↑↓ lines", and ends "q step out"
+   - **Expect:** nothing moved: colours and layout as before stepping in
+3. **Do:** press `q`, then click `[ ↳ step in ]` in the menu, then `[ ↰ step out ]`
+   - **Expect:** `q` and step out both leave the line for the whole block; step in enters it again
 
-### What to check
+**How it looks**
 
-- **Stepping in**
-  - A code block's menu has a 5th action, step in; other blocks keep their four
-  - s or step in enters the block on its first line; s, q or step out returns to it
-  - After ctrl+x tab: s steps in, j / k move between lines, q steps out
-- **How it looks**
-  - Colours and layout match the block before stepping in, and nothing jumps
-  - Multi-line comments and strings keep their colour on every line, above and below the selection
-  - Only the selected line has the background, with the menu right under it
-  - After the long line in the bash block, the selection and the menu still sit on the right line
-- **Marks on a line**
-  - a / x / c on a line stage it, its glyph in the margin on that line; Backspace takes it off
-  - c opens a comment under the line, and a staged comment shows there when the line is selected
-  - A block's own mark and its lines' marks can be staged together
-  - Outside a review, a block with only marked lines shows ✸ in the margin; its own mark takes that place
-  - Backspace on a block takes its own mark, then its lines' marks
-- **Tables**
-  - A table's menu has step in; ↑/↓ move between its data rows, the band says "Row 1 of 3"
-  - The selected row has the background and the menu under it, and the grid otherwise looks unchanged
-  - A row that wraps is selected whole, and ↓ goes to the next row, never a border
-  - Narrowed until the table turns into a list, ↑/↓ still select whole rows
-  - A marked row compiles as row N with its cells, nested under the table's quote
-- **The prompt**
-  - A marked line compiles nested under its block, with its number and the line trimmed
-  - An unmarked block with a marked line is sent as a plain quote ending "(code block)"
-  - A blank line compiles as its number alone
+4. **Do:** step in, press `↓` slowly through the whole block
+   - **Expect:** only the selected line has the background, with the menu right under it
+   - **Expect:** the multi-line comment stays comment-coloured on every line, above and below the selection
+   - **Expect:** the template string stays string-coloured on every line
+5. **Do:** step into the Python block, `↓` through the docstring
+   - **Expect:** the docstring stays string-coloured on every line
+6. **Do:** step into the bash block, `↓` to `echo done`
+   - **Expect:** after the long line, which wraps, the selection and the menu sit on `echo done`
+7. **Do:** step into the block with no language
+   - **Expect:** its two lines can be selected like any other
+
+**Marks on lines**
+
+8. **Do:** in the TypeScript block, `x` on line 2, `a` on line 6, `c` on line 5, type `why GET?`, press `⏎`
+   - **Expect:** each glyph sits in the margin on its own line (one row too high while stepped in is #168)
+   - **Expect:** the comment shows under line 5 while it is selected
+9. **Do:** `x` on the blank line between `]` and `const message`
+   - **Expect:** the suggestion names it `line 8 (blank)`
+10. **Do:** press `q` to step out, then `q` to end the review
+    - **Expect:** the block shows ✸ in its margin: only its lines are marked
+    - **Expect:** the suggestion quotes the block plainly, ending `(code block)`, with each marked line nested under it: its number, its text trimmed, and the comment after `→`
+11. **Do:** click the TypeScript block, press `a`
+    - **Expect:** ✓ takes the ✸'s place; the suggestion has ✓ on the block, its lines still under it
+12. **Do:** press `Backspace`, then `Backspace` again
+    - **Expect:** the first takes the block's ✓; the second takes its lines' marks
+
+**From the keyboard**
+
+13. **Do:** press `q`, `ctrl+x tab`, `k` up to the TypeScript block, then `s`
+    - **Expect:** the band says "Line 1 of N · j/k lines"
+14. **Do:** press `j` twice, then `q`
+    - **Expect:** `j` moves between lines; `q` steps out to the whole block, still in the review
+
+When you're done: click the first **Expect:**, mark every expectation, press `q`, `Tab`, then `⏎`. The test session answers with a table of your results.

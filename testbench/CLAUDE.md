@@ -25,15 +25,20 @@ When the person asks to run a test — "run the rendering test", "run split",
 
 | Asked for | Fixture |
 |---|---|
-| fullscreen | `fixtures/fullscreen.md` — rendering and reviewing, fullscreen only |
-| classic | `fixtures/classic.md` — the navigator, the default renderer only |
-| code | `fixtures/code.md` — stepping into code blocks and tables, fullscreen only |
-| threads | `fixtures/threads.md` — discussing blocks in threads, their summaries and include, fullscreen only |
-| split | `fixtures/split.md` |
-| nesting | `fixtures/nesting.md` |
-| long | `fixtures/long.md` |
-| all, everything, whole test | `fullscreen` or `classic`, for the renderer in use (ask if not stated), then `split`, `nesting`, `long` |
-| neighbour | `fixtures/neighbour.md` — only with `neighbour-mod` loaded; not part of "all" |
+| smoke | `fixtures/smoke.md` — the happy path, start to finish; run it first on every build, fullscreen |
+| render | `fixtures/render.md` — how the reply is drawn: mod off vs on, the selection, marks, widths; fullscreen |
+| review | `fixtures/review.md` — reviewing in detail: the keyboard path, the menu, ending; fullscreen |
+| comments | `fixtures/comments.md` — commenting in detail: editing, several lines, reopening, clearing, pasting; fullscreen |
+| code | `fixtures/code.md` — stepping into code blocks: colours, margins, marks on lines; fullscreen |
+| tables | `fixtures/tables.md` — stepping into tables: rows, wrapped rows, a table drawn as a list; fullscreen |
+| threads | `fixtures/threads.md` — the thread pane: opening, its field, several threads, lines and rows; fullscreen |
+| summaries | `fixtures/summaries.md` — what a thread's summary says, and the include switch; fullscreen |
+| nesting | `fixtures/nesting.md` — which Markdown makes which block, and how nested blocks compile |
+| classic | `fixtures/classic.md` — the basics in the default renderer only |
+| split | `fixtures/split.md` — a reply split around a real tool call; fullscreen, run rarely |
+| long | `fixtures/long.md` — a reply taller than the screen: the view following the selection; fullscreen, run rarely |
+| neighbour | `fixtures/neighbour.md` — next to `neighbour-mod`, loaded as its steps say; run rarely |
+| all, everything, whole test | one fixture per reply, in the order above from `smoke` to `nesting`; in the default renderer, `classic` alone. Write the next only when the person asks for it |
 
 **Rules — the replies must be identical every run, or results are not comparable:**
 
@@ -44,26 +49,27 @@ When the person asks to run a test — "run the rendering test", "run split",
    End your text there, make the real Bash call it names (`sleep N`), and continue
    with the text after it once the call returns. A reply with no Bash calls has
    failed the test, because the point is a reply split around real tool calls.
-3. For "all": before each fixture, output its first heading as written, and run
-   `sleep 2` with the Bash tool between fixtures.
-4. Read every fixture you need **before** writing any reply text, so that the
-   reads are not interleaved with the reply.
-5. Nothing after the last fixture line — the checklist at the end of each
-   fixture is the end of the reply.
+3. Read the fixture **before** writing any reply text, so that the read is not
+   interleaved with the reply.
+4. Nothing after the last fixture line — its closing paragraph is the end of the
+   reply.
 
 ## Taking results
 
-Each fixture ends with **What to check**. The person marks those items with the
-mod — ✓ passed, ✗ failed, ✎ with a note — and sends. Their message arrives as
-lines like:
+Each fixture ends with **Steps**: numbered **Do:** lines, each with **Expect:**
+lines under it. The person marks the **Expect:** lines with the mod — ✓ passed,
+✗ failed, ✎ with a note — and sends.
+Marks on the fixture's reply itself are part of the test: list them apart, as what
+the person marked, not as results. A **Do:** line arrives as the group of its
+**Expect:** lines. Their message arrives as lines like:
 
 ```
-✓ "Numbered list keeps its numbers 1. 2...."
-✗ "The table draws as a table" → rows split onto separate lines
+"3. Do: press a"
+    ✓ "Expect: ✓ in its margin"
+    ✗ "Expect: a dim suggestion in the prompt box,..." → no suggestion
 ```
 
-In a grouped checklist, a mark arrives under its group's name, unmarked and
-indented. The group is not a result.
+The **Do:** line arrives unmarked, as the group of its marks: it is not a result.
 
 Then:
 
@@ -73,6 +79,7 @@ Then:
    or classic), Claude Code version (`claude --version`), other mods enabled.
 3. Offer to post the summary as a comment on the matching GitHub issue, and
    **post only after the person says yes**:
+   - smoke → only if something failed; then ask which issue
    - classic renderer → #11
    - other mods enabled, or the neighbour test → #12
    - a platform, terminal or surface other than macOS fullscreen → #13
