@@ -2,7 +2,7 @@
 
 How Synaptik draws the reply: the same as Claude Code with the mod off, plus the selection, the marks and comments, at any width. Fullscreen (`/tui fullscreen`).
 
-A paragraph with **bold**, *italic*, `inline code` and a [link](https://example.com), long enough to wrap onto a second line, and a third in a narrow terminal, so that a selection has to cover every row of it.
+A paragraph with **bold**, *italic*, `inline code` and a [link](#a-heading-between-blocks), long enough to wrap onto a second line, and a third in a narrow terminal, so that a selection has to cover every row of it.
 
 ### A heading between blocks
 
