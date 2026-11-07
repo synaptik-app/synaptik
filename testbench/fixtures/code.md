@@ -35,7 +35,7 @@ def greet(name: str) -> str:
 A very long line, to see wrapping:
 
 ```bash
-curl --request POST --url https://example.com/api/v1/resource --header 'content-type: application/json' --data '{"name": "a value long enough to wrap in most terminals", "other": "and some more of it"}'
+curl --request POST --url "$API_URL/api/v1/resource" --header 'content-type: application/json' --data '{"name": "a value long enough to wrap in most terminals", "other": "and some more of it"}'
 echo done
 ```
 

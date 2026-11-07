@@ -22,7 +22,7 @@ test('with no room for the grid it is a list: each row its cells, a rule between
 })
 
 test('inline marks take no room', () => {
-  const marked = '| A |\n|---|\n| **bold** `code` [link](https://example.com/long) |\n| y |'
+  const marked = '| A |\n|---|\n| **bold** `code` [link](#long) |\n| y |'
   const bare = '| A |\n|---|\n| bold code link |\n| y |'
   expect(tableLayout(marked, 18)).toEqual(tableLayout(bare, 18))
 })
