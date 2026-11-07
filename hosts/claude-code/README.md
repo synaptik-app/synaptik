@@ -59,11 +59,12 @@ A Claude Code mod runs with your own permissions and is not sandboxed. Synaptik:
 | Hook | What it does |
 |---|---|
 | `session.start` | registers `/synaptik`, and picks up the last reply |
+| `session.end` | after `/resume` or `/clear`, picks up the reply of the session that follows |
 | `command.run` | answers `/synaptik` only; other commands aren't touched |
 | `turn.start`, `turn.complete` | stops marking during a turn, and picks up the new reply after it |
-| `ui.render` | draws the reply while it's under review or carries marks, the band above the prompt, and its own pane |
+| `ui.render` | draws the reply while it's under review or carries marks, the band above the prompt, and its own panes: the navigator and discuss threads. It also notes which turn row is the newest, without changing it. |
 | `ui.message` | receives clicks and keys from its own elements |
-| `ui.focus`, `ui.scroll`, `ui.close` | tracks focus in the band and its own pane, moves between blocks, and notices its pane closing. It refuses focus only on its own hidden keys. |
+| `ui.focus`, `ui.scroll`, `ui.close` | tracks focus in the band and its own panes, moves between blocks and within a thread, and notices its panes closing: closing a thread asks for its summary. It refuses focus only on its own hidden keys. |
 | `prompt.edit` | colours the ✓ ✗ ✎ glyphs in the box, proposes the suggestion again when you empty it, and moves a paste into a comment you have open. Typing there ends a review. |
 
 Apart from those requests, it sends nothing anywhere. It reads and writes no
