@@ -49,7 +49,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
     - **Expect:** if the answer recommends one, a summary under the include switch, which is on
 11. **Do:** press `Esc`
     - **Expect:** the pane closes, and the table has 💬 in its margin
-12. **Do:** click any block, then press `q`
+12. **Do:** look at the reply and the prompt box (the thread took the keyboard, so the review is already over)
     - **Expect:** no selection and no menus; the marks are still in the margins
     - **Expect:** a dim suggestion with the ✓, the ✎ and its comment, line 2 under the code block, and the table's 💬 if it was included
 13. **Do:** press `Tab`, then type a space
