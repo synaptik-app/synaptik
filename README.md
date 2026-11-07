@@ -5,9 +5,9 @@
 
 # Synaptik
 
-**Synaptik** (with a **k**) is a mod for Claude Code. Review the agent's reply
-in place: go through it block by block — a paragraph, a step in its plan, an
-item in a list — and accept it, reject it, or comment on it. Synaptik turns
+**Synaptik** (with a **k**) is a terminal mod for Claude Code. Review Claude's
+reply in place: go through it block by block — a paragraph, a step in its plan,
+an item in a list — and accept it, reject it, or comment on it. Synaptik turns
 your review into one prompt, written as if you'd typed it yourself.
 
 ![Synaptik: reviewing a reply in place, then sending the review as one prompt](.github/assets/demo.gif)
