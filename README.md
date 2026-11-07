@@ -133,6 +133,10 @@ A Claude Code mod runs with your own permissions and is not sandboxed. Synaptik:
   your review as a prompt;
 - proposes that prompt in the prompt box, as a suggestion. It never submits:
   you take the suggestion and send it yourself.
+- when you discuss a block, asks Claude your question, and later for the
+  thread's summary, through Claude Code (`$.model.fork`). It goes over this
+  session's transcript to the same model and account as your session, and
+  uses its tokens. The answer stays in the thread until you send it.
 
 **The hooks it registers.** It changes nothing beyond what each line says, and every hook falls back to Claude Code's own behaviour on an error:
 
@@ -146,8 +150,9 @@ A Claude Code mod runs with your own permissions and is not sandboxed. Synaptik:
 | `ui.focus`, `ui.scroll`, `ui.close` | tracks focus in the band and its own pane, moves between blocks, and notices its pane closing. It refuses focus only on its own hidden keys. |
 | `prompt.edit` | colours the ✓ ✗ ✎ glyphs in the box, proposes the suggestion again when you empty it, and moves a paste into a comment you have open. Typing there ends a review. |
 
-It reads and writes no files, makes no network requests, runs no commands and
-registers no tool hooks. Your marks stay in memory for the session. More in [SECURITY.md](SECURITY.md).
+Apart from those requests, it sends nothing anywhere. It reads and writes no
+files, runs no commands and registers no tool hooks. Your marks stay in memory
+for the session. More in [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
