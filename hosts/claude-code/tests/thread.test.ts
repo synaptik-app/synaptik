@@ -7,7 +7,7 @@ import type { FoundElement } from 'claude-code/testing'
 
 import { closed, forkAnswer, forks, fullscreen, log, opened, placement, start, suggested, synaptik, threadPane } from './engine'
 
-const F = 'fullscreen'
+const F = 'review'
 const CACHE = 1
 const PANE = `synaptik-thread-${CACHE}`
 

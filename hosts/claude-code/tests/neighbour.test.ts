@@ -9,7 +9,7 @@ import { expect, test } from 'claude-code/testing'
 // A generated copy of testbench/neighbour-mod (scripts/fixtures.mjs): a test may
 // import only files inside the plugin's folder.
 import { register as neighbour } from './neighbour.generated'
-import { check, ENGINE_DRAWING, pane, PLUGIN, start } from './engine'
+import { ENGINE_DRAWING, pane, PLUGIN, start } from './engine'
 
 const F = 'neighbour'
 const WITH_NEIGHBOUR = { plugins: [{ name: 'neighbour', register: neighbour }] }
@@ -31,7 +31,7 @@ function band($: any) {
   })
 }
 
-test(check(F, "The band shows the neighbour's line as well as Synaptik's"), WITH_NEIGHBOUR, async ($, on) => {
+test("The band shows the neighbour's line as well as Synaptik's", WITH_NEIGHBOUR, async ($, on) => {
   await start($, on, F)
   await pane($, 'dock', false)
   const ui = await band($)
@@ -54,7 +54,7 @@ test("classic: while reviewing in the navigator, Synaptik's band stands alone; t
   expect(await after.find({ type: 'Text', text: ENGINE_DRAWING })).toBeDefined()
 })
 
-test(check(F, 'Pressing n in the band pings the neighbour'), WITH_NEIGHBOUR, async ($, on) => {
+test('Pressing n in the band pings the neighbour', WITH_NEIGHBOUR, async ($, on) => {
   await start($, on, F)
   const nav = await pane($, 'inline', true)
   await nav.press({ key: 'verb-accept' })

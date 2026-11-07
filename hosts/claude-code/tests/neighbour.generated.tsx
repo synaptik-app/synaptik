@@ -38,8 +38,15 @@ export const register: Register = on => {
       return { text: `neighbour greedy: ${isGreedy ? 'on — no next(e) for band and reply' : 'off'}` }
     }
     if (e.args.trim() === 'suggest') {
-      const shown = await $.prompt.suggest({ text: 'neighbour: a suggestion of its own' })
-      return { text: `neighbour suggest: ${JSON.stringify(shown)}` }
+      // Not from inside the command: while it runs, the box isn't free and a
+      // suggestion is refused. Proposed once the command is done, the result in
+      // a toast.
+      void $.clock
+        .sleep(500)
+        .then(() => $.prompt.suggest({ text: 'neighbour: a suggestion of its own' }))
+        .then(shown => $.ui.toast(`neighbour suggest: ${JSON.stringify(shown)}`))
+        .catch(err => $.ui.toast(`neighbour suggest failed: ${String(err)}`))
+      return { text: 'neighbour suggest: proposing in a moment' }
     }
     return { text: 'neighbour: suggest or greedy' }
   })

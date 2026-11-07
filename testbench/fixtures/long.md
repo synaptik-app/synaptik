@@ -1,6 +1,6 @@
 ## Long test
 
-A reply long enough to fill more than one screen, so the transcript has to scroll. Run it in either renderer; one group is the default renderer's only.
+A reply long enough to fill more than one screen, so the transcript has to scroll to follow the selection. Fullscreen (`/tui fullscreen`). Run it rarely: when Claude Code changes how its transcript scrolls, or when Synaptik's scrolling to the selection changes.
 
 ### Section one
 
@@ -48,19 +48,19 @@ A short paragraph.
 
 A closing paragraph after the final list.
 
-### What to check
+### Steps
 
-- **Moving between blocks**
-  - ↑/↓ reach every block, first to last, and stop at the ends
-  - Block N of M counts every block, headings excluded
-  - Review starts on the last block, already on screen
-- **Scrolling the reply**
-  - With ctrl+x tab and j / k, or in the default renderer: moving up into the first third jumps the view to the reply's top
-  - With ctrl+x tab and j / k, or in the default renderer: moving back down into the last third jumps the view to the reply's end
-  - In the middle third the view stays where you scroll it
-  - After a click on a block or the band's hint, ↑/↓ never scroll the view; the wheel does (known limit: Claude Code refuses it, "not person-initiated")
-- **Marking**
-  - Marks spread across sections all reach the suggestion in reading order
-- **The default renderer's navigator**
-  - The pane shows the selected block in full, with the previous and next blocks dim and the menu right under it
-  - The tall paragraph in section two is trimmed, PgUp/PgDn read on, ↑/↓ still move between blocks
+Each step says what to **do**, then what to **expect**. Mark each expectation: ✓ if you saw it, ✗ with a comment if not. Marks on the reply above are part of the test, not results.
+
+1. **Do:** scroll the transcript so the reply's top is off screen, then press `ctrl+x tab`
+   - **Expect:** the review starts on the last block, on screen
+2. **Do:** press `k` until the first block, then `j` back down to the last
+   - **Expect:** every block is reached, headings skipped, and the band counts them all ("Block 1 of N" at the top)
+   - **Expect:** moving into the reply's first third jumps the view to its top; into its last third, to its end
+   - **Expect:** in the middle third, the view stays where it is
+3. **Do:** click a block, then press `↑` and `↓` past the screen's edge
+   - **Expect:** the selection moves, but the view doesn't follow (Claude Code refuses a scroll that isn't "person-initiated"); the wheel still scrolls
+4. **Do:** press `Home`, then `End`
+   - **Expect:** the first block, then the last, is selected, and `↑` at the first or `↓` at the last goes no further
+
+When you're done: click the first **Expect:**, mark every expectation, press `q`, `Tab`, then `⏎`. The test session answers with a table of your results.
