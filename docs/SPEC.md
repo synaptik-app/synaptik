@@ -328,9 +328,12 @@ The keys shown are Claude Code's defaults. With the recommended bindings (§10)
 the classic legend reads `↑↓ blocks · ←→ actions`.
 
 **The band is shared with every mod.** A hook that answers without `next(e)`
-hides every mod beneath it. Outside review, Synaptik draws what `next(e)` returns
-and adds its lines below it; while the navigator holds the keyboard, Synaptik's
-band stands alone as the key legend for that mode. Claude Code's own drawing
+hides every mod beneath it. Synaptik draws what `next(e)` returns and adds its
+lines below it, during a review too: `ctrl+x tab` is the band's ring, every mod's,
+so another mod's buttons stay stops in it and its hotkeys work while the band has
+the keyboard (#171). Synaptik's own band controls carry their hotkeys (`a x c d j k
+s q`) only while its review holds the band: a clashing key otherwise reached
+Synaptik's, whichever mod had the ring and whatever the load order. Claude Code's own drawing
 (an engine node) may sit in what `next(e)` returns, and **an engine node under a
 `Box` with `width` is refused** — the whole band falls back to Claude Code's own —
 so `width` is set only on the box around Synaptik's own lines.

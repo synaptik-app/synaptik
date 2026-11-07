@@ -1123,8 +1123,13 @@ beneath it. Found with the test bench's neighbour mod and its greedy toggle:
 
 **Decisions:**
 1. **The band composes** with `next(e)`, Synaptik's lines last under a header —
-   except **while reviewing**, when its band stands alone as the key legend for
-   that mode. Brief, bounded, and the one deliberate exception.
+   ~~except **while reviewing**, when its band stands alone as the key legend for
+   that mode. Brief, bounded, and the one deliberate exception.~~ **Revised
+   2026-11-07 (#171): no exception.** Standing alone during a review dropped every
+   mod loaded after Synaptik from the band, buttons and hotkeys too, and
+   `ctrl+x tab` (the band's ring, every mod's) only ever reached Synaptik's
+   actions. The band composes during a review as well, Synaptik's legend still
+   last, so another mod's button is a stop in the ring, as D41 says.
 2. **The reply is redrawn only when needed:** while the navigator holds the
    keyboard, or when a block in that piece of the reply is marked or being
    commented. Otherwise it is passed through with `next(e)`. Most replies are
