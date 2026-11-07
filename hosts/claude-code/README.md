@@ -69,7 +69,8 @@ A Claude Code mod runs with your own permissions and is not sandboxed. Synaptik:
 Apart from those requests, it sends nothing anywhere. It reads and writes no
 files, runs no commands and registers no tool hooks. Your marks stay in memory
 for the session. More in
-[SECURITY.md](https://github.com/synaptik-app/synaptik/blob/main/SECURITY.md).
+[SECURITY.md](https://github.com/synaptik-app/synaptik/blob/main/SECURITY.md)
+and [PRIVACY.md](https://github.com/synaptik-app/synaptik/blob/main/PRIVACY.md).
 
 ## License
 
