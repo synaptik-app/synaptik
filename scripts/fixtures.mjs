@@ -24,7 +24,8 @@ const SLEEP = /^<<STOP WRITING\..*sleep (\d+)\..*>>$/
 
 // A fixture's reply, split into the pieces a real run produces: a `<<STOP WRITING…>>`
 // line is a tool call, so the text before and after it are separate messages.
-// Its checks are the list under "What to check", grouped or not.
+// Its checks are the **Expect:** lines under "Steps", each under its numbered
+// **Do:** step.
 function parse(text) {
   const pieces = []
   let current = []
@@ -41,10 +42,11 @@ function parse(text) {
   const items = []
   let inChecks = false
   for (const line of text.split('\n')) {
-    const item = line.match(/^(\s*)- (.*)$/)
-    if (/^#{1,6}\s+What to check\s*$/.test(line)) inChecks = true
+    const item = line.match(/^(\s*)(?:-|\d+\.) (.*)$/)
+    if (/^#{1,6}\s+Steps\s*$/.test(line)) inChecks = true
     else if (/^#{1,6}\s/.test(line)) inChecks = false
-    else if (inChecks && item) items.push({ indent: item[1].length, text: item[2].trim() })
+    // A step's **Do:** and **Expect:** labels are for reading; a check is its text.
+    else if (inChecks && item) items.push({ indent: item[1].length, text: item[2].replace(/^\*\*(Do|Expect):\*\*\s*/, '').trim() })
   }
   // An item with items under it is a group's name, not a check.
   const checks = items.filter((item, i) => !(items[i + 1]?.indent > item.indent)).map(item => item.text)

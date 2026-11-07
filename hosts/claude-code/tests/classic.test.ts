@@ -1,11 +1,11 @@
-// The classic fixture's checklist (testbench/fixtures/classic.md), as tests.
-// Each test is named after its checklist line; items only a person can judge
-// stay manual: "Mod on and off look the same apart from marks and the selection".
+// The classic renderer's navigator, on the classic fixture's reply
+// (testbench/fixtures/classic.md). By hand only: the reply looks the same with
+// the mod off.
 
 import { expect, test } from 'claude-code/testing'
 import type { FoundElement } from 'claude-code/testing'
 
-import { arrow, check, ENGINE_DRAWING, pane, position, reply, start } from './engine'
+import { arrow, ENGINE_DRAWING, pane, position, reply, start } from './engine'
 
 const F = 'classic'
 
@@ -14,7 +14,7 @@ async function markdowns(ui: { findAll: (q: unknown) => Promise<{ text: string; 
   return (await ui.findAll({ type: 'Markdown' })).map(m => String(m.props.text ?? m.text))
 }
 
-test(check(F, 'Numbered list keeps its numbers'), async ($, on) => {
+test('Numbered list keeps its numbers', async ($, on) => {
   await start($, on, F)
   await pane($, 'dock') // the navigator holds the keyboard: Synaptik draws the reply
   const ui = await reply($, F)
@@ -24,7 +24,7 @@ test(check(F, 'Numbered list keeps its numbers'), async ($, on) => {
   expect(texts.some(t => t.startsWith('3. Numbered item three'))).toBe(true)
 })
 
-test(check(F, 'Nested bullets sit under their parent'), async ($, on) => {
+test('Nested bullets sit under their parent', async ($, on) => {
   await start($, on, F)
   await pane($, 'dock')
   const ui = await reply($, F)
@@ -35,7 +35,7 @@ test(check(F, 'Nested bullets sit under their parent'), async ($, on) => {
   expect(nested).toBeDefined()
 })
 
-test(check(F, 'The table draws as a table'), async ($, on) => {
+test('The table draws as a table', async ($, on) => {
   await start($, on, F)
   await pane($, 'dock')
   const ui = await reply($, F)
@@ -45,7 +45,7 @@ test(check(F, 'The table draws as a table'), async ($, on) => {
   expect(table).toContain('| Postgres')
 })
 
-test(check(F, 'The code block keeps its styling'), async ($, on) => {
+test('The code block keeps its styling', async ($, on) => {
   await start($, on, F)
   await pane($, 'dock')
   const ui = await reply($, F)
@@ -53,7 +53,7 @@ test(check(F, 'The code block keeps its styling'), async ($, on) => {
   expect(code?.startsWith('```ts')).toBe(true)
 })
 
-test(check(F, 'The heading is skipped by'), async ($, on) => {
+test('The heading is skipped by', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline')
   const { of } = await position(ui)
@@ -69,7 +69,7 @@ test(check(F, 'The heading is skipped by'), async ($, on) => {
   expect(new Set(seen).size).toBe(of)
 })
 
-test(check(F, 'The selected block shows the selection background'), async ($, on) => {
+test('The selected block shows the selection background', async ($, on) => {
   await start($, on, F)
   const focused = await pane($, 'dock', true)
   const drawn = await reply($, F)
@@ -86,7 +86,7 @@ test(check(F, 'The selected block shows the selection background'), async ($, on
   expect(await plain.find({ type: 'Text', text: ENGINE_DRAWING })).toBeDefined()
 })
 
-test(check(F, 'Marking a block puts its glyph before it'), async ($, on) => {
+test('Marking a block puts its glyph before it', async ($, on) => {
   await start($, on, F)
   const nav = await pane($, 'inline')
   const before = await reply($, F)
@@ -99,7 +99,7 @@ test(check(F, 'Marking a block puts its glyph before it'), async ($, on) => {
   expect((await markdowns(after)).length).toBe(blocksBefore)
 })
 
-test(check(F, 'Selecting the table shows it whole'), async ($, on) => {
+test('Selecting the table shows it whole', async ($, on) => {
   await start($, on, F)
   const ui = await pane($, 'inline', true, 30)
   const { of } = await position(ui)

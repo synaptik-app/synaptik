@@ -1,4 +1,4 @@
-// The fullscreen fixture's checklist (testbench/fixtures/fullscreen.md), as
+// The review fixture (testbench/fixtures/review.md) and fullscreen's behaviour, as
 // tests: the review in the reply itself (D41). Each block is a Client; a test
 // clicks one and presses keys in it, as the person does. Manual only: how the
 // terminal draws it, and Esc, which raises nothing a mod can see (#23).
@@ -24,7 +24,7 @@ import {
   typeInPrompt,
 } from './engine'
 
-const F = 'fullscreen'
+const F = 'review'
 
 // The plugin's type config has no timers; the test runtime does.
 declare const setTimeout: (run: () => void, ms: number) => unknown
@@ -102,7 +102,7 @@ test('no navigator pane opens in fullscreen, and the band says how to start', as
   expect(opened.length).toBe(before)
 })
 
-test(check(F, 'A click on any block selects that block'), async ($, on) => {
+test('A click on any block selects that block', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -121,7 +121,7 @@ test(check(F, 'A click on any block selects that block'), async ($, on) => {
   expect(suggested()).toContain('✓ "key each entry by user"')
 })
 
-test(check(F, 'After a click, ↑/↓ and Home/End move between blocks'), async ($, on) => {
+test('After a click, ↑/↓ and Home/End move between blocks', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -129,12 +129,12 @@ test(check(F, 'After a click, ↑/↓ and Home/End move between blocks'), async 
   await clickAndPress(ui, RATE_LIMIT, ['up', 'up', 'x'])
   expect(suggested()).toContain('✗ "key each entry by user"')
   await clickAndPress(ui, RATE_LIMIT, ['home', 'a'])
-  expect(suggested()).toContain('✓ "Rendering and reviewing in the reply itself:')
+  expect(suggested()).toContain('✓ "Reviewing in detail, past the smoke test')
   const b = await band($)
   expect((await hintLines(b))[0]).toMatch(/^Block 1 of \d+ · ↑↓ blocks/)
 })
 
-test(check(F, '←/→ walk the menu under the selected block'), async ($, on) => {
+test('←/→ walk the menu under the selected block', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -144,7 +144,7 @@ test(check(F, '←/→ walk the menu under the selected block'), async ($, on) =
   expect(suggested()).toBe('✗ "1. Cache sessions in Redis"')
 })
 
-test(check(F, 'a / x / c / d act directly on the selected block'), async ($, on) => {
+test('a / x / c / d act directly on the selected block', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -154,7 +154,7 @@ test(check(F, 'a / x / c / d act directly on the selected block'), async ($, on)
   expect(await log($)).not.toContain('discuss failed')
 })
 
-test(check(F, 'c opens a comment under the block, dim, with a cursor'), async ($, on) => {
+test('c opens a comment under the block, dim, with a cursor', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -163,7 +163,7 @@ test(check(F, 'c opens a comment under the block, dim, with a cursor'), async ($
   expect(suggested()).toBe(['"1. Cache sessions in Redis"', '    ✎ "expire after 5 minutes" → oo lon'].join('\n'))
 })
 
-test(check(F, 'In a comment, backslash then ⏎ starts a new line'), async ($, on) => {
+test('In a comment, backslash then ⏎ starts a new line', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -176,7 +176,7 @@ test(check(F, 'In a comment, backslash then ⏎ starts a new line'), async ($, o
   expect(suggested()).not.toContain('Rate-limit')
 })
 
-test(check(F, 'A paste while a comment is open goes into the comment'), async ($, on) => {
+test('A paste while a comment is open goes into the comment', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -190,7 +190,7 @@ test(check(F, 'A paste while a comment is open goes into the comment'), async ($
   expect(suggested()).toBe('✎ "1. Cache sessions in Redis" → apasted')
 })
 
-test(check(F, 'c on a commented block reopens its text'), async ($, on) => {
+test('c on a commented block reopens its text', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -199,7 +199,7 @@ test(check(F, 'c on a commented block reopens its text'), async ($, on) => {
   expect(suggested()).toBe('✎ "1. Cache sessions in Redis" → hi!')
 })
 
-test(check(F, 'Typing in the prompt ends the review'), async ($, on) => {
+test('Typing in the prompt ends the review', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -217,7 +217,7 @@ test(check(F, 'Typing in the prompt ends the review'), async ($, on) => {
   expect(suggested()).toContain('✗ "2. Rate-limit the login endpoint"')
 })
 
-test(check(F, 'The suggestion in the prompt box follows every mark'), async ($, on) => {
+test('The suggestion in the prompt box follows every mark', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -233,7 +233,7 @@ test(check(F, 'The suggestion in the prompt box follows every mark'), async ($, 
   expect(suggested()).toBe('✓ "1. Cache sessions in Redis"')
 })
 
-test(check(F, 'During a review a long suggestion shows 3 lines'), async ($, on) => {
+test('During a review a long suggestion shows 3 lines', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -247,7 +247,7 @@ test(check(F, 'During a review a long suggestion shows 3 lines'), async ($, on) 
   expect(suggested()).toContain('✓ "table: Option · Latency"')
 })
 
-test(check(F, 'Esc during a review, then Tab on the short suggestion'), async ($, on) => {
+test('Esc during a review, then Tab on the short suggestion', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -261,7 +261,7 @@ test(check(F, 'Esc during a review, then Tab on the short suggestion'), async ($
   expect(promptBox.text).toContain('✓ "table: Option · Latency"')
 })
 
-test(check(F, 'ctrl+x tab starts a review'), async ($, on) => {
+test('ctrl+x tab starts a review', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -304,7 +304,7 @@ test('/synaptik in fullscreen says how to start: there is no navigator to open',
   expect(opened.length).toBe(before)
 })
 
-test(check(F, 'Outside a review the reply is plain'), async ($, on) => {
+test('Outside a review the reply is plain', async ($, on) => {
   await start($, on, F)
   const ui = await fullscreen($, F)
   expect(await ui.findAll({ type: 'Client' })).toEqual([])
@@ -335,7 +335,7 @@ test('the band losing the keyboard to a click in the reply keeps the review', as
   expect(suggested()).toBe('✓ "1. Cache sessions in Redis"')
 })
 
-test(check(F, 'A click on the band\'s hint starts the review'), async ($, on) => {
+test('A click on the band\'s hint starts the review', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   const b = await band($)
@@ -349,7 +349,7 @@ test(check(F, 'A click on the band\'s hint starts the review'), async ($, on) =>
   expect((await hintLines(await band($)))[0]).toMatch(/↑↓ blocks/)
 })
 
-test(check(F, 'q ends the review'), async ($, on) => {
+test('q ends the review', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -492,7 +492,7 @@ test('a comment typed in place names its keys after the text, as the fields do',
   expect(await ui.find({ type: 'Text', text: /⏎ ok · \\⏎ new line/, in: into })).toBeDefined()
 })
 
-test(check(F, 'Backspace on a block takes its mark off'), async ($, on) => {
+test('Backspace on a block takes its mark off', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -524,7 +524,7 @@ test('from the band Backspace is not offered: the legend does not name it', asyn
   expect((await hintLines(await band($)))[0]).not.toContain('unmark')
 })
 
-test(check(F, 'ctrl+u empties the comment being typed'), async ($, on) => {
+test('ctrl+u empties the comment being typed', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -549,7 +549,7 @@ async function draws(ui: Mounted, index: number, text: RegExp): Promise<boolean>
   return text.test(JSON.stringify(await ui.drawn({ in: await block(ui, index) })))
 }
 
-test(check(C, "A code block's menu has a 5th action"), async ($, on) => {
+test("A code block's menu has a 5th action", async ($, on) => {
   await start($, on, C)
   await fullscreen($, C)
   await review($)
@@ -560,7 +560,7 @@ test(check(C, "A code block's menu has a 5th action"), async ($, on) => {
   expect(await draws(ui, PARAGRAPH, /step in/)).toBe(false)
 })
 
-test(check(C, 's or step in enters the block'), async ($, on) => {
+test('s or step in enters the block', async ($, on) => {
   await start($, on, C)
   await fullscreen($, C)
   await review($)
@@ -575,7 +575,7 @@ test(check(C, 's or step in enters the block'), async ($, on) => {
   expect((await hintLines(await band($)))[0]).toMatch(/^Block \d+ of \d+/)
 })
 
-test(check(C, 'After ctrl+x tab: s steps in'), async ($, on) => {
+test('After ctrl+x tab: s steps in', async ($, on) => {
   await start($, on, C)
   await fullscreen($, C)
   await review($)
@@ -592,7 +592,7 @@ test(check(C, 'After ctrl+x tab: s steps in'), async ($, on) => {
   expect(await draws(ui, TS, /step in/)).toBe(true)
 })
 
-test(check(C, 'a / x / c on a line stage it'), async ($, on) => {
+test('a / x / c on a line stage it', async ($, on) => {
   await start($, on, C)
   await fullscreen($, C)
   await review($)
@@ -603,7 +603,7 @@ test(check(C, 'a / x / c on a line stage it'), async ($, on) => {
   expect(suggested()).not.toContain('line 2')
 })
 
-test(check(C, 'c opens a comment under the line'), async ($, on) => {
+test('c opens a comment under the line', async ($, on) => {
   await start($, on, C)
   await fullscreen($, C)
   await review($)
@@ -617,7 +617,7 @@ test(check(C, 'c opens a comment under the line'), async ($, on) => {
   expect(await draws(staged, TS, /"hi"/)).toBe(true)
 })
 
-test(check(C, "A block's own mark and its lines' marks"), async ($, on) => {
+test("A block's own mark and its lines' marks", async ($, on) => {
   await start($, on, C)
   await fullscreen($, C)
   await review($)
@@ -626,11 +626,11 @@ test(check(C, "A block's own mark and its lines' marks"), async ($, on) => {
   expect(suggested()).toMatch(/^✓ "\/\* A multi-line comment:.*\n    ✗ line 1: /)
 })
 
-test(check(C, "A table's menu has step in"), async ($, on) => {
-  await start($, on, C)
-  await fullscreen($, C)
+test(check('tables', 'the band says "Row 1 of 3'), async ($, on) => {
+  await start($, on, 'tables')
+  await fullscreen($, 'tables')
   await review($)
-  const ui = await fullscreen($, C)
+  const ui = await fullscreen($, 'tables')
   const clients = await ui.findAll({ type: 'Client' })
   const table = clients.map((c: FoundElement) => c.props.props as { index: number; text: string }).find((p: { text: string }) => p.text?.startsWith('| Option'))!.index
   await clickAndPress(ui, table, ['s', 'down'])
