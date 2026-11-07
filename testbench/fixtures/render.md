@@ -39,7 +39,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 1. **Do:** run `/synaptik off`, look at the reply, then run `/synaptik on`
    - **Expect:** the reply looks the same both ways: wraps, indents, list numbers, the code's colours, the table's borders, the quote's bar, the rule
    - **Expect:** ⏺ before the first block both ways
-2. **Do:** click the first paragraph's second line
+2. **Do:** click the band's "click here to review the reply", then click the first paragraph's second line
    - **Expect:** the selection background covers every row of the paragraph, and only it
    - **Expect:** the menu sits right under the paragraph; no text moves sideways
 3. **Do:** press `↓` through the blocks, down to "The last paragraph."

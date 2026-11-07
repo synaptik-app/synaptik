@@ -11,8 +11,8 @@ import { COMMENT_HINT, END_REVIEW, generational, NEXT_BLOCK, PREVIOUS_BLOCK, STE
 const NEST = '⎿  '
 
 export type BandModel = {
-  // What the chain beneath drew, or null while reviewing (Synaptik's band then
-  // stands alone as the key legend).
+  // What the chain beneath drew: other mods' lines, Claude Code's own. Drawn
+  // during a review too, so their buttons stay in the band's ring (#171).
   beneath: RenderElement | null | undefined
   columns: number
   // What is staged, as the margins mark it ("✓2 ✗1 ✎1"), empty when nothing
@@ -91,6 +91,11 @@ export function BandView(
 export type BandKeysModel = {
   // The controls' generation (ui.ts, generational).
   generation: number
+  // Whether Synaptik's review holds the band: only then do its controls carry
+  // their hotkeys. Otherwise a key another mod's band button also uses (its own
+  // `a`, with the ring on it) would reach Synaptik's instead, whatever the load
+  // order (#171).
+  hasHotkeys: boolean
   // The comment being typed from the band: its field's key and text.
   comment?: { key: string; text: string }
 }
@@ -134,16 +139,16 @@ export function BandKeysView(
           <Button
             key={generational(v.key, m.generation)}
             plain
-            hotkey={v.hotkey}
+            {...(m.hasHotkeys ? { hotkey: v.hotkey } : {})}
             autoFocus={n === 0 ? true : undefined}
             label={v.glyph}
             onPress={() => actions.verb(n)}
           />
         ))}
-        <Button key={generational(NEXT_BLOCK, m.generation)} plain hotkey="j" label="next block" onPress={() => actions.move(1)} />
-        <Button key={generational(PREVIOUS_BLOCK, m.generation)} plain hotkey="k" label="previous block" onPress={() => actions.move(-1)} />
-        <Button key={generational(STEP_INTO, m.generation)} plain hotkey="s" label="step in or out" onPress={() => actions.step()} />
-        <Button key={generational(END_REVIEW, m.generation)} plain hotkey="q" label="end review" onPress={() => actions.end()} />
+        <Button key={generational(NEXT_BLOCK, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 'j' } : {})} label="next block" onPress={() => actions.move(1)} />
+        <Button key={generational(PREVIOUS_BLOCK, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 'k' } : {})} label="previous block" onPress={() => actions.move(-1)} />
+        <Button key={generational(STEP_INTO, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 's' } : {})} label="step in or out" onPress={() => actions.step()} />
+        <Button key={generational(END_REVIEW, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 'q' } : {})} label="end review" onPress={() => actions.end()} />
       </Box>
     </Box>
   )
