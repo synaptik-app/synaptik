@@ -1,7 +1,7 @@
 {
   "name": "synaptik",
   "displayName": "Synaptik",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Review Claude’s reply in place, block by block, and send your review as one prompt. A terminal mod for Claude Code.",
   "author": {
     "name": "Synaptik",
