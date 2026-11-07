@@ -18,12 +18,16 @@ sandboxed**. What Synaptik does with them:
 - reads the session's transcript and the prompt box, to draw marks and propose
   the compiled prompt;
 - proposes text in the prompt box, as a suggestion. It never submits anything:
-  you take the suggestion and send it yourself.
+  you take the suggestion and send it yourself;
+- when you discuss a block, asks Claude your question, and later for the
+  thread's summary, through Claude Code (`$.model.fork`). It goes over this
+  session's transcript to the same model and account as your session, and
+  uses its tokens. The answer stays in the thread until you send it.
 
-It makes no network requests, runs no commands, and registers no tool hooks: it
-never gates, changes or runs a tool call. `claude plugin validate
-./hosts/claude-code` lists every event it handles and every API call it makes,
-without running it.
+Apart from those requests it sends nothing anywhere. It runs no commands and
+registers no tool hooks: it never gates, changes or runs a tool call. `claude
+plugin validate ./hosts/claude-code` lists every event it handles and every API
+call it makes, without running it.
 
 Something that breaks one of these — Synaptik sending text you did not see, or
 acting outside the list above — is a vulnerability worth reporting.
