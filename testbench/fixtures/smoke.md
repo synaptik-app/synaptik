@@ -25,7 +25,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: â
 
 1. **Do:** look at the band above the prompt
    - **Expect:** "ctrl+x tab to review the reply" or "click here to review the reply"
-2. **Do:** click the Redis paragraph
+2. **Do:** click the band's "click here to review the reply", then click the Redis paragraph
    - **Expect:** it gets the selection background, with a menu under it
    - **Expect:** the band says "Block 2 of N"
 3. **Do:** press `a`

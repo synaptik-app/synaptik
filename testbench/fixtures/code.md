@@ -52,7 +52,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 
 **Stepping in and out**
 
-1. **Do:** click the TypeScript block, then the paragraph under it
+1. **Do:** click the band's "click here to review the reply", then click the TypeScript block, then the paragraph under it
    - **Expect:** the code block's menu has a fifth action, `↳ step in`; the paragraph's has four
 2. **Do:** click the TypeScript block again, press `s`
    - **Expect:** its first line is selected, the menu under it ending `↰ step out`

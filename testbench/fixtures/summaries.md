@@ -1,6 +1,6 @@
 ## Summaries test
 
-What a thread's summary says, whether it is sent, and how the include switch decides. The pane itself is the threads test. Fullscreen (`/tui fullscreen`), at least 144 columns. Each kind of thread below is on its own block; open it with `d`.
+What a thread's summary says, whether it is sent, and how the include switch decides. The pane itself is the threads test. Fullscreen (`/tui fullscreen`), at least 144 columns. Each kind of thread below is on its own block: start a review (the band's "click here to review the reply"), click the block, and press `d`.
 
 For the session store, use Redis with a 5-minute TTL on every entry, keyed by user id.
 

@@ -61,7 +61,7 @@ x()
 
 Each step says what to **do**, then what to **expect**. Mark each expectation: ✓ if you saw it, ✗ with a comment if not. Marks on the reply above are part of the test, not results.
 
-1. **Do:** click the first list item, then press `↓` down to the four-backtick fence
+1. **Do:** click the band's "click here to review the reply", then click the first list item, then press `↓` down to the four-backtick fence
    - **Expect:** the headings ("Markdown the segmenter…", "Setext heading") are skipped
    - **Expect:** each list item is its own block, nested ones too
    - **Expect:** item 2 and its second paragraph are one block

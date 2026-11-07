@@ -86,11 +86,11 @@ test('outside review the band adds its lines under what lies beneath', async ($,
   expect(texts.some((t: string) => t.startsWith('Synaptik'))).toBe(true)
 })
 
-test('while reviewing Synaptik’s band stands alone', async ($, on) => {
+test('while reviewing, the band still draws what is beneath it (#171)', async ($, on) => {
   await start($, on, 'classic')
   await pane($, 'dock')
   const drawn = await band($)
-  expect(await drawn.find({ type: 'Text', text: ENGINE_DRAWING })).toBeUndefined()
+  expect(await drawn.find({ type: 'Text', text: ENGINE_DRAWING })).toBeDefined()
 })
 
 test('the navigator not on screen: the band offers the press that opens it', async ($, on) => {
