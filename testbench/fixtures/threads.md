@@ -1,6 +1,6 @@
 ## Threads test
 
-Discussing a block in a thread (`d`): the pane, its field, several threads at once, and threads on a code line or table row. What the summaries say is the summaries test. Fullscreen (`/tui fullscreen`), at least 144 columns. A thread takes the keyboard, and the review lets go: if a click on a block doesn't select it afterwards, click the band's "click here to review the reply" first.
+Discussing a block in a thread (`d`): the pane, its field, several threads at once, and threads on a code line or table row. What the summaries say is the summaries test. Fullscreen (`/tui fullscreen`), at least 144 columns. A thread takes the keyboard, and the review lets go; `Esc` on the pane gives the keyboard to the prompt box. So before clicking a block after a thread, click **the hint**: the band's "click here to review the reply".
 
 For the session store, use Redis with a 5-minute TTL on every entry, keyed by user id.
 
@@ -43,28 +43,28 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 
 **Several threads**
 
-8. **Do:** send a question, then at once press `Esc`, click the table, press `d`, and send another
+8. **Do:** send a question, then at once press `Esc`, click the hint, click the table, press `d`, and send another
    - **Expect:** both answer, each in its own pane, as tabs
-9. **Do:** with the table's tab in front, click the Redis paragraph and press `d`
+9. **Do:** with the table's tab in front, press `Esc`, click the hint, click the Redis paragraph and press `d`
    - **Expect:** the Redis thread comes to the front
 
 **Lines and rows**
 
-10. **Do:** click the code block, press `s`, `↓` to the `return` line, press `d`
+10. **Do:** press `Esc`, click the hint, click the code block, press `s`, `↓` to the `return` line, press `d`
     - **Expect:** the pane's title and the anchor at its top are that line alone, coloured as code
     - **Expect:** after `Esc`, the line's margin shows 💬, and the block's ✸
-11. **Do:** press `q` to step out, then `d` on the whole code block
+11. **Do:** press `Esc`, click the hint, click the code block, then `d` on the whole block
     - **Expect:** a different thread opens, about the whole block
-12. **Do:** press `Esc`, click the table, `s`, `↓` to the Postgres row, press `d`
+12. **Do:** press `Esc`, click the hint, click the table, `s`, `↓` to the Postgres row, press `d`
     - **Expect:** the pane shows the table's header and that row only
 
 **Leaving**
 
-13. **Do:** switch a thread on with its include switch, `Esc`, click its block, press `Backspace`
+13. **Do:** switch a thread on with its include switch, `Esc`, click the hint, click its block, press `Backspace`
     - **Expect:** the thread's switch is off when you open it again, and its messages are kept
-14. **Do:** run `/synaptik off`, then `/synaptik on`, then `d` on a block with a thread
+14. **Do:** run `/synaptik off`, then `/synaptik on`, click the hint, then `d` on a block with a thread
     - **Expect:** off closes every thread pane; `d` opens the thread again, messages and all
-15. **Do:** narrow the terminal below 144 columns, click a block, press `d`
+15. **Do:** narrow the terminal below 144 columns, click the hint, click a block, press `d`
     - **Expect:** a toast says to use the band; `ctrl+x tab`, then `d`, opens the thread above the prompt
 16. **Do:** widen it again, and send any prompt to the agent
     - **Expect:** with the new reply, the old threads' panes close, and its blocks have no 💬

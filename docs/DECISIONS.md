@@ -1604,7 +1604,9 @@ sees Esc.
 - `$.ui.focus` moves focus only inside the site that already holds it, so after a
   thread the keyboard can't go back to the review. Keeping the review on left the
   band naming ↑/↓ while they recalled prompt history, so **the review lets go**
-  when a thread takes the keyboard or closes; a click on a block resumes it.
+  when a thread takes the keyboard or closes; `ctrl+x tab` or the band's hint
+  starts it again (a click on a block doesn't: outside a review the blocks take no
+  click — corrected 2026-11-07).
 - A pane opened from the reply is unasked, a `Client`'s post: below 144 columns it
   isn't placed. From the band it is.
 - The pane's own close (`$.ui.close`) raised no `ui.close` in the log. Esc does,
