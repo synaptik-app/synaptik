@@ -29,6 +29,29 @@ first — revise it, supersede it, or mark it dead — rather than work around i
 
 ---
 
+## Format
+
+```markdown
+### D30 — Send by live suggestion in the prompt box
+**Status:** settled · added 2026-10-15
+
+What holds today, and why — rewritten when it changes, never appended to.
+
+**Revisions**
+- **2026-10-24** — what changed, and why, in a line or two.
+```
+
+- **The status line** holds the status and the date the DR was added, nothing
+  else. A DR from before the repository's first commit says `added by 2026-10-14`.
+- **The body is always current.** A revision rewrites it; what it replaced goes
+  to *Revisions*, one dated line each. The full story of an attempt goes to
+  `docs/log/`.
+- **A superseded or dead DR** is written as it stood when it was replaced, and
+  says what replaced it or why it died.
+- **A rule between every DR**, so each reads as one unit.
+
+---
+
 ## Index
 
 | ID | Title | File | Status |
