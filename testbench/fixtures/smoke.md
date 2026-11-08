@@ -56,6 +56,6 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
     - **Expect:** after `Tab`, the suggestion is in the box, its glyphs plain
     - **Expect:** after the space, ✓ is green, ✗ red, ✎ the suggestion's colour
 14. **Do:** press `ctrl+c`
-    - **Expect:** the box is empty, and the dim suggestion is back (on the `directory` build, at your next keystroke or mark)
+    - **Expect:** the box is empty, and the dim suggestion is back
 
 When you're done: click the first **Expect:**, mark every expectation, press `q`, `Tab`, then `⏎`. The test session answers with a table of your results.

@@ -116,9 +116,13 @@ test('A click on any block selects that block', async ($, on) => {
   }
   await clickAndPress(ui, KEY_BY_USER, ['q'])
   await settled()
-  expect(suggested()).toContain('✓ "npm run migrate"')
-  expect(suggested()).toContain('✓ "table: Option · Latency"')
-  expect(suggested()).toContain('✓ "key each entry by user"')
+  // Taken (Tab): the box holds the whole review, the suggestion being short.
+  const short = suggested()
+  await ($ as unknown as { prompt: { change: (e: object) => Promise<unknown> } }).prompt.change({ origin: { kind: 'clear' }, text: short, cursor: short.length })
+  await settled()
+  expect(promptBox.text).toContain('✓ "npm run migrate"')
+  expect(promptBox.text).toContain('✓ "table: Option · Latency"')
+  expect(promptBox.text).toContain('✓ "key each entry by user"')
 })
 
 test('After a click, ↑/↓ and Home/End move between blocks', async ($, on) => {
@@ -226,22 +230,48 @@ test('The suggestion in the prompt box follows every mark', async ($, on) => {
   expect(suggested()).toBe('✓ "1. Cache sessions in Redis"')
   await typeInPrompt($, 'x')
   const before = suggestions.length
-  // Backspace on the x: the box is empty again.
-  await ($ as unknown as { prompt: { edit: (e: object) => Promise<unknown> } }).prompt.edit({ origin: { kind: 'person' }, text: 'x', cursor: 1, start: 0, end: 1, inputText: '', key: { key: 'backspace' } })
+  // A clear: raised as Claude Code raises it (the test's `$` lists no such call).
+  await ($ as unknown as { prompt: { change: (e: object) => Promise<unknown> } }).prompt.change({ origin: { kind: 'clear' }, text: '', cursor: 0 })
   await settled()
   expect(suggestions.length).toBe(before + 1)
   expect(suggested()).toBe('✓ "1. Cache sessions in Redis"')
 })
 
-test('During a review the suggestion is the whole review', async ($, on) => {
+test('A long suggestion shows 3 lines, in a review and after it', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
   await review($)
   const ui = await fullscreen($, F)
   for (const index of [CODE, TABLE, KEY_BY_USER]) await clickAndPress(ui, index, ['a'])
-  // Never shortened: taken at any time, after an Esc too, it is all of it.
-  expect(suggested()).not.toContain('…')
-  expect(suggested()).toContain('✓ "table: Option · Latency"')
+  expect(suggested().split('\n').length).toBe(4)
+  expect(suggested()).toMatch(/\n… \(\+\d+ lines?\)$/)
+  await clickAndPress(ui, KEY_BY_USER, ['q'])
+  await settled()
+  // Still short once the review ends: a suggestion shows only in an empty box.
+  expect(suggested().split('\n').length).toBe(4)
+  expect(suggested()).toMatch(/\n… \(\+\d+ lines?\)$/)
+  // Taken, then cleared (ctrl+c): proposed short again.
+  const short = suggested()
+  const change = ($ as unknown as { prompt: { change: (e: object) => Promise<unknown> } }).prompt.change
+  await change({ origin: { kind: 'clear' }, text: short, cursor: short.length })
+  await settled()
+  await change({ origin: { kind: 'clear' }, text: '', cursor: 0 })
+  await settled()
+  expect(suggested()).toBe(short)
+})
+
+test('Esc during a review, then Tab on the short suggestion', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  for (const index of [CODE, TABLE, KEY_BY_USER]) await clickAndPress(ui, index, ['a'])
+  // Esc raises nothing. Tab: the box holds the suggestion, as a prompt.change.
+  const short = suggested()
+  await ($ as unknown as { prompt: { change: (e: object) => Promise<unknown> } }).prompt.change({ origin: { kind: 'clear' }, text: short, cursor: short.length })
+  await settled()
+  expect(promptBox.text).not.toContain('…')
+  expect(promptBox.text).toContain('✓ "table: Option · Latency"')
 })
 
 test('ctrl+x tab starts a review', async ($, on) => {

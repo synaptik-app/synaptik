@@ -110,9 +110,7 @@ export function compile(
 }
 
 // The compiled prompt in a few lines, and how many more there are: what the
-// suggestion showed during a review. Unused while the suggestion stays whole
-// (no `prompt.change` to repair a short one taken); kept for #178. Short enough
-// already, it comes back as is.
+// suggestion shows during a review. Short enough already, it comes back as is.
 export function preview(text: string, keep = 3): string {
   const lines = text.split('\n')
   const rest = lines.length - keep

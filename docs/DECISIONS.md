@@ -1061,6 +1061,17 @@ it back at the next keystroke or action rather than at once. First on a
 The hook and the shortened suggestion come back once the directory lists the
 event (#178).
 
+#### Revision 2026-11-08 — shortened again, with `prompt.change`
+
+The directory refused Synaptik on 2026-11-07 for another reason: it takes mods
+only from Verified organizations, and there is no way to apply (#93). Nothing
+left to keep `main` in its shape for, so the hook and the shortened suggestion
+are back (#178). And now **always** shortened, not only during a review: every
+way out of a review (typing, taking the suggestion) left the box with the whole
+text again, so a clear brought back a long suggestion. A suggestion shows only
+while the box is empty, so a short one never sits beside a draft; taken, it is
+the whole review, in either renderer.
+
 ---
 
 ### D31 — The navigator: a docked pane that maps the reply
