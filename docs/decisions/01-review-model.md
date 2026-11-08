@@ -16,11 +16,8 @@ compiles into a single prompt. Interactions fall into three classes:
 need typing." Comment groups with accept and reject: all three are deferred
 marks that compile into one prompt, and only a thread interrupts the flow.
 
-**Comment ↔ thread conversion is free until the first prompt is sent.** Open a
-comment, realise you need an answer, promote it with one key and the typed text
-becomes the thread's opening message. The reverse works too. After the first
-exchange the choice is committed, since a thread has history and a comment does
-not.
+**A comment does not turn into a thread.** Discuss is its own action on the
+block: the person decides to open a thread.
 
 **Rationale:** of the five frictions in the problem statement
 (`spec/README.md`), only one is genuinely a discussion. The other four are
@@ -40,6 +37,8 @@ pane, marking is a shortcut for the trivial case. Better if the real pain is
 - **by 2026-10-14** — verbs were grouped by *typed vs untyped*, and the free-form
   mark was "amend": renamed **comment**, since amend implies editing Claude's
   text when the user is annotating it. Regrouped by *deferred vs waiting*.
+- **2026-11-08** — no comment ↔ thread conversion. A comment could be promoted to a
+  thread with one key, its text the opening message, until the first exchange.
 
 ---
 
