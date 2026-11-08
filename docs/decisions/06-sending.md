@@ -1,34 +1,5 @@
 # Sending
 
-### D29 — The band is the source of truth; the prompt box is a scratch copy
-**Status:** settled · added 2026-10-12
-
-The person sees the exact text before it is sent, and the mod never merges its
-text into what they typed. The compiled prompt is shown in the prompt box, as a
-suggestion (D30); the band above the box (`AbovePrompt`) holds a one-line summary
-and an action line (SPEC §7), never the prompt itself.
-
-**Why:** the band is the mod's own surface and the box is the person's. Keeping
-the mod's text out of what they typed removes all merge logic — there is no case
-where mod text and user text must be combined, and no divergence state to
-explain or display.
-
-#### Rejected alternatives
-
-| | Why rejected |
-|---|---|
-| Regenerate into the box, overwriting user edits automatically | data loss as a side effect of marking |
-| Live preview in the box until the user edits it, then detach | needs a divergence state and a destructive re-sync key |
-| Merge mod text with typed text on submit via `prompt.submit` | the agent would receive text the user never saw |
-
-**Revisions**
-- **2026-10-15** — the compiled prompt moves from a dim preview in the band to a
-  suggestion in the box (D30). The band keeps a summary and an action line; the
-  submit and copy-to-box keys go with the preview.
-- **2026-10-24** — no direct submission at all: the mod never submits (D30).
-
----
-
 ### D30 — Send by live suggestion in the prompt box
 **Status:** settled · added 2026-10-15
 
@@ -85,6 +56,38 @@ suggestions while feedback is staged (item 7).
 ---
 
 ## Superseded
+
+### D29 — The band is the source of truth; the prompt box is a scratch copy
+**Status:** superseded → D30 · added 2026-10-12
+
+**Replaced by D30**, which holds the mechanism; the principle carries over to P1
+and D30 unchanged. As it stood: the person sees the exact text before it is sent, and the mod never merges its
+text into what they typed. The compiled prompt is shown in the prompt box, as a
+suggestion (D30); the band above the box (`AbovePrompt`) holds a one-line summary
+and an action line (SPEC §7), never the prompt itself.
+
+**Why:** the band is the mod's own surface and the box is the person's. Keeping
+the mod's text out of what they typed removes all merge logic — there is no case
+where mod text and user text must be combined, and no divergence state to
+explain or display.
+
+#### Rejected alternatives
+
+| | Why rejected |
+|---|---|
+| Regenerate into the box, overwriting user edits automatically | data loss as a side effect of marking |
+| Live preview in the box until the user edits it, then detach | needs a divergence state and a destructive re-sync key |
+| Merge mod text with typed text on submit via `prompt.submit` | the agent would receive text the user never saw |
+
+**Revisions**
+- **2026-10-15** — the compiled prompt moves from a dim preview in the band to a
+  suggestion in the box (D30). The band keeps a summary and an action line; the
+  submit and copy-to-box keys go with the preview.
+- **2026-10-24** — no direct submission at all: the mod never submits (D30).
+- **2026-11-08** — superseded by D30: what was left of it was the principle, which
+  P1 and D30 already state.
+
+---
 
 ### D6 — Reference expansion by truncated quote
 **Status:** dead · added by 2026-10-14
