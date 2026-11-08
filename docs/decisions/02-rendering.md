@@ -69,8 +69,9 @@ beneath it. Found with the test bench's `neighbour-mod` and its greedy toggle
    blocks text selection.
 3. **In classic, everything essential lives in the navigator.** The in-place view
    is a bonus another mod can take; the function must survive any neighbour
-   (bears on #19). Fullscreen has no navigator (D41); a greedy mod above Synaptik
-   during a fullscreen review is not re-tested.
+   (bears on #19). **Fullscreen has no navigator (D41), so a greedy mod above
+   Synaptik can block the review:** it takes the reply, and with it the blocks'
+   focus and keys. Tested.
 
 **Rejected:** calling `next(e)` for the reply and discarding the result — other
 mods would run, nothing of theirs would show, and the reply would be drawn twice.
