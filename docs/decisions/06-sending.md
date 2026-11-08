@@ -55,6 +55,37 @@ suggestions while feedback is staged (item 7).
 
 ---
 
+### D47 — Compile format: a marked-up outline of the reply
+**Status:** settled · added 2026-11-08
+
+What is sent is a marked-up outline of what Claude wrote. No header and no prose
+scaffolding: no "the user approved step 3", no "the user asked to explain…".
+
+```
+✓ "Use Redis for the session cache"
+    ✓ "per-user key prefix"
+    ✗ "write-through on logout"
+✎ "Add a rate limiter" → make it 5 req/sec
+💬 "Shard by tenant id" → defer sharding until >10k tenants
+```
+
+Symbol, short quote, optional text, nesting preserved (D4). Quotes run to roughly
+the first 6–8 words — long enough to locate, short enough to stay readable in a
+stack of marks — and a cut quote ends in three plain dots (`...`), not the single
+`…` character. **Threads contribute only their included summary**, with no
+mention that a discussion happened or what was asked. The full format is SPEC §9.
+
+**Why:** the agent wrote this message one turn ago, so a six-word quote locates
+anything — the user is annotating, not re-explaining. No header is the closest
+thing to text a person would type (P1).
+
+**Revisions**
+- **2026-10-15** — the `Re your last message:` header is dropped: it read like an
+  email reply, and the quotes alone locate everything. Cut quotes end in `...`.
+- **2026-11-08** — a DR of its own; it was the part of D6 that survived.
+
+---
+
 ## Superseded
 
 ### D29 — The band is the source of truth; the prompt box is a scratch copy
@@ -95,30 +126,7 @@ explain or display.
 Existed only because the user was assumed to type block references. They never
 do. Nothing to expand (D5, P1).
 
-What survives is the compile format, below: quotes run to roughly the first 6–8
-words — long enough to locate, short enough to stay readable in a stack of
-marks.
-
-#### Compile format
-
-No header and no prose scaffolding. No "the user approved step 3", no "the user
-asked to explain…". A marked-up outline of what Claude wrote:
-
-```
-✓ "Use Redis for the session cache"
-    ✓ "per-user key prefix"
-    ✗ "write-through on logout"
-✎ "Add a rate limiter" → make it 5 req/sec
-💬 "Shard by tenant id" → defer sharding until >10k tenants
-```
-
-Symbol, short quote, optional text, nesting preserved. Cut quotes end in three
-plain dots (`...`), not the single `…` character. The agent wrote this message
-one turn ago, so a six-word quote locates anything — the user is annotating, not
-re-explaining. **Threads contribute only their committed summary**, with no
-mention that a discussion happened or what was asked. No header is the closest
-thing to text a person would type.
+What survived of it, the compile format, is D47.
 
 **Revisions**
-- **2026-10-15** — the `Re your last message:` header is dropped: it read like an
-  email reply, and the quotes alone locate everything. Cut quotes end in `...`.
+- **2026-11-08** — the compile format moves out to D47.

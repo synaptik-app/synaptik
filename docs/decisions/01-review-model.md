@@ -173,7 +173,7 @@ can only read it that way if the output shows the nesting:
     ✗ "write-through on logout"
 ```
 
-(Format as in D6's compile section and `SPEC.md` §9.)
+(Format as in D47 and `SPEC.md` §9.)
 
 Cheap to record now, impossible to retrofit once the compile format is fixed.
 
