@@ -1,24 +1,32 @@
 # Principles
 
-## 2. Principles
+Principles (P) are constraints that govern decisions rather than being decisions
+themselves. The D records here are the decisions closest to them.
 
-Constraints that govern decisions rather than being decisions themselves.
+---
 
 ### P1 — The mod never interferes with the prompt/response flow
-**Status:** settled · added 2026-10-12 · **revised 2026-10-15** (was: "the agent
-never knows the mod exists" — see the revision note at the end)
+**Status:** settled · added 2026-10-12
 
-The compiled prompt reads exactly like something the user typed. No markers, no
-IDs, no mod structures, no sender attribution. The mod does not ask the model
-for anything, and does not teach it any protocol.
+The mod never puts something into the flow between the person and the agent that
+the person did not see and choose, and never blocks, rewrites or holds that flow.
+**Interference is the concern, not secrecy:** the agent knowing the mod exists is
+fine.
+
+The compiled prompt reads like something the person typed. No markers, no IDs, no
+mod structures, no protocol — not to hide the mod, but because they are noise the
+agent would have to parse. The mod does not ask the model for anything, and does
+not teach it any protocol.
 
 **Consequences:**
-- The user always sees the exact text before it goes — in the band preview
-  (D29), whether they submit it directly or copy it to the box first.
-- Submission uses `$.prompt.submit({ asUser: true })`. The plain form prepends
-  a sentence naming the mod as sender. *(Since D30's revision of 2026-10-24 the
-  mod submits nothing: the person sends the suggestion themselves.)*
+- The person sees every word before it is sent, in the prompt box (D30), and sends
+  it themselves: the mod submits nothing.
 - Killed D6 and D8 outright, and reduced D7 to nothing.
+- Allowed: a slash command whose output the model reads (the kill switch, D39);
+  naming the mod where useful.
+
+**The test** for anything new, E9 and E16 included: does it change the flow, or
+only inform it?
 
 **Open edge:** E9 (nudging Claude toward `AskUserQuestion` via `prompt.compose`)
 does not touch user prompts, but does make the agent behave differently because
@@ -31,24 +39,17 @@ E12 is ever built.
 stays the default and the documented norm** — extended mode is the deviation, not
 the other way round. The reasoning for keeping it that way is in E16.
 
-#### Revision 2026-10-15 — what P1 actually protects
+**Revisions**
+- **2026-10-15** — what P1 protects is the flow, not secrecy. It was "the agent
+  never knows the mod exists".
+- **2026-10-24** — the mod submits nothing (D30); before, it sent with
+  `$.prompt.submit({ asUser: true })`, since the plain form names the mod as
+  sender.
 
-Secrecy was never the point. The concern is **interference**: the mod must never
-put something into the flow between the person and the agent that the person did
-not see and choose, and never block, rewrite or hold that flow. The agent
-knowing the mod exists is fine.
-
-**What stays:** no markers, IDs or protocol in the compiled prompt — not to hide
-the mod, but because they are noise the agent would have to parse. The person
-sees every word before it is sent (now in the prompt box, D30). `asUser: true`
-stays, because the text *is* the person's.
-
-**What this frees:** a slash command whose output the model reads (the kill
-switch, a `/synaptik configure`); naming the mod where useful. E9 and E16 are
-judged by the same test: do they change the flow, or only inform it?
+---
 
 ### P2 — The mod relays, it does not analyse
-**Status:** settled · added 2026-10-12 (implicit from the start)
+**Status:** settled · added 2026-10-12
 
 The mod never decides what the user meant, what is worth sending, or how to
 reconcile contradictions. It captures intent and hands it over verbatim; the
@@ -57,6 +58,8 @@ agent does the interpreting.
 Visible in D3 (the model summarizes its own thread, the mod does not),
 D22 (conflicts go out unresolved), and the deletion of the capability matrix
 in D4.
+
+---
 
 ### P3 — One mechanism, many sources: review what the transcript already holds
 **Status:** settled · added 2026-10-13
@@ -116,7 +119,7 @@ activity.** Conflating them is what made the gating designs hard.
 ---
 
 ### D22 — Conflicting marks are not resolved by the mod
-**Status:** settled
+**Status:** settled · added by 2026-10-14
 
 If a block is accepted and then threaded to the opposite conclusion, send
 **both** without intervention. The agent resolves it in its next response.
@@ -125,7 +128,7 @@ Avoids inventing precedence rules the user would have to learn. See P2.
 ---
 
 ### D23 — The mod must be trivially disableable, and must fail to vanilla
-**Status:** settled · reviewed 2026-10-13
+**Status:** settled · added by 2026-10-13
 
 Enabling and disabling must be a single step, at any point, leaving a vanilla
 Claude Code session behind with the chat and flow unbroken. A hook that throws
@@ -147,21 +150,21 @@ to migrate, nothing to recover.
 **This is a constraint to check future features against.** E13's persisted
 block identity would be the first thing to test it.
 
-#### Add: an in-mod kill switch
+#### An in-mod kill switch
 
-Beyond `--safe-mode` and `/plugin`, provide a key or `/command` that makes the
-render hooks pass through while the session continues. **The failure actually
-hit during development is rendering being *wrong*, not throwing** — and
-restarting a session to escape it is painful mid-task.
+`/synaptik off` makes the hooks pass through while the session continues, and
+`/synaptik on` brings them back (D39). **The failure actually hit during
+development is rendering being *wrong*, not throwing** — and restarting a session
+to escape it is painful mid-task.
 
-**Available switches:** `claude --plugin-dir ./mod` loads for one session only
-(and reloads the hooks module on save); `/plugin` disables an installed one;
+**Other switches:** `claude --plugin-dir ./mod` loads for one session only (and
+reloads the hooks module on save); `/plugin` disables an installed one;
 `--safe-mode` disables everything for a session.
 
 ---
 
 ### D28 — Mods do not intervene in Claude Code's own tool runs
-**Status:** settled
+**Status:** settled · added by 2026-10-14
 
 The mod does not gate, modify or execute tool calls Claude makes. The boundary
 falls on a natural seam — two different surfaces, never confusable at runtime:
@@ -171,9 +174,8 @@ falls on a natural seam — two different surfaces, never confusable at runtime:
 | Command **in the response text** (written, not called) | `AssistantMessage` render site | Yes — comment and thread apply |
 | Command Claude **is calling** | `tool.call` | No — untouched |
 
-**Consequence, now stronger than when written:** MVP registers **no tool hooks
-at all**. The surface is three render sites (`AssistantMessage`, `AbovePrompt`,
-`Pane`), the `ui.*` events, and `turn.complete`.
+**Consequence:** Synaptik registers **no tool hooks at all**. The hooks it does
+register are listed in the README.
 
 **The excluded case is real and wanted** — responding to an approval prompt with
 "yes, but add `--verbose`" instead of rejecting and retyping. See E5.
@@ -183,8 +185,9 @@ at all**. The surface is three render sites (`AssistantMessage`, `AbovePrompt`,
 ## Extensions
 
 ### E16 — Extended mode: cooperate with the agent (**analysis needed**)
-**Status:** proposed
-**Added 2026-10-14. The deliberate inverse of P1 — read that first.**
+**Status:** proposed · added 2026-10-14
+
+**The deliberate inverse of P1 — read that first.**
 
 A mode switch: **simple** (the default, P1 intact — the agent never knows the mod
 exists) versus **extended**, where the mod modifies the system prompt so the
@@ -205,7 +208,7 @@ back; `prompt.section` rewrites one section by name. So the question is never
 
 #### Why this is filed as analysis, not design
 
-**The coupling is the whole problem.** This session's consistent finding was that
+**The coupling is the whole problem.** The design's consistent finding was that
 every design depending on model cooperation got harder (D7, D8, E9) and every
 design depending only on reading got simpler (P3). Extended mode reintroduces
 that dependency on purpose.
@@ -242,4 +245,3 @@ a wishlist is how compliance budget gets spent on things that did not matter.
 **If it ships, it ships off by default**, with the switch as an `E10` option, and
 P1 remains the documented norm rather than a legacy mode.
 
----

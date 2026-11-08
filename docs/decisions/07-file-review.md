@@ -3,14 +3,10 @@
 ## Extensions
 
 ### E15 — Review the files a turn touched, in the same review
-**Status:** proposed
-*2026-10-24: the git-snapshot approach (a snapshot per `turn.complete`, since
-the last reply or the last review), its concerns, and the first test are on
-#108. To consider in detail later.*
+**Status:** proposed · added 2026-10-13
 
-**Added 2026-10-13. Reframed 2026-10-14 and 2026-10-16. Likely the strongest
-extension point — possibly worth more than phase 2's threads, since reviewing
-generated code is where comments batch up most.**
+**Likely the strongest extension point** — possibly worth more than phase 2's
+threads, since reviewing generated code is where comments batch up most.
 
 Claude edits or creates a file. You want to leave **several comments across it
 and submit once** — how a pull-request review works, and the same batching
@@ -44,11 +40,12 @@ caching across the review.
 
 The turn boundary is the same one the reply already uses: **the whole turn is the
 reply** (§11 item 12, fixed in #25), so text and files written between tool calls
-belong to the same review.
+belong to the same review. The turn boundary covers diffs and created files
+alike.
 
-An earlier draft of this entry treated files as a separate feature with their own
-lifecycle, and argued the stability case only for diffs (frozen) and not for
-created files (live). The turn boundary already covers both.
+**Another approach, on #108:** a git snapshot per `turn.complete`, since the last
+reply or the last review — its concerns and the first test are there. To consider
+in detail later.
 
 #### Shape: additive, never a restyle
 
@@ -64,9 +61,8 @@ lands.
 
 #### Surface: the navigator lists files; ⏎ opens one
 
-*Depends on the navigation model (#19).* This surface is model A — a navigator
-pane with ↑/↓ for rows and ←/→ for verbs. Under model B there is no navigator to
-list files in, and file review needs its own entry point.
+*Written for model A of the navigation model (#19)* — a navigator pane with ↑/↓
+for rows and ←/→ for verbs.
 
 The navigator (`synaptik-map`, SPEC §10) already lists the reply's blocks. Files
 the turn touched are listed in it too, below the blocks. `⏎` on a file opens a
@@ -98,12 +94,12 @@ Paths come from the `Edit`/`Write` tool calls in `$.session.messages()` (newest
 4,096 entries) — so the mod knows which files the turn touched **even when the
 reply never mentions them**.
 
-**Precondition verified (2026-10-17, types of 2.1.287):** each `messages()` row
+**Verified (2026-10-17, types of 2.1.287):** each `messages()` row
 carries `toolUses[]`, and every entry has `input` — "the arguments the model gave
 it" — as well as `result` and `text`. So an `Edit` or `Write` call gives its
 `file_path`, and an `Edit` call gives its own before/after (`old_string` /
-`new_string`). No fallback needed; a `/command` taking a path stays a possible
-simplest first version.
+`new_string`). A `/command` taking a path stays a possible simplest first
+version.
 
 #### Why this is easier than the main feature, not harder
 
@@ -159,9 +155,18 @@ E8's `Edit`/`Write` entry is about **gating** a tool call before it runs. This i
 reviewing **after** — a different moment, and it keeps D28 intact: the mod never
 touches a tool call, it only reads what already happened.
 
-**Field note #5** (code blocks need line-level granularity) wants this same pane
-for a fenced code block inside a reply — line-numbered, same verbs, no file path.
-If E15 is built, #5 is close to free.
+**Field note #5** (code blocks need line-level granularity) wanted this same pane
+for a fenced code block inside a reply. It was met another way: stepping into a
+code block, line by line, in the reply itself (D43). Its windows are a starting
+point for a file's lines.
 
-**Do this after phase 1**, when the tray, navigator and compile step exist to
-reuse rather than guess at.
+**After phase 1**, so the tray, navigator and compile step exist to reuse rather
+than guess at.
+
+**Revisions**
+- **2026-10-14, 2026-10-16** — reframed: files are more of the same review, in the
+  same tray and prompt, not a separate feature with its own lifecycle. An earlier
+  draft argued stability only for diffs (frozen), not for created files (live).
+- **2026-10-17** — `messages()` rows carry each tool call's `input`, so the paths
+  and the `Edit` before/after are available; no fallback needed.
+- **2026-10-24** — the git-snapshot approach, on #108.
