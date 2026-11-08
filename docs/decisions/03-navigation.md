@@ -1,14 +1,12 @@
 # Navigation
 
 ### D20 — Modal navigation with visible controls on the selected block
-**Status:** settled · reviewed 2026-10-13, revised
+**Status:** settled · added by 2026-10-13
 
-Enter navigation → arrows move between blocks → Esc backs out one level per
-nesting depth.
-
-**Revision: visible controls, not hotkeys alone.** The selected block shows a
-row of real `Button` elements; hotkeys work too, for whoever learns them. This
-is the primary interaction — not a fallback.
+Review is a mode: entered, moved through block by block, and left. **The selected
+block shows its actions** as a row of real buttons with labels — hotkeys work too
+(`a` `x` `c` `d`), for whoever learns them — so nothing must be memorized. The row
+moves with the selection, so only one block's controls are on screen.
 
 ```
 ▎ Use Redis for the session cache
@@ -17,140 +15,109 @@ is the primary interaction — not a fallback.
 ▏ Shard by tenant id
 ```
 
-The row moves with the selection, so **only one block's controls are on screen**
-— which resolves D20's original tension without hiding the verbs. Labels are
-visible, so nothing must be memorized, and `Button` takes both `label` and
-`hotkey`, so both paths work from one definition.
+**A comment is typed in place** under its block — better than a popup, because
+the text being commented on stays visible while typing.
 
-**Comment is an inline `Input`** appearing in place under the block — better
-than a popup, because the text being commented on stays visible while typing.
+**How keys reach the review depends on the renderer**, because a mod gets keys
+only through a focus ring (the band's, a pane's) or a `Client` that was clicked:
+- **Fullscreen (D41):** the review is in the reply. Once a block is clicked, the
+  reply's `Client`s take the keys: ↑/↓ between blocks, ←/→ along the actions. From
+  the keyboard, `ctrl+x tab` gives the review to the band, with `j` / `k` between
+  blocks.
+- **Classic (D31):** a pane, whose scrolling turns ↑/↓ into block moves; ←/→ or
+  Tab walk the actions on its ring.
 
-`Button`, `Input` and `Select` all render in the terminal.
+**Entering:** `ctrl+x tab`, Claude Code's `abovePrompt:focus`, or a key the person
+binds to it (D32).
 
-#### Entry key — open, and less important than it looked
+**A second level, for code and tables:** a code block or table gets **step in**
+(D43, D44). Inside it, ↑/↓ move between lines or rows and the actions apply to the
+selected one. Prose stays at block level: splitting a paragraph into sentences
+breaks how it wraps.
 
-**`Cmd+S` is rejected.** On macOS the terminal emulator usually swallows Cmd
-combinations before they reach the TUI, and Cmd does not exist in Linux or
-Windows terminals. **`Ctrl+S` is worse** — it is the classic terminal XOFF and
-some terminals still honour it, freezing output until `Ctrl+Q`.
+#### Why it works this way
 
-Candidates, in order:
+**No raw keys (Q3).** `ui.press` fires only for `Button`s. Keys reach a mod only
+through a focus ring, which only the band and panes have — the reply never takes
+focus. And a ring is **linear**: ↑, ←, ⇧Tab all mean "previous"; `ui.focus`
+reports where focus goes, never which key sent it.
 
-1. **A plain unmodified key while the prompt box is empty** — the way Claude
-   Code already treats digits in the band. No modifiers, nothing to swallow.
-2. **`Ctrl+G`** — rarely bound, reaches the TUI reliably.
-3. **Esc-prefixed** (Esc then a key) — portable, slightly awkward.
-4. **`Button`'s `action` prop**, which names one of Claude Code's own
-   [keybinding actions](https://code.claude.com/docs/en/keybindings) and fires on
-   whatever the user has bound — inheriting a key that is already portable and
-   already consistent with the rest of the app.
-
-**Settle by feel in the spike** (D27), alongside Q3 — the key cannot be chosen
-without knowing what `ui.press` actually receives. Visible controls make the
-mode self-evident once entered, so the entry key matters less than it first
-appeared.
-
-#### Notes for implementation
-
-- `autoFocus` accepts only `true`, so focus is managed per render rather than
-  by flipping a prop off.
-- `Box` has a `hover` prop, which suggests **mouse interaction may work in the
-  terminal**. Worth checking in the spike — if clicking works, discoverability
-  comes free without touching the keyboard design.
-
-#### Revision 2026-10-15 — what the spike found
-
-**Q3 answered: no raw keys.** `ui.press` fires only for `Button`s. Keys reach a
-mod only through a focus ring, which only the band and panes have — the reply
-never takes focus. And a ring is **linear**: ↑, ←, ⇧Tab all mean "previous";
-`ui.focus` reports where focus goes, never which key sent it. Arrowing through
-blocks *of the reply*, as designed, is not possible.
-
-**What works: a pane, and its scrolling.** In a pane ↑/↓ scroll, and `ui.scroll`
+**A pane turns ↑/↓ into a direction.** In a pane ↑/↓ scroll, and `ui.scroll`
 carries a signed direction. With the pane's tree kept two rows taller than its
 window and the window pinned in the middle, every ↑/↓ is a direction signal; the
-mod moves the selection and cancels the scroll. ←/→ (or Tab) walk the verbs on
-the ring. That is D31.
+mod moves the selection and cancels the scroll. The band raises no scroll event
+when it has nothing to scroll (tested 2026-10-18), and making it overflow would
+take half the screen.
 
-**Tried and dropped along the way:**
-- *Verbs and blocks on one band ring*: ↓ walked the verbs, then fell through to
+**The navigation model, A (#19):** the pane — ↑/↓ blocks, ←/→ verbs — over B (no
+pane: every arrow moves blocks on the band's ring, verbs by letter keys). A won on
+what the spike found, not on whether the pane earns its space: only a pane
+separates ↑/↓ from ←/→; the classic renderer needs a pane regardless, since the
+reply above cannot be redrawn once scrolled off (#11, #31); and a pane cannot be
+taken by another mod (D33). Fullscreen later moved the review into the reply
+(D41), where clicked `Client`s get the arrows directly.
+
+`autoFocus` accepts only `true`, so focus is managed per render rather than by
+flipping a prop off.
+
+#### Tried and dropped
+
+- **`Cmd+S` to enter:** the terminal emulator usually swallows Cmd combinations,
+  and Cmd does not exist in Linux or Windows terminals. **`Ctrl+S`** is the
+  classic terminal XOFF, which some terminals still honour.
+- **Verbs and blocks on one band ring:** ↓ walked the verbs, then fell through to
   the next block. Confusing.
-- *Borrowed Global actions for blocks* (`app:diffFileListUp/Down`, `ctrl`/`⌥` +
+- **Borrowed Global actions for blocks** (`app:diffFileListUp/Down`, `ctrl`/`⌥` +
   ↑↓): did not fire on macOS — Mission Control takes `ctrl+↑`, and `⌥` needs the
   terminal's Option-as-Meta. Borrowing another feature's action is fragile anyway.
-- *A bare digit from the empty prompt* to enter: it presses a band button, but
+- **A bare digit from the empty prompt** to enter: it presses a band button, but
   `$.ui.focus` from there is refused; it did not give the band the keyboard.
 
-**Entry key: settled as a user binding** (D32). `abovePrompt:focus` is an
-ordinary action, `ctrl+x tab` by default.
-
-**The navigation model — decided 2026-10-18: A, a pane in both renderers (#19).**
-The options were A (the pane: ↑/↓ blocks, ←/→ verbs) and B (no pane: every arrow
-moves blocks on the band's ring, verbs by letter keys). A won on what the spike
-found, not on whether the pane earns its space:
-- **↑/↓ apart from ←/→ needs a pane.** Only a pane turns ↑/↓ into a direction
-  (`ui.scroll`); the band raises no scroll event for them when it has nothing to
-  scroll (tested 2026-10-18), and making it overflow would take half the screen.
-- **The classic renderer needs a pane regardless** — the reply above cannot be
-  redrawn once scrolled off, so the pane is the one surface that stays current
-  (#11, #31).
-- **A pane cannot be taken by another mod** (D33): a greedy mod above Synaptik
-  removed its in-place view, never the navigator.
-
-Classic: the pane is a block viewer (#31, SPEC §10). Fullscreen: the docked
-navigator, its design to be finished on #39.
-
-#### Revision 2026-10-24 — a second level, for code and tables
-
-**Revised 2026-11-01 by D43:** built for code blocks in fullscreen, with `step in` and
-`step out`. Tables are still to come.
-
-A code block or a table gets a 5th action, **step into**. Inside it, ↑/↓ move
-between lines or rows, and the menu holds the four verbs plus **step back**,
-which returns to the blocks. Prose stays at block level: splitting a paragraph
-into sentences breaks how it wraps. Design and rendering: #105 (for #5, #6).
-
-**Revised 2026-10-27 by D41:** in fullscreen the reply's own `Client`s take the
-keys once clicked, so the scroll trick and the pane are needed only in classic.
-The keyboard path in fullscreen goes through the band, with `j` / `k`.
+**Revisions**
+- **2026-10-13** — visible controls on the selected block, not hotkeys alone.
+- **2026-10-15** — the spike: no raw keys, so ↑/↓ come from a pane's scrolling
+  (D31); the entry key is a user binding (D32).
+- **2026-10-18** — navigation model A, a pane in both renderers (#19).
+- **2026-10-24** — a second level, step into, for code and tables (#105).
+- **2026-10-27** — fullscreen reviews in the reply (D41); the pane only in
+  classic.
+- **2026-11-01** — step in built for code blocks (D43), then tables (D44).
 
 ---
 
 ### D31 — The navigator: a docked pane that maps the reply
-**Status:** settled · added 2026-10-15 · **the pane stays, in both renderers**
-(#19, 2026-10-18; see D20) · fullscreen design to finish on #39 · **revised
-2026-10-27 by D41: classic only; fullscreen reviews in the reply**
+**Status:** settled · added 2026-10-15
 
-A pane beside the transcript serves two jobs:
+**In the classic renderer, a pane carries the review** (fullscreen has none: it
+reviews in the reply, D41). It opens **inline**, full width, above the band, and
+does two jobs:
 
-1. **Keys** — the scroll trick for ↑/↓, the ring for ←/→ (D20 revision). Its
-   verb buttons and comment field are drawn hidden; the reply shows the cursor.
-2. **Overview** — one bar per block sized by length; selected, staged and
-   other bars distinct; staged blocks show their mark and opening words;
-   comments under their block; `Your notes · ✓2 ✗1 ✎1` on top, the position at
-   the bottom.
+1. **Keys** — the scroll trick for ↑/↓, the ring for ←/→ (D20). Its verb buttons
+   are drawn hidden; the reply shows the cursor.
+2. **A block viewer** (#31) — the selected block in full with its mark, menu and
+   comment, its neighbours' opening words, the counts on top and the position at
+   the bottom. The reply above cannot be redrawn once scrolled off, so the pane is
+   the one surface that stays current. Sized once per reply; trimmed with
+   PgUp/PgDn beyond a third of the screen.
 
-The overview exists because the pane could not be made narrow: a request for 4
-columns drew ~23, so the width is spent on content.
+**Limits found:** an unasked open waits undrawn below 144 columns; a module reload
+closes it; the size a person sets is remembered and wins. Two things were tried and
+dropped, both because the mod cannot see how the reply wraps: mirroring the reply
+line for line, and highlighting the blocks the terminal shows (§11, item 16).
 
-**Limits found:** an unasked open waits undrawn below 144 columns; a module
-reload closes it; the width a person sets is remembered and wins. Two things
-were tried and dropped, both because the mod cannot see how the reply wraps:
-mirroring the reply line for line, and highlighting the blocks the terminal
-shows (§11, item 16).
-
-**Classic renderer, 2026-10-18 (#31):** the same pane, placed inline, is a
-**block viewer** — the selected block in full with its neighbours, menu and
-comment — since the reply above cannot be redrawn once scrolled off. Sized once
-per reply; trimmed with PgUp/PgDn beyond a third of the screen. Fullscreen keeps
-the docked navigator with in-place review.
+**Revisions**
+- **2026-10-18** — the pane stays, in both renderers (#19, D20). In classic it is a
+  block viewer (#31); fullscreen keeps a docked navigator: an overview, one bar per
+  block sized by length, marks and opening words, which used the ~23 columns a
+  docked pane can't go below.
+- **2026-10-27** — classic only: fullscreen reviews in the reply (D41).
 
 ---
 
 ### D37 — Blocks move by the keys only; the wheel scrolls the reply
-**Status:** settled · added 2026-10-20 · decided on #62, #63, #64; closes #24
+**Status:** settled · added 2026-10-20
 
-**Decision:** in the navigator the selection moves only by keys — ↑/↓ a block,
+Decided on #62, #63 and #64; closes #24. In the navigator the selection moves only by keys — ↑/↓ a block,
 Home/End the first or last block (#63). The mouse wheel or a trackpad never moves
 it: over the navigator it moves nothing (#62), over the transcript it scrolls the
 reply. The selection does **not** follow the terminal's scrolling.
@@ -174,12 +141,12 @@ preview, folding far blocks, and following the scrolling were set aside.
 ---
 
 ### D43 — Step into a code block, drawn as windows of the whole block
-**Status:** settled · added 2026-11-01 · narrows D20's step into (#105) · tables added by D44
+**Status:** settled · added 2026-11-01
 
 In fullscreen a code block's menu gets `step in`, and its lines take marks of their
-own, nested under the block in the prompt with their number and text. Tables and
-classic are left out: tables need our own grid, and classic is legacy. (D44 found
-tables don't need one.)
+own, nested under the block in the prompt with their number and text. This narrows
+D20's step into (#105). Classic is left out: it is legacy. Tables step the same way
+(D44).
 
 **Drawing.** `Code` has no background for one line and the menu has to sit between
 lines, so the block is drawn in three parts. Cutting the source into three pieces
@@ -210,9 +177,9 @@ marked lines shows `✸`, never sent. Its own mark takes that place, as it says 
 ---
 
 ### D44 — Step into a table, placing its rows with Claude Code's own layout
-**Status:** settled · added 2026-11-01 · extends D43 (#105)
+**Status:** settled · added 2026-11-01
 
-A table steps like a code block, drawn with the same windows, so its look is Claude
+Extends D43 (#105). A table steps like a code block, drawn with the same windows, so its look is Claude
 Code's own rather than a grid of ours. Its data rows take marks; the header doesn't,
 since the table's quote already names the columns.
 
