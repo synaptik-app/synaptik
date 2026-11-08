@@ -55,11 +55,16 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 
 10. **Do:** press `a` on any block, then `Esc`
     - **Expect:** the review goes on (a mod never sees Esc, #23); `q` ends it
-11. **Do:** look at the band
-    - **Expect:** it counts the marks (e.g. `✓1 ✎1`) and says "tab, then ⏎ to send"
-12. **Do:** press `Tab`
+11. **Do:** click the hint ("click here to review the reply"), press `↑` and `a` three times, then `q`
+    - **Expect:** the prompt box's suggestion shows 3 lines, then `… (+N lines)`, and stays that short after `q`
+12. **Do:** look at the band
+    - **Expect:** it counts the marks (e.g. `✓4 ✎1`) and says "tab, then ⏎ to send"
+13. **Do:** press `Tab`
+    - **Expect:** the box holds the whole review, every mark, with no `… (+N lines)` line
     - **Expect:** the band says "⏎ sends your feedback"
-13. **Do:** press `ctrl+c`, click a block, then click the prompt box and type `h`
+14. **Do:** press `ctrl+c`
+    - **Expect:** the box is empty, and the short suggestion is back
+15. **Do:** click the hint, click a block, then click the prompt box and type `h`
     - **Expect:** the review ends, the reply is plain and its text can be selected
     - **Expect:** the band says, in yellow, "⏎ sends what you typed"
 

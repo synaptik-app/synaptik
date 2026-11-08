@@ -100,7 +100,7 @@ test('feedback in the prompt box gets its glyphs coloured from the first keystro
   const ui = await pane($, 'inline')
   await ui.press({ key: 'verb-accept' })
   await ui.unmount()
-  promptBox.text = suggested() // taken with Tab, which carries no decorations
+  promptBox.text = suggested() // taken with Tab: a prompt.change, which carries no decorations
   const after = (await typeInPrompt($, ' ')) as { text: string; decorations?: { start: number; color: string }[] }
   expect(after.decorations?.map(d => [after.text.slice(d.start, d.start + 1), d.color])).toEqual([['✓', 'success']])
   // A prompt of the person's own is never painted.

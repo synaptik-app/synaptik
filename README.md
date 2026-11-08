@@ -151,6 +151,7 @@ A Claude Code mod runs with your own permissions and is not sandboxed. Synaptik:
 | `ui.message` | receives clicks and keys from its own elements |
 | `ui.focus`, `ui.scroll`, `ui.close` | tracks focus in the band and its own panes, moves between blocks and within a thread, and notices its panes closing: closing a thread asks for its summary. It refuses focus only on its own hidden keys. |
 | `prompt.edit` | colours the ✓ ✗ ✎ glyphs in the box, proposes the suggestion again when you empty it, and moves a paste into a comment you have open. Typing there ends a review. |
+| `prompt.change` | proposes the suggestion again after a clear, an undo or a recalled entry, and puts the whole review in the box when you take the shortened one |
 
 Apart from those requests, it sends nothing anywhere. It reads and writes no
 files, runs no commands and registers no tool hooks. Your marks stay in memory
