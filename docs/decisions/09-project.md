@@ -1,44 +1,46 @@
 # Project
 
 ### D27 — A throwaway spike, then two thin phases
-**Status:** settled · reviewed 2026-10-13, revised · **"throwaway" revised by D34**
-(2026-10-18): the spike evolves into phase 1
+**Status:** settled · added by 2026-10-13
 
 Each phase is **thin but end-to-end** rather than a layer (all the parsing, then
 all the state, then all the UI), so something usable exists at the end of each.
 
 | | What | Delivers |
 |---|---|---|
-| **Spike** | a throwaway mod drawing one hardcoded message with a gutter, fake mark symbols and a selected row | answers Q3, Q10, the highlight question and the entry key — and whether the look holds up |
+| **Spike** | a mod drawing one hardcoded message with a gutter, fake mark symbols and a selected row | answers Q3, Q10, the highlight question and the entry key — and whether the look holds up |
 | **Phase 1** | real segmentation, accept/reject/comment, tray, band preview, submit | a mod usable daily. **No threads.** |
 | **Phase 2** | threads via `fork`, commit toggle, model-written summary | the discussion half |
 
-**The spike is not phase 1** — it is throwaway code written to answer questions,
-then deleted.
-
-**Revision note:** the original first slice bundled rendering and state
-together, which would have meant discovering a rendering problem *after*
-building the machinery that depends on it. D21 is the one part of the design
-that cannot be settled on paper, so it goes first and costs almost nothing:
-`--plugin-dir`, one `register.ts`, reloads on save.
+Rendering goes first, in the spike: D21 is the one part of the design that cannot
+be settled on paper, and finding a rendering problem *after* building the
+machinery that depends on it is the expensive order. The spike costs almost
+nothing: `--plugin-dir`, one `register.ts`, reloads on save. It is not thrown
+away: phase 1 evolves it (D34).
 
 **Phase 1 is the real test.** If marking without threads does not change how the
 work feels, phase 2 will not save it.
 
 **Rationale:** the project's real risk is scope growth, not poor tracking.
 
+**Revisions**
+- **2026-10-13** — the first slice no longer bundles rendering and state:
+  rendering goes first, as the spike.
+- **2026-10-18** — the spike is no longer throwaway; it evolves into phase 1
+  (D34).
+
 ---
 
 ### D34 — The spike evolves into phase 1
-**Status:** settled · added 2026-10-18 · **revises D27** ("the spike is throwaway")
+**Status:** settled · added 2026-10-18
 
-D27 called the spike throwaway: write it to answer questions, then delete it, and
-build phase 1 fresh from `SPEC.md`. By the end of spike 0 the code had outgrown
-that: tested against the bench's fixtures, the classic renderer and a second mod,
-with real fixes in it — the whole turn as the reply, multi-paragraph items, the
-shared band, focus handling, the suggestion's re-proposal.
+Phase 1 evolves the spike's code rather than building fresh from `SPEC.md`, as
+D27 first had it. By the end of spike 0 the code had been tested against the
+bench's fixtures, the classic renderer and a second mod, with real fixes in it —
+the whole turn as the reply, multi-paragraph items, the shared band, focus
+handling, the suggestion's re-proposal.
 
-**Phase 1 evolves it, deliberately:**
+**Phase 1, deliberately:**
 - **Keep** the hooks file's tested behaviour and the tested `src/` pieces
   (`lastTurnText`, the compile step), renamed out of `spike-*`.
 - **Rewrite the segmenter** properly from SPEC §3 — the most naive part; tables,
@@ -55,23 +57,16 @@ it — has been served. D27's other point stands: phases stay thin but end-to-en
 ### D36 — Distribution: a release zip now, a marketplace at v0.1, npm held
 **Status:** settled · added 2026-10-18
 
-How people get Synaptik before and after phase 1.
+**The repository is its own marketplace** — `.claude-plugin/marketplace.json`
+listing `./hosts/claude-code`, installed with `claude plugin marketplace add
+synaptik-app/synaptik` — and the README leads with it. It gives by-name install
+and `claude plugin update`.
 
-**Now: a zip on every release.** Pushing a tag `v<version>` builds
-`synaptik-<version>.zip` from git and drafts a GitHub release with it
-(`release.yml`). It is unzipped into `~/.claude/skills/` (every session) or passed
-to `--plugin-dir` (one session). A file is easier to hand over than a clone,
-works while the repository is private, and works on machines with no network.
-Releases are cut when something visible lands, not after every PR.
-
-**Revised 2026-10-22: the marketplace comes with going public (#47), not v0.1** —
-once the repository is public anyone can add it, so the README leads with it
-and the zip stays for offline machines. Originally: **At v0.1 (#52): the
-repository becomes its own marketplace** —
-`.claude-plugin/marketplace.json` listing `./hosts/claude-code`, installed with
-`claude plugin marketplace add synaptik-app/synaptik`. Tried and working in #54,
-then held back: by-name install and `claude plugin update` are worth offering
-once phase 1 is done, not for an alpha. The zip stays on each release.
+**A zip on every release**, for machines with no network. Pushing a tag
+`v<version>` builds `synaptik-<version>.zip` from git and drafts a GitHub release
+with it (`release.yml`). It is unzipped into `~/.claude/skills/` (every session)
+or passed to `--plugin-dir` (one session); a mirror can host it as an `archive`
+source. Releases are cut when something visible lands, not after every PR.
 
 **npm: the scope is reserved, nothing is published.** `@synaptik-app` exists on
 npm (`synaptik` unscoped is taken). A marketplace entry can name an npm package,
@@ -81,14 +76,19 @@ moving part without removing one. `claude plugin install <package>@npm` appears
 in the CLI's help (2.1.287) but not in the docs, and is untested. Revisit if
 Claude Code installs plugins from npm directly.
 
-**Why not npm or a marketplace first:** the zip covers every case seen so far —
-colleagues, a private repository, air-gapped machines (a mirror can host the zip
-as an `archive` source) — with one artifact and no account on anyone's side.
+**Why the zip came first:** it covered every case seen before going public —
+colleagues, a private repository, air-gapped machines — with one artifact and no
+account on anyone's side.
+
+**Revisions**
+- **2026-10-22** — the marketplace comes with going public (#47), not at v0.1
+  (#52): once the repository is public anyone can add it. Tried and working in
+  #54 before that, then held back as not worth offering for an alpha.
 
 ---
 
 ### D40 — Target surfaces: the terminal only
-**Status:** settled · added 2026-10-21 · revised 2026-10-29 (non-interactive row)
+**Status:** settled · added 2026-10-21
 
 **Synaptik draws only in Claude Code's terminal renderer** (`e.surface ===
 'terminal'`): standalone terminals, IDE-integrated terminals (VS Code, Cursor,
@@ -101,14 +101,12 @@ screen, SSH and WSL. Everywhere else every hook passes through with `next(e)`.
 | `vscode` | the Claude Code VS Code extension panel | not yet — **the next surface** (#76) |
 | `desktop` | the Claude app's Code tab | **stays out** |
 | `mobile` | the Claude mobile app (e.g. steering via Remote Control) | **stays out** |
-| — | `claude -p`, the Agent SDK, GitHub Actions, cloud sessions (`!e.isInteractive`) | no `/synaptik` command, nothing adopted; the other hooks still run and pass through silently (revised 2026-10-29, #127) |
+| — | `claude -p`, the Agent SDK, GitHub Actions, cloud sessions (`!e.isInteractive`) | no `/synaptik` command, nothing adopted; the other hooks still run and pass through silently |
 
-**Revision (#127) — non-interactive sessions.** The row used to read "hooks run,
-nothing draws: pass through silently". Now `session.start` checks
-`!e.isInteractive` and, in such a session, skips registering the `/synaptik`
-command and adopting the last reply (`adoptLastReply`, so `turn.complete`
-stays out too). Only the command is skipped: the other hooks are still
-registered and pass through, and find no reply to draw. Nobody is there to
+**Non-interactive sessions:** `session.start` checks `!e.isInteractive` and, in
+such a session, skips registering the `/synaptik` command and adopting the last
+reply (`adoptLastReply`, so `turn.complete` stays out too). The other hooks are
+still registered and pass through, and find no reply to draw. Nobody is there to
 review, so a command and a tray would be dead weight. The check is
 `!e.isInteractive`, not `=== false`: 2.1.301 sends the field.
 
@@ -142,3 +140,6 @@ support, glyph widths, renderer (fullscreen, classic) and width — the matrix o
 #13. The glyphs are plain Unicode (`✓ ✗ ✎ 💬 ⏺ ▲ ▼ █ ┃ │ ⎿ ▸ ‹`), no Nerd Font
 needed; emoji width (`💬`) is the one to watch.
 
+**Revisions**
+- **2026-10-29** — non-interactive sessions (#127): the command and reply
+  adoption are skipped there; before, the hooks ran and only drew nothing.
