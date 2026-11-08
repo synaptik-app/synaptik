@@ -163,7 +163,7 @@ for the session. More in [SECURITY.md](SECURITY.md) and
 Found a bug, or something that felt wrong or missing on a real reply?
 [An issue](https://github.com/synaptik-app/synaptik/issues/new/choose) is the
 most useful thing you can send. Ideas and design discussion are welcome; see
-[CONTRIBUTING.md](CONTRIBUTING.md). `docs/DECISIONS.md` records what was decided
+[CONTRIBUTING.md](CONTRIBUTING.md). `docs/decisions/` records what was decided
 and what was deliberately left out, so a proposal is easier to argue for against
 that than from scratch. Security issues: [SECURITY.md](SECURITY.md).
 

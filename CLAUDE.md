@@ -7,15 +7,17 @@ comment, discuss — and compile that review into one prompt.
 
 - **`docs/SPEC.md`** — what to build. Present tense, examples throughout. This is
   the contract; follow it.
-- **`docs/DECISIONS.md`** — why it is built this way, and what was deliberately
-  left out. Read this before proposing a change to the spec, because most
-  obvious ideas were already considered and cut for a reason.
+- **`docs/decisions/`** — why it is built this way, and what was deliberately
+  left out: one file per topic, every record indexed in its `README.md`. Read
+  it before proposing a change to the spec, because most obvious ideas were
+  already considered and cut for a reason.
 
 If the two disagree, SPEC.md is wrong — fix it.
 
 Anything marked ⚠️ in the spec is **unverified against the mods API**. Do not
 rely on it or build on it without checking first. `docs/SPEC.md` §15 holds what
-the spike answered; `docs/DECISIONS.md` §11 lists what is still open.
+the spike answered; `docs/spec/08-claude-code-api.md` §11 lists what is still
+open.
 
 ## Layout
 
@@ -47,8 +49,8 @@ test needs a mock `$`, the separation has leaked.**
 the person did not see and choose; the mod never writes the prompt box behind
 their back, submits on its own, or holds a turn. No markers or identifiers in
 what is sent — they are noise. The agent knowing the mod exists is fine
-(`DECISIONS.md` P1, revised). Sending is a suggestion the person takes
-(`$.prompt.suggest`) and sends with `⏎`; the mod never submits (D30).
+(`decisions/00-principles.md` P1, revised). Sending is a suggestion the person
+takes (`$.prompt.suggest`) and sends with `⏎`; the mod never submits (D30).
 
 **The mod relays; it does not analyse.** It captures what the user meant and
 hands it over verbatim. It does not reconcile contradictory marks, decide what is
@@ -62,7 +64,7 @@ failure must leave plain Claude Code rendering — never a half-drawn transcript
 nothing is written into the conversation. Disabling mid-flow costs only the tray.
 
 **No tool hooks.** The mod reads what the transcript already holds and never
-gates, modifies or executes a tool call. See `DECISIONS.md` P3.
+gates, modifies or executes a tool call. See `decisions/00-principles.md` P3.
 
 ## Commands
 
@@ -99,6 +101,6 @@ https://code.claude.com/docs/en/plugins/mods/reference
 
 ## Working on this
 
-Keep `docs/DECISIONS.md` current when a decision changes. Decision numbers are
+Keep `docs/decisions/` current when a decision changes. Decision numbers are
 never reused or renumbered; a superseded decision is marked and says what
 replaced it. The history is the point.

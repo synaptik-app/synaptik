@@ -9,10 +9,10 @@ specifics. See §14 for how a second host would fit.
 
 **Status:** spike done (branch `spike/rendering`, Claude Code 2.1.287). §15 holds
 its answers; §6, §7, §10 and §11 describe what it showed works. Anything still
-marked ⚠️ is unverified. Open design questions are listed in `DECISIONS.md` §11.
+marked ⚠️ is unverified. Open design questions are listed in `spec/08-claude-code-api.md` §11.
 
 > **For the rationale** behind anything here — why Run was cut, why there are no
-> block IDs, what was parked — see `DECISIONS.md`. This file says only what to
+> block IDs, what was parked — see `decisions/`. This file says only what to
 > build. If the two disagree, this file is wrong; fix it.
 
 ---
@@ -944,7 +944,9 @@ work feels, phase 2 will not save it.
 synaptik/
 ├── docs/
 │   ├── SPEC.md                    this file
-│   └── DECISIONS.md               rationale and history
+│   ├── decisions/                 rationale, one file per topic
+│   ├── log/                       history
+│   └── spec/                      the spec, as it is split out of this file
 ├── hosts/
 │   └── claude-code/
 │       ├── .claude-plugin/
