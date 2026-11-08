@@ -142,4 +142,3 @@ support, glyph widths, renderer (fullscreen, classic) and width — the matrix o
 #13. The glyphs are plain Unicode (`✓ ✗ ✎ 💬 ⏺ ▲ ▼ █ ┃ │ ⎿ ▸ ‹`), no Nerd Font
 needed; emoji width (`💬`) is the one to watch.
 
----

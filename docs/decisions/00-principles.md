@@ -4,6 +4,8 @@
 
 Constraints that govern decisions rather than being decisions themselves.
 
+---
+
 ### P1 — The mod never interferes with the prompt/response flow
 **Status:** settled · added 2026-10-12 · **revised 2026-10-15** (was: "the agent
 never knows the mod exists" — see the revision note at the end)
@@ -47,6 +49,8 @@ stays, because the text *is* the person's.
 switch, a `/synaptik configure`); naming the mod where useful. E9 and E16 are
 judged by the same test: do they change the flow, or only inform it?
 
+---
+
 ### P2 — The mod relays, it does not analyse
 **Status:** settled · added 2026-10-12 (implicit from the start)
 
@@ -57,6 +61,8 @@ agent does the interpreting.
 Visible in D3 (the model summarizes its own thread, the mod does not),
 D22 (conflicts go out unresolved), and the deletion of the capability matrix
 in D4.
+
+---
 
 ### P3 — One mechanism, many sources: review what the transcript already holds
 **Status:** settled · added 2026-10-13
@@ -242,4 +248,3 @@ a wishlist is how compliance budget gets spent on things that did not matter.
 **If it ships, it ships off by default**, with the switch as an `E10` option, and
 P1 remains the documented norm rather than a legacy mode.
 
----

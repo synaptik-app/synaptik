@@ -122,6 +122,8 @@ close from the plugin hands the keyboard to the prompt just the same, so Esc doe
 it all); a thread inline under its block (above); one pane switching between
 threads (tabs come free when docked).
 
+---
+
 ### D46 — A thread on a code line or table row
 **Status:** settled · added 2026-11-05 · extends D43, D44 and D45
 
@@ -166,6 +168,8 @@ back ends deserves its own context each. **Not pursued:** a Synaptik-owned
 session tree, and hiding branches from the resume list. Branching goes through
 Claude Code's own `/branch`, from a thread (E2, #106).
 
+---
+
 ### E2 — Promote a thread to a branched session
 **Status:** proposed
 **Mechanism:** `/branch` forks the *main* conversation, which by design does
@@ -184,11 +188,15 @@ seeded with `$.prompt.fill` for the person to send, never auto-submitted.
 `/branch` typed without the button carries nothing, which is intended. Design:
 #106.
 
+---
+
 ### E3 — Worktree isolation (was D19)
 **Status:** proposed
 Branches share the working directory by default; the moment one edits files, the
 main session's picture is stale and it does not know. Isolated git worktrees are
 the correct answer. **Hooks:** `$.session.cwd`, `$.session.repo`.
+
+---
 
 ### E4 — Summary-based merge between sessions (was D18)
 **Status:** proposed
@@ -208,6 +216,8 @@ include/exclude row, in two parts:
 Excluding a branch that changed files raises a loud band warning (as D24 does):
 that is exactly the surprise to avoid. With worktrees (E3), the manifest says
 where the changes are, and moving them is a git merge.
+
+---
 
 ## Superseded
 
@@ -229,6 +239,8 @@ conclusion; a false positive quietly injects noise.
 **Open:** Q9 — whether `classify` is cheap enough to run per thread turn rather
 than only on close.
 
+---
+
 ### D16–D19 — Branched sessions, depth, merge, worktrees
 **Status:** superseded → E1–E4
 
@@ -244,4 +256,3 @@ covers it. What remains is **context isolation** — keeping an hour of
 exploratory work out of the main context. Real, but a smaller argument. Re-test
 after living with the loop.
 
----

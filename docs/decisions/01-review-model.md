@@ -308,6 +308,8 @@ Execute a proposed command from the response directly, with edits.
 running without feedback silently desyncs the agent's picture of the world.
 **Weak case now:** D15's delegate loop covers it at the cost of one round trip.
 
+---
+
 ### E9 — Nudge Claude toward `AskUserQuestion` (was D25)
 **Status:** proposed
 A `prompt.compose` section could raise the tool-usage rate. **Three cautions:**
@@ -316,10 +318,14 @@ not fit open-ended questions, so pushing hard would produce *worse questions in
 tool form* rather than better ones in prose; and it sits in tension with P1.
 Only relevant if E12 is built.
 
+---
+
 ### E11 — Multi-message interactivity
 **Status:** proposed
 Marking older messages, not just the last (relaxing D24). Reintroduces the
 stale-mark problem D24 exists to avoid, and requires E13.
+
+---
 
 ### E12 — `AskUserQuestion` interception (was D9, D11, D12, D13)
 **Status:** proposed
@@ -339,16 +345,22 @@ risky shell command and shows proceed/cancel buttons. Read it first.
 typed text as a separate turn, without classifying answers as complete or
 partial (D13).
 
+---
+
 ### E13 — Persisted block identity (was D5's `session.append`)
 **Status:** proposed
 Assign stable IDs at store time so marks survive a restart and can attach to
 messages that are no longer last. Prerequisite for E11.
+
+---
 
 ### E14 — Custom structured payload via `$.tool.register` (was half of D7)
 **Status:** proposed
 A mod-registered tool letting Claude hand over arbitrary structured items.
 **Depends on** Claude choosing to call a tool it has no habit of calling, and
 sits in tension with P1.
+
+---
 
 ## Superseded
 
@@ -419,4 +431,3 @@ long Claude Code tolerates a held call.
 ### D25 — Nudging Claude toward `AskUserQuestion`
 **Status:** superseded → E9 · now also in tension with P1
 
----

@@ -260,6 +260,7 @@ Found on the test bench, Claude Code 2.1.308.
   is Claude Code's: there `ctrl+u` empties only the current line, and a mod can't
   change that, since `ui.input` reports the text and not the key.
 
+---
 
 ## Extensions
 
@@ -308,6 +309,8 @@ wrong, with no clean fix visible from the docs.
 
 **Kept as a record of why not to try it again.** The additive version needs none
 of it.
+
+---
 
 ### E8 — Other built-in tools
 **Status:** proposed

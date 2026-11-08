@@ -78,6 +78,8 @@ default change:
 mod nobody tuned. Add an option when use reveals a genuine split, not in
 anticipation of one.
 
+---
+
 ## Superseded
 
 ### D26 — Config surface
@@ -135,4 +137,3 @@ Synaptik's to set: `ctrl+x tab` is Claude Code's, and a key the person bound —
 `/synaptik config` opens nothing and says it is for the default renderer, using
 Claude Code's own name for the non-fullscreen renderer.
 
----

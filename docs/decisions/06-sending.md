@@ -198,4 +198,3 @@ message one turn ago, so a six-word quote locates anything — the user is
 annotating, not re-explaining. **Threads contribute only their committed
 summary**, with no mention that a discussion happened or what was asked.
 
----

@@ -207,6 +207,8 @@ its lines' marks, with no timing to learn; comments' texts stay, as always. Outs
 review a line's glyph can't be placed (no width is known there), so a block with only
 marked lines shows `✸`, never sent. Its own mark takes that place, as it says more.
 
+---
+
 ### D44 — Step into a table, placing its rows with Claude Code's own layout
 **Status:** settled · added 2026-11-01 · extends D43 (#105)
 
@@ -234,4 +236,3 @@ tallest cell, the list a table becomes without room for a grid, and the 200-row 
   wrap, and hand-tested on top-level tables only.
 - A link in a cell is assumed to draw as its text. Not confirmed.
 
----
