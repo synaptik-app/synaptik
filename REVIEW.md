@@ -13,7 +13,7 @@ judgeable without reading the code:
   last block throws, and the transcript falls back to plain rendering" — not
   "possible undefined access".
 - **Why it matters here**, in one sentence, naming the rule or decision
-  (`CLAUDE.md`, `docs/DECISIONS.md` D-number) when there is one.
+  (`CLAUDE.md`, `docs/decisions/` D-number) when there is one.
 - **The fix in words**; a suggestion block only when it is short.
 
 If you cannot state a concrete failure, it is not a finding.
@@ -54,7 +54,7 @@ and are not in the repository. So a type error can merge — watch for one.
 5. **Tests.** A change to `src/` without a test that would have failed before
    it. A test that cannot fail.
 6. **Docs.** Behavior changed but `docs/SPEC.md` did not; a decision changed
-   but `docs/DECISIONS.md` did not, or a decision was renumbered or reused.
+   but `docs/decisions/` did not, or a decision was renumbered or reused.
 7. **TypeScript that hides a bug**: `any`, `!` or `as` that silences a real
    `undefined`, a promise that is neither awaited nor caught, mutating data the
    caller still holds.
@@ -62,7 +62,7 @@ and are not in the repository. So a type error can merge — watch for one.
 ## What not to flag
 
 - Style, naming or formatting the surrounding code already uses.
-- Ideas `docs/DECISIONS.md` already considered and cut — check before
+- Ideas `docs/decisions/` already considered and cut — check before
   proposing a feature, a setting or an abstraction.
 - "Add a comment", "extract a helper", "consider renaming" — unless the current
   form causes a bug.

@@ -12,7 +12,7 @@ is **what you saw using it**.
 - **Feature or idea** — a proposal, or a field note: something that felt wrong
   or missing while marking up a real reply. Say what you were doing and what you
   expected; a screenshot helps. For a design, read
-  [`docs/DECISIONS.md`](docs/DECISIONS.md) first: most obvious ideas were already
+  [`docs/decisions/`](docs/decisions/README.md) first: most obvious ideas were already
   considered, and many were cut for a reason. A proposal that answers that reason
   is easy to take up.
 
@@ -54,7 +54,7 @@ Before opening one:
   session), and ask it to run
   `fullscreen`, `classic`, `split`, `nesting`, `long` or `all`.
 - **Keep the docs true** — `docs/SPEC.md` when behaviour changes,
-  `docs/DECISIONS.md` when a decision does.
+  `docs/decisions/` when a decision does.
 
 The PR template lists the same checks.
 

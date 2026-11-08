@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Ideas and field notes both belong here: "I wanted to do X while marking up a reply, and couldn't" is as useful as a proposal.
-        Before proposing a design, [`docs/DECISIONS.md`](https://github.com/synaptik-app/synaptik/blob/main/docs/DECISIONS.md) records what was decided and what was deliberately left out.
+        Before proposing a design, [`docs/decisions/`](https://github.com/synaptik-app/synaptik/blob/main/docs/decisions/README.md) records what was decided and what was deliberately left out.
   - type: textarea
     id: what
     attributes:
