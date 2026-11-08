@@ -1,5 +1,13 @@
 # Design history
 
+> **Direction of travel.** This pass removed far more than it added. Killed or
+> moved out of MVP: the Run verb, Explain as a separate verb, the capability
+> matrix, block IDs, ID expansion, tool-payload anchoring, the `session.append`
+> hook, `$.tool.register`, the unified question model, and all
+> `AskUserQuestion` interception. **The MVP now registers no tool hooks at all.**
+
+---
+
 ## 4. MVP definition
 
 **The whole of it:**

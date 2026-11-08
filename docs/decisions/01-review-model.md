@@ -302,12 +302,14 @@ persisted marks that survive a new message — not a confirm dialog.
 ## Extensions
 
 ### E7 — Mod-driven Run verb (cut from D2)
+**Status:** proposed
 Execute a proposed command from the response directly, with edits.
 **Requires:** `$.process.run`, output capture, and **feeding results back** —
 running without feedback silently desyncs the agent's picture of the world.
 **Weak case now:** D15's delegate loop covers it at the cost of one round trip.
 
 ### E9 — Nudge Claude toward `AskUserQuestion` (was D25)
+**Status:** proposed
 A `prompt.compose` section could raise the tool-usage rate. **Three cautions:**
 it changes behaviour session-wide; the tool's shape (a few short options) does
 not fit open-ended questions, so pushing hard would produce *worse questions in
@@ -315,10 +317,12 @@ tool form* rather than better ones in prose; and it sits in tension with P1.
 Only relevant if E12 is built.
 
 ### E11 — Multi-message interactivity
+**Status:** proposed
 Marking older messages, not just the last (relaxing D24). Reintroduces the
 stale-mark problem D24 exists to avoid, and requires E13.
 
 ### E12 — `AskUserQuestion` interception (was D9, D11, D12, D13)
+**Status:** proposed
 Hold the tool call, render questions inline with their options, gate the resume
 on all questions being answered, and fix Discuss so it does not destroy its
 siblings.
@@ -336,10 +340,12 @@ typed text as a separate turn, without classifying answers as complete or
 partial (D13).
 
 ### E13 — Persisted block identity (was D5's `session.append`)
+**Status:** proposed
 Assign stable IDs at store time so marks survive a restart and can attach to
 messages that are no longer last. Prerequisite for E11.
 
 ### E14 — Custom structured payload via `$.tool.register` (was half of D7)
+**Status:** proposed
 A mod-registered tool letting Claude hand over arbitrary structured items.
 **Depends on** Claude choosing to call a tool it has no habit of calling, and
 sits in tension with P1.
@@ -347,7 +353,7 @@ sits in tension with P1.
 ## Superseded
 
 ### D7 — Structure comes from tool payloads, not prose markup
-**Status:** reduced to nothing in MVP · the principle survives as P1
+**Status:** superseded → E12, E14 · the principle survives as P1
 
 Never ask Claude to emit `{?}` / `<block>` markers in prose: a schema cannot
 drift, markup degrades indistinguishably from "nothing to mark", must be
@@ -364,7 +370,7 @@ deterministically from response text (D4, D5).
 ---
 
 ### D8 — Tool-driven items anchor by quote
-**Status:** **dead** · killed by P1, then moot under E12
+**Status:** dead · killed by P1, then moot under E12
 
 Proposed that each tool-supplied item carry an `anchor_quote` so its control
 could be drawn inline. That required the model to send a field it does not
@@ -377,7 +383,7 @@ order, which is where Claude Code puts them anyway.
 ---
 
 ### D9 — Unified question model
-**Status:** **dead in MVP** · moved to E12
+**Status:** superseded → E12 · moved to E12
 
 Was the design's keystone: one `Question` schema, two sources (tool and prose),
 two resume paths. It was load-bearing only because tool questions existed.
@@ -389,7 +395,7 @@ with `c` like any other block. Same verb, same tray, same compile step.
 ---
 
 ### D10 — Build the prose path first
-**Status:** **absorbed into D4** · no longer a separate decision
+**Status:** superseded → D4 · no longer a separate decision
 
 Its content — prose questions need no model cooperation, detection is a dumb
 heuristic, a miss is harmless — is now simply how blocks work. There is no
@@ -398,7 +404,7 @@ second path to build first.
 ---
 
 ### D11, D12, D13 — Held tool calls, Discuss, answer-and-forward
-**Status:** **moved to E12** with `AskUserQuestion`
+**Status:** superseded → E12
 
 All three existed to manage a held tool call: the gate (D11), the fix for
 Discuss destroying sibling questions (D12), and the escape hatch for typing
@@ -411,6 +417,6 @@ long Claude Code tolerates a held call.
 ---
 
 ### D25 — Nudging Claude toward `AskUserQuestion`
-**Status:** deferred → §5 (E9) · now also in tension with P1
+**Status:** superseded → E9 · now also in tension with P1
 
 ---

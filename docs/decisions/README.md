@@ -1,20 +1,31 @@
-# Synaptik — Design Decision Record
+# Synaptik — Decision records
 
-**Created:** 2026-10-12 · **Last updated:** 2026-10-15 (spike results)
-**Status:** Spike done — **32 decisions and 3 principles**; P1, D20, D21, D24 and
-D29 revised from it. The build spec is `SPEC.md`; this file holds the rationale
-behind it. Open items from the spike are in §11.
-**Framework:** Claude Code mods (CLI v2.1.301+ since 2026-10-27, was 2.1.287+; Desktop Code tab v2.1.286+)
+Decision records (**DRs**), like ADRs but covering design, UX and process as
+well. Each DR is cited by its ID: `P` principle, `D` decision, `E` extension
+(proposed). They are grouped by topic, one file each, with the same number and
+name as the topic's spec file where it has one.
 
 > **Review convention.** Decisions keep their original numbers even when revised,
 > collapsed or killed, so they stay citable across sessions. Numbers are never
 > reused or renumbered. A dead decision says why it died rather than vanishing.
 
-> **Direction of travel.** This pass removed far more than it added. Killed or
-> moved out of MVP: the Run verb, Explain as a separate verb, the capability
-> matrix, block IDs, ID expansion, tool-payload anchoring, the `session.append`
-> hook, `$.tool.register`, the unified question model, and all
-> `AskUserQuestion` interception. **The MVP now registers no tool hooks at all.**
+---
+
+## Status
+
+Every DR has one:
+
+- **settled** — decided and in force. Not final: it can later be superseded or
+  marked dead.
+- **proposed** — not decided yet: an idea, or worked on (a spike, a design) but
+  not agreed.
+- **superseded → X** — replaced by X, which says what changed. Covers what was
+  parked as an extension, merged into another DR, or replaced by a later one.
+- **dead** — dropped, with nothing in its place; the DR says why.
+
+Status says nothing about what is built. DRs are the rules to build by: when
+work needs something a DR doesn't allow, or would break one, change that DR
+first — revise it, supersede it, or mark it dead — rather than work around it.
 
 ---
 
@@ -31,21 +42,21 @@ behind it. Open items from the spike are in §11.
 | D4 | Block segmentation: uniform verbs, flat navigation, structured output | [review-model](01-review-model.md#d4--block-segmentation-uniform-verbs-flat-navigation-structured-output) | settled |
 | D5 | Blocks are derived at render time; no IDs are stored or shown | [review-model](01-review-model.md#d5--blocks-are-derived-at-render-time-no-ids-are-stored-or-shown) | settled |
 | D6 | Reference expansion by truncated quote | [sending](06-sending.md#d6--reference-expansion-by-truncated-quote) | dead |
-| D7 | Structure comes from tool payloads, not prose markup | [review-model](01-review-model.md#d7--structure-comes-from-tool-payloads-not-prose-markup) | reduced to nothing in MVP |
+| D7 | Structure comes from tool payloads, not prose markup | [review-model](01-review-model.md#d7--structure-comes-from-tool-payloads-not-prose-markup) | superseded → E12, E14 |
 | D8 | Tool-driven items anchor by quote | [review-model](01-review-model.md#d8--tool-driven-items-anchor-by-quote) | dead |
-| D9 | Unified question model | [review-model](01-review-model.md#d9--unified-question-model) | dead in MVP |
-| D10 | Build the prose path first | [review-model](01-review-model.md#d10--build-the-prose-path-first) | absorbed into D4 |
-| D11, D12, D13 | Held tool calls, Discuss, answer-and-forward | [review-model](01-review-model.md#d11-d12-d13--held-tool-calls-discuss-answer-and-forward) | moved to E12 with `AskUserQuestion` |
+| D9 | Unified question model | [review-model](01-review-model.md#d9--unified-question-model) | superseded → E12 |
+| D10 | Build the prose path first | [review-model](01-review-model.md#d10--build-the-prose-path-first) | superseded → D4 |
+| D11, D12, D13 | Held tool calls, Discuss, answer-and-forward | [review-model](01-review-model.md#d11-d12-d13--held-tool-calls-discuss-answer-and-forward) | superseded → E12 |
 | D14 | Thread isolation via `$.model.fork` | [thread](05-thread.md#d14--thread-isolation-via-modelfork) | settled |
 | D15 | Escalation ladder | [thread](05-thread.md#d15--escalation-ladder) | settled |
-| D16–D19 | Branched sessions, depth, merge, worktrees | [thread](05-thread.md#d16d19--branched-sessions-depth-merge-worktrees) | deferred → §5 (E1–E4) |
+| D16–D19 | Branched sessions, depth, merge, worktrees | [thread](05-thread.md#d16d19--branched-sessions-depth-merge-worktrees) | superseded → E1–E4 |
 | D20 | Modal navigation with visible controls on the selected block | [navigation](03-navigation.md#d20--modal-navigation-with-visible-controls-on-the-selected-block) | settled |
 | D21 | Selection highlighting is a gutter column | [rendering](02-rendering.md#d21--selection-highlighting-is-a-gutter-column) | settled |
 | D22 | Conflicting marks are not resolved by the mod | [principles](00-principles.md#d22--conflicting-marks-are-not-resolved-by-the-mod) | settled |
 | D23 | The mod must be trivially disableable, and must fail to vanilla | [principles](00-principles.md#d23--the-mod-must-be-trivially-disableable-and-must-fail-to-vanilla) | settled |
 | D24 | MVP scope: last message only | [review-model](01-review-model.md#d24--mvp-scope-last-message-only) | settled |
-| D25 | Nudging Claude toward `AskUserQuestion` | [review-model](01-review-model.md#d25--nudging-claude-toward-askuserquestion) | deferred → §5 (E9) |
-| D26 | Config surface | [keys](04-keys.md#d26--config-surface) | deferred → §5 (E10) |
+| D25 | Nudging Claude toward `AskUserQuestion` | [review-model](01-review-model.md#d25--nudging-claude-toward-askuserquestion) | superseded → E9 |
+| D26 | Config surface | [keys](04-keys.md#d26--config-surface) | superseded → E10 |
 | D27 | A throwaway spike, then two thin phases | [project](09-project.md#d27--a-throwaway-spike-then-two-thin-phases) | settled |
 | D28 | Mods do not intervene in Claude Code's own tool runs | [principles](00-principles.md#d28--mods-do-not-intervene-in-claude-codes-own-tool-runs) | settled |
 | D29 | The band is the source of truth; the prompt box is a scratch copy | [sending](06-sending.md#d29--the-band-is-the-source-of-truth-the-prompt-box-is-a-scratch-copy) | settled |
@@ -57,7 +68,7 @@ behind it. Open items from the spike are in §11.
 | D35 | In-place marks after review: a configuration option, on by default | [rendering](02-rendering.md#d35--in-place-marks-after-review-a-configuration-option-on-by-default) | settled |
 | D36 | Distribution: a release zip now, a marketplace at v0.1, npm held | [project](09-project.md#d36--distribution-a-release-zip-now-a-marketplace-at-v01-npm-held) | settled |
 | D37 | Blocks move by the keys only; the wheel scrolls the reply | [navigation](03-navigation.md#d37--blocks-move-by-the-keys-only-the-wheel-scrolls-the-reply) | settled |
-| D38 | `/synaptik config` writes the key bindings, after the person confirms | [keys](04-keys.md#d38--synaptik-config-writes-the-key-bindings-after-the-person-confirms) | superseded by D42 |
+| D38 | `/synaptik config` writes the key bindings, after the person confirms | [keys](04-keys.md#d38--synaptik-config-writes-the-key-bindings-after-the-person-confirms) | superseded → D42 |
 | D39 | The `/synaptik` command | [keys](04-keys.md#d39--the-synaptik-command) | settled |
 | D40 | Target surfaces: the terminal only | [project](09-project.md#d40--target-surfaces-the-terminal-only) | settled |
 | D41 | Fullscreen reviews in the reply itself; classic keeps its pane | [rendering](02-rendering.md#d41--fullscreen-reviews-in-the-reply-itself-classic-keeps-its-pane) | settled |
@@ -71,7 +82,7 @@ behind it. Open items from the spike are in §11.
 | E3 | Worktree isolation (was D19) | [thread](05-thread.md#e3--worktree-isolation-was-d19) | proposed |
 | E4 | Summary-based merge between sessions (was D18) | [thread](05-thread.md#e4--summary-based-merge-between-sessions-was-d18) | proposed |
 | E5 | Edit and resend a denied command | [rendering](02-rendering.md#e5--edit-and-resend-a-denied-command) | proposed |
-| E6 | Auto-classify thread outcomes | [thread](05-thread.md#e6--auto-classify-thread-outcomes) | done 2026-11-04 (#156), as D45's revision: a verdict in the thread's own fork, as the switch's default. |
+| E6 | Auto-classify thread outcomes | [thread](05-thread.md#e6--auto-classify-thread-outcomes) | superseded → D45 |
 | E7 | Mod-driven Run verb (cut from D2) | [review-model](01-review-model.md#e7--mod-driven-run-verb-cut-from-d2) | proposed |
 | E8 | Other built-in tools | [rendering](02-rendering.md#e8--other-built-in-tools) | proposed |
 | E9 | Nudge Claude toward `AskUserQuestion` (was D25) | [review-model](01-review-model.md#e9--nudge-claude-toward-askuserquestion-was-d25) | proposed |
@@ -82,22 +93,3 @@ behind it. Open items from the spike are in §11.
 | E14 | Custom structured payload via `$.tool.register` (was half of D7) | [review-model](01-review-model.md#e14--custom-structured-payload-via-toolregister-was-half-of-d7) | proposed |
 | E15 | Review the files a turn touched, in the same review | [file-review](07-file-review.md#e15--review-the-files-a-turn-touched-in-the-same-review) | proposed |
 | E16 | Extended mode: cooperate with the agent (**analysis needed**) | [principles](00-principles.md#e16--extended-mode-cooperate-with-the-agent-analysis-needed) | proposed |
-
----
-
-## 3. Decision records
-
-Status values: `settled`, `provisional` (decided, revisit after dogfooding),
-`deferred` (moved to extension points, §5), `dead` (no longer exists).
-
----
-
-## 5. Extension points
-
-Parked capabilities, each with what it needs and which decisions it reactivates.
-Nothing in the MVP design blocks any of these.
-
-> These are parked for *different reasons*, which matters. E1 got **weaker** as
-> a result of D15, not merely postponed. E5 is blocked on a hook-ordering
-> problem that may have no clean solution. E7 is probably dead. E12 is
-> straightforwardly valuable and was cut for implementation cost alone.

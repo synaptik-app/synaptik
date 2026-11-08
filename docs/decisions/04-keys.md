@@ -55,6 +55,7 @@ Someone who rebound those keys sees the default named; their keys still work.
 ## Extensions
 
 ### E10 — Config surface (was D26)
+**Status:** proposed
 The `userConfig` manifest field declares options and gives a `/config` surface
 for free — rows rendered by Claude Code, with `config.set` and `config.describe`
 hooks available if a row needs guarding or relabelling.
@@ -80,12 +81,12 @@ anticipation of one.
 ## Superseded
 
 ### D26 — Config surface
-**Status:** deferred → §5 (E10)
+**Status:** superseded → E10
 
 ---
 
 ### D38 — `/synaptik config` writes the key bindings, after the person confirms
-**Status:** superseded by D42 · settled · added 2026-10-20 · settles D32's candidate · spike on #8
+**Status:** superseded → D42 · added 2026-10-20 · settles D32's candidate · spike on #8
 
 The keys that matter most for adapting are the entry key and the verb keys, and
 they live in `~/.claude/keybindings.json` — the only place Claude Code takes them

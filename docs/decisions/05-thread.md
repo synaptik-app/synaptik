@@ -150,6 +150,7 @@ stepping in already said, and the margin couldn't show where it is).
 ## Extensions
 
 ### E1 — Branched sub-sessions (was D16, D17)
+**Status:** proposed
 A full Claude Code session **with the mod loaded**, so its responses carry the
 same gutter, verb bar and threads — the mod running recursively, not a read-only
 subagent view.
@@ -166,6 +167,7 @@ session tree, and hiding branches from the resume list. Branching goes through
 Claude Code's own `/branch`, from a thread (E2, #106).
 
 ### E2 — Promote a thread to a branched session
+**Status:** proposed
 **Mechanism:** `/branch` forks the *main* conversation, which by design does
 **not** contain the thread (D14). So the mod carries it deliberately: write the
 thread to `$.store` → branch → the new session's `session.start` hook reads it
@@ -183,11 +185,13 @@ seeded with `$.prompt.fill` for the person to send, never auto-submitted.
 #106.
 
 ### E3 — Worktree isolation (was D19)
+**Status:** proposed
 Branches share the working directory by default; the moment one edits files, the
 main session's picture is stale and it does not know. Isolated git worktrees are
 the correct answer. **Hooks:** `$.session.cwd`, `$.session.repo`.
 
 ### E4 — Summary-based merge between sessions (was D18)
+**Status:** proposed
 `$.session.send` from branch to parent → `session.receive` hook returns
 `{ consumed }` so Claude does not read it immediately → summary surfaces in a
 pane with a Merge button → `$.prompt.fill`. Explicitly lossy for discussion;
@@ -205,8 +209,10 @@ Excluding a branch that changed files raises a loud band warning (as D24 does):
 that is exactly the surprise to avoid. With worktrees (E3), the manifest says
 where the changes are, and moving them is a git merge.
 
+## Superseded
+
 ### E6 — Auto-classify thread outcomes
-**Status:** done 2026-11-04 (#156), as D45's revision: a verdict in the thread's own fork, as the switch's default.
+**Status:** superseded → D45 · done 2026-11-04 (#156), as D45's revision: a verdict in the thread's own fork, as the switch's default.
 Decide automatically whether a thread has something worth appending, removing
 the manual commit step.
 **Primitive exists:** `$.model.classify`, alongside `complete` and `fork` — a
@@ -223,10 +229,8 @@ conclusion; a false positive quietly injects noise.
 **Open:** Q9 — whether `classify` is cheap enough to run per thread turn rather
 than only on close.
 
-## Superseded
-
 ### D16–D19 — Branched sessions, depth, merge, worktrees
-**Status:** deferred → §5 (E1–E4)
+**Status:** superseded → E1–E4
 
 Dropping sub-sessions removes the entire distributed half of the design:
 cross-session messaging, lineage tracking, merge semantics and worktree

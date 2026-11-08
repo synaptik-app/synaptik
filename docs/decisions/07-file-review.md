@@ -3,6 +3,7 @@
 ## Extensions
 
 ### E15 — Review the files a turn touched, in the same review
+**Status:** proposed
 *2026-10-24: the git-snapshot approach (a snapshot per `turn.complete`, since
 the last reply or the last review), its concerns, and the first test are on
 #108. To consider in detail later.*

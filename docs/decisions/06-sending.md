@@ -166,7 +166,7 @@ the whole review, in either renderer.
 ## Superseded
 
 ### D6 — Reference expansion by truncated quote
-**Status:** **dead** · killed by D5 + P1
+**Status:** dead · killed by D5 + P1
 
 Existed only because the user was assumed to type block references. They never
 do. Nothing to expand.

@@ -264,6 +264,7 @@ Found on the test bench, Claude Code 2.1.308.
 ## Extensions
 
 ### E5 — Edit and resend a denied command
+**Status:** proposed
 **Rebuilt additively 2026-10-13 under P3. The gating design below is abandoned.**
 
 The case: Claude proposes a Bash command, you deny it — but you did not want to
@@ -309,6 +310,7 @@ wrong, with no clean fix visible from the docs.
 of it.
 
 ### E8 — Other built-in tools
+**Status:** proposed
 **Largely superseded by P3.** Most of what this entry wanted is reached by
 *reading* the transcript rather than hooking the tool:
 

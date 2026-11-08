@@ -183,6 +183,7 @@ at all**. The surface is three render sites (`AssistantMessage`, `AbovePrompt`,
 ## Extensions
 
 ### E16 — Extended mode: cooperate with the agent (**analysis needed**)
+**Status:** proposed
 **Added 2026-10-14. The deliberate inverse of P1 — read that first.**
 
 A mode switch: **simple** (the default, P1 intact — the agent never knows the mod

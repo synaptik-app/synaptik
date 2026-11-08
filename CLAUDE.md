@@ -7,10 +7,14 @@ comment, discuss — and compile that review into one prompt.
 
 - **`docs/SPEC.md`** — what to build. Present tense, examples throughout. This is
   the contract; follow it.
-- **`docs/decisions/`** — why it is built this way, and what was deliberately
-  left out: one file per topic, every record indexed in its `README.md`. Read
-  it before proposing a change to the spec, because most obvious ideas were
-  already considered and cut for a reason.
+- **`docs/decisions/`** — the decision records (**DRs**): why it is built this
+  way, and what was deliberately left out. One file per topic, every DR indexed
+  in its `README.md`. Read it before proposing a change to the spec, because
+  most obvious ideas were already considered and cut for a reason.
+
+**DR** = decision record. A DR is cited by its ID: `P` principle, `D` decision,
+`E` extension (proposed) — "D29", "E15". A topic's DRs are cited by file:
+"navigation DRs" = `docs/decisions/03-navigation.md`.
 
 If the two disagree, SPEC.md is wrong — fix it.
 
@@ -101,6 +105,10 @@ https://code.claude.com/docs/en/plugins/mods/reference
 
 ## Working on this
 
-Keep `docs/decisions/` current when a decision changes. Decision numbers are
-never reused or renumbered; a superseded decision is marked and says what
-replaced it. The history is the point.
+DRs are the rules to build by, not a record of what is built. If the work needs
+something a DR doesn't allow, or would break one, stop and ask to revise it,
+supersede it or mark it dead — never work around it.
+
+Keep the DRs current when a decision changes. DR numbers are never reused or
+renumbered; a superseded DR is marked and says what replaced it. The history is
+the point.
