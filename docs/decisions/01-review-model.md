@@ -1,9 +1,9 @@
 # Review model
 
 ### D1 — The response is a fillable form, not a thread host
-**Status:** settled · reviewed, revised
+**Status:** settled · added by 2026-10-14
 
-**Decision:** The central metaphor is in-place marking of response blocks that
+The central metaphor is in-place marking of response blocks that
 compiles into a single prompt. Interactions fall into three classes:
 
 | Class | Input | Waits for a reply | Resume path |
@@ -22,13 +22,9 @@ becomes the thread's opening message. The reverse works too. After the first
 exchange the choice is committed, since a thread has history and a comment does
 not.
 
-**Rationale:** of the five frictions above, only one is genuinely a discussion.
-The other four are marking. A thread for each would be heavier than the prose
-being typed today.
-
-**Revision note:** originally grouped verbs by *typed vs untyped* and named the
-free-form mark "amend". Renamed to **comment** — amend implies editing Claude's
-text, when the user is annotating it. Regrouped by *deferred vs waiting*.
+**Rationale:** of the five frictions in the problem statement
+(`spec/README.md`), only one is genuinely a discussion. The other four are
+marking. A thread for each would be heavier than the prose being typed today.
 
 **Accepted consequences:**
 - The staging tray and compile step are core infrastructure, built in slice 1.
@@ -40,17 +36,28 @@ text, when the user is annotating it. Regrouped by *deferred vs waiting*.
 pane, marking is a shortcut for the trivial case. Better if the real pain is
 *thinking through* responses; worse if it is *processing* them quickly.
 
+**Revisions**
+- **by 2026-10-14** — verbs were grouped by *typed vs untyped*, and the free-form
+  mark was "amend": renamed **comment**, since amend implies editing Claude's
+  text when the user is annotating it. Regrouped by *deferred vs waiting*.
+
 ---
 
 ### D2 — Verb set: four verbs, two mechanisms
-**Status:** settled · reviewed, revised
+**Status:** settled · added by 2026-10-14
 
 | Verb | Key | Mechanism |
 |---|---|---|
 | ✓ Accept | `a` | staged mark |
 | ✗ Reject | `x` | staged mark |
 | ✎ Comment | `c` | staged mark + input |
-| 💬 Thread | `d` (empty) / `?` (pre-filled "explain this") | fork conversation |
+| 💬 Discuss | `d` | a thread (fork conversation) |
+
+*Discuss* opens a **thread**, which is anchored and private until included, as a
+GitHub review thread is. Inside a thread, **branch** would turn it into a session
+of its own (E2): Claude Code's `/branch`, which creates a branch of the
+conversation at that point (`/fork` is a background session or agent; checked on
+2.1.308). Design of the thread pane and of branching: #106.
 
 **Verbs are idempotent entry points.** Pressing a verb again resumes or edits
 rather than duplicating: `c` reopens the comment input pre-filled, `d` reopens
@@ -65,55 +72,48 @@ feeding results back — and skipping the feedback would silently desync the
 agent's picture of the world. The comment loop removes that trap for free.
 *(→ E7.)*
 
-**Explain was collapsed into Thread.** `?` opens a thread pre-seeded with
-"explain this"; `d` opens an empty one. One mechanism, two entry points,
-one-keypress ergonomics retained, one code path removed.
-
 **Known cost of cutting Run:** responding to a proposed command costs a round
 trip, because the agent must re-emit it before executing. Accepted, to avoid
 maintaining a parallel execution path with its own failure mode.
 
-#### Revision 2026-10-24 — naming; `?` removed
+**Explain is a thread.** Asking for an explanation is what a thread is for; no
+separate verb.
 
-The verbs are **accept · reject · comment · discuss**. *Discuss* opens a
-**thread**, which is anchored and private until included, as a GitHub review
-thread is. Inside a thread, **branch** turns it into a session of its own:
-Claude Code's `/branch`, which creates a branch of the conversation at that
-point (`/fork` is a background session or agent; checked on 2.1.308). The table
-above keeps its old label and key: read "💬 Thread" as 💬 discuss, on `d`.
-**`?` is removed.** A thread pre-seeded with "explain this" is not worth a
-second key. Design of the thread pane and of branching: #106.
+**Revisions**
+- **by 2026-10-14** — Run cut (E7); Explain collapsed into Thread, as `?`, a
+  thread pre-seeded with "explain this".
+- **2026-10-24** — the verbs are named accept · reject · comment · discuss (was
+  "Thread"); `?` removed: a pre-seeded thread is not worth a second key.
 
 ---
 
 ### D3 — Deferred vs waiting; threads commit explicitly
-**Status:** settled · reviewed, revised
+**Status:** settled · added by 2026-10-14
 
 - **Accept / reject / comment** — deferred. Nothing reaches the agent until the
-  main prompt is submitted.
-- **Thread** — opens immediately, but sends nothing until committed.
+  prompt is sent.
+- **Thread** — opens immediately, but sends nothing unless included.
 
-**Threads are consequence-free by default.** A thread is fully interactive, but
-has no effect on the main conversation unless committed. Close it and it is as
-if it never happened.
+**Threads are consequence-free until included.** A thread is fully interactive,
+but has no effect on the main conversation unless its switch is on. Leave it off
+and it is as if it never happened.
 
-**Rationale:** since Explain is now a thread (D2), most threads will be
-read-only understanding with nothing worth sending. Auto-staging them would
-pollute every prompt with explanations requested purely to understand. It also
-keeps "never mind, I was wrong" from reaching the agent.
+**Rationale:** most threads are read-only understanding, with nothing worth
+sending. Auto-sending them would pollute every prompt with explanations requested
+purely to understand. It also keeps "never mind, I was wrong" from reaching the
+agent.
 
-#### Commit flow
+#### Including a thread
 
-1. **Esc** closes the thread. Nothing sent. *This is the default.*
-2. **The commit key** commits. The mod fires one more `fork` call at the thread:
-   *"summarize what was decided here as an instruction to the main agent."*
-3. The summary lands in the tray as an **editable** row.
-4. It compiles with the other marks into the band preview, and goes out with
-   them when the tray is submitted (D29). The copy key puts the whole thing in
-   the prompt box first, if a final edit is wanted.
+The thread's pane shows an **include/exclude switch** and, while it is on, the
+summary that would go (D45). The thread's own fork writes the summary — *what was
+decided here, as an instruction to the main agent* — with a verdict that sets the
+switch's default; the person flips it, and the switch then follows them. The
+summary compiles with the other marks into the suggestion in the prompt box
+(D30), where it can be edited before sending.
 
 Per P2, the mod never analyses what is worth sending — the model summarizes and
-the user approves. Two review points, both free.
+the person decides. Two review points, both free.
 
 **Rejected alternative:** stage the raw thread transcript. Zero machinery and
 nothing lost, but a ten-message thread dumps ten messages into the prompt and
@@ -123,46 +123,29 @@ the main agent must re-derive the conclusion anyway.
 nuance the thread was about. Mitigated by the summary being editable. If it
 needs frequent rewriting, fix the summarizer prompt — not the mod.
 
-#### Build note — commit is a toggle, not a button
+`Enter` in the prompt box with text of the person's own sends that text alone,
+and the marks are discarded, with a warning (D24).
 
-Render the commit control as an **include/exclude state the user can flip**,
-showing the summary that would be staged. In MVP it defaults to *excluded* and
-the commit key flips it. With auto-classification (E6) it defaults to the
-classifier's verdict and the same key overrides it. Costs nothing now; makes E6
-a change to one default rather than a UI rework.
-
-#### Two submits, two surfaces
-
-| Action | Where | Effect |
-|---|---|---|
-| commit key | thread pane | thread summary joins the tray |
-| submit key | band | the whole tray compiles and sends (D29) |
-
-`Enter` in the prompt box is **not** a tray submit: with text in the box it
-sends that text alone and the marks are discarded, with a warning (D24).
-
-**Key bindings are deliberately unnamed here.** `⌃S` was an early candidate and
-is **rejected** — see D20: it is the classic terminal XOFF and some terminals
-freeze output on it. Actual bindings are settled in the spike (D27).
-
-This separation is what allows threading on three blocks, committing all three,
-and sending once. Requirements must give these distinct keys and clear
-affordances, or a user will commit a thread believing they sent a prompt.
+**Revisions**
+- **by 2026-10-14** — commit is a toggle, not a button: an include/exclude state
+  showing the summary, so auto-classification (E6) changes one default rather
+  than the UI.
+- **2026-10-15** — the commit key, the band preview and the tray's submit and copy
+  keys give way to the suggestion in the prompt box (D29, D30).
+- **2026-11-04** — the switch's default is the thread's own verdict, with each
+  answer (D45, settling E6). In MVP it was *excluded*, flipped by a commit key
+  that fired one more `fork` for the summary.
 
 ---
 
 ### D4 — Block segmentation: uniform verbs, flat navigation, structured output
-**Status:** settled · reviewed, substantially revised
+**Status:** settled · added by 2026-10-14
 
-**Every block gets every verb.** No capability matrix.
-
-**Revision note:** the original restricted verbs by block type — list items got
-everything, paragraphs got discussion only, on the reasoning that "accepting a
-paragraph of prose is meaningless." **That was wrong.** Much of Claude's advice
+**Every block gets every verb.** No capability matrix: much of Claude's advice
 arrives as prose ("I'd recommend Redis here because…"), and accepting it is
-perfectly meaningful; the matrix would have made the verb bar useless on half of
-real responses. It also violated P2 — the mod deciding, on the user's behalf,
-that a mark is semantically invalid.
+perfectly meaningful. Restricting verbs by block type would make the verb bar
+useless on half of real responses, and violate P2 — the mod deciding, on the
+user's behalf, that a mark is semantically invalid.
 
 **What is a block:**
 
@@ -197,25 +180,29 @@ Cheap to record now, impossible to retrofit once the compile format is fixed.
 **Genuinely ambiguous case:** rejecting a parent while accepting a child. Goes
 out as-is; the agent resolves it (D22, P2).
 
+**Revisions**
+- **by 2026-10-14** — the capability matrix is gone. Verbs were restricted by block
+  type — list items got everything, paragraphs discussion only, on the reasoning
+  that "accepting a paragraph of prose is meaningless". That was wrong.
+
 ---
 
 ### D5 — Blocks are derived at render time; no IDs are stored or shown
-**Status:** settled · reviewed, substantially revised
+**Status:** settled · added by 2026-10-14
 
-Split the message text into blocks at render time and key marks by **position**.
-No stored IDs, no `session.append` hook, no persistence.
+Split the message text into blocks at render time and key marks by **position**
+(the block's index, or `block.line` for a line inside a code block). No stored
+IDs, no `session.append` hook, no persistence.
 
-**Revision note:** the original assigned IDs in `session.append` for anchor
-stability, on the assumption that the user would *type* block references into a
-prompt. Modal navigation (D20) removed that assumption, and the stability
-argument turned out to be free: per D24 only the completed last message is
-markable, so its text is fixed, so parsing it repeatedly yields identical blocks.
-Deterministic input, deterministic output.
+**Stability is free:** per D24 only the completed last message is markable, so
+its text is fixed, so parsing it repeatedly yields identical blocks.
+Deterministic input, deterministic output. Users never type block references
+(D20), so nothing needs an ID.
 
 **Rule that falls out: marking is disabled while streaming.** Mid-stream the
 text is still growing, so indices would shift. Gate on `turn.complete`.
 
-**`session.append` moves to extension points** (E13), where it earns its place:
+**`session.append` is an extension** (E13), where it earns its place:
 marks surviving a restart, or multi-message interactivity (E11) where "it is the
 last message and the text is fixed" no longer holds.
 
@@ -242,52 +229,22 @@ conversation and can be flipped back to included — that is D3's toggle reached
 from the block rather than the pane, not a second mechanism. A cleared comment
 keeps its text, so a misfire costs nothing.
 
-The gutter shows the result directly: a cleared block drops back to a dim `▏`
-with no symbol. No state the user cannot see. (Gutter characters are defined in
-D21: bright `▎` for the selected block, dim `▏` for the rest.)
+The reply shows the result directly: a cleared block drops its glyph. No state
+the user cannot see.
+
+**Revisions**
+- **by 2026-10-14** — no stored IDs. They were assigned in `session.append` for
+  anchor stability, on the assumption that the user would *type* block references
+  into a prompt; moved to E13.
 
 ---
 
 ### D24 — MVP scope: last message only
-**Status:** settled · reviewed 2026-10-13
+**Status:** settled · added by 2026-10-13
 
 Only the most recent assistant message is interactive, and only once its turn
 has completed (D5). No historic interactivity. Eliminates the stale-mark problem
 entirely, and is what makes render-time segmentation safe.
-
-#### Q7 resolved: discard with warning
-
-**The mod never adds itself to a prompt the user typed.** Type your own prompt,
-it goes alone — no appended marks, no interception of `prompt.submit`.
-
-The consequence follows: that prompt produces a new assistant message, D24 makes
-only the newest message markable, so marks staged on the previous one are
-orphaned and go.
-
-**The risk is doing it silently** — sending a quick side question intending to
-return to five marks, and finding them gone with no sign they existed.
-
-**Shown in the band, before it happens.** No interception, no double-Enter, no
-dialog. The mod knows the box has text, and the band line changes:
-
-```
-5 marks staged · ⏎ sends your text only — marks discarded · ⇥ to use marks instead
-```
-
-Read one line above the cursor while typing. The band should be **loud** here —
-different colour, not the usual dim — because this is the one place in the mod
-where work can be lost. Everything else is reversible.
-
-**How the mod knows the box has text:** `$.prompt.read()` from the band's render
-hook, which needs no extra registration — the band redraws anyway. The
-`prompt.edit` event (fires when the user edits the box, observe-only, returns
-`next(e)`) is the fallback if `read()` does not serve. Prefer `read()`: one
-fewer hook, and the surface stays at four event types (`SPEC.md` §11).
-
-**If discarding turns out to be annoying in practice, the fix is E13** —
-persisted marks that survive a new message — not a confirm dialog.
-
-#### Additions 2026-10-15
 
 - **Off during a turn.** From `turn.start` to `turn.complete` the reply and band
   draw as vanilla. A reply on its way will replace the tray; staging against it
@@ -297,12 +254,43 @@ persisted marks that survive a new message — not a confirm dialog.
   `No response requested.` assistant row, skipped by its text — `SessionMessage`
   has no flag for engine-written rows (§11, item 11).
 
+#### Discard with warning (Q7)
+
+**The mod never adds itself to a prompt the user typed.** Type your own prompt,
+it goes alone — no appended marks, no interception of `prompt.submit`.
+
+The consequence follows: that prompt produces a new assistant message, only the
+newest message is markable, so marks staged on the previous one are orphaned and
+go.
+
+**The risk is doing it silently** — sending a quick side question intending to
+return to five marks, and finding them gone with no sign they existed.
+
+**Shown in the band, before it happens.** No interception, no double-Enter, no
+dialog. When something is staged and the box holds text other than the taken
+suggestion, the band's summary line turns **yellow** (SPEC §7):
+
+```
+2 accepted · 1 comment staged · ⏎ sends only what you typed and drops them
+```
+
+Read one line above the cursor while typing. Loud, because this is the one place
+in the mod where work can be lost. Everything else is reversible. The mod reads
+the box with `$.prompt.read()` from the band's render hook, which redraws anyway.
+
+**If discarding turns out to be annoying in practice, the fix is E13** —
+persisted marks that survive a new message — not a confirm dialog.
+
+**Revisions**
+- **2026-10-15** — off during a turn; on after a resume.
+
 ---
 
 ## Extensions
 
 ### E7 — Mod-driven Run verb (cut from D2)
-**Status:** proposed
+**Status:** proposed · added by 2026-10-14
+
 Execute a proposed command from the response directly, with edits.
 **Requires:** `$.process.run`, output capture, and **feeding results back** —
 running without feedback silently desyncs the agent's picture of the world.
@@ -311,7 +299,8 @@ running without feedback silently desyncs the agent's picture of the world.
 ---
 
 ### E9 — Nudge Claude toward `AskUserQuestion` (was D25)
-**Status:** proposed
+**Status:** proposed · added by 2026-10-14
+
 A `prompt.compose` section could raise the tool-usage rate. **Three cautions:**
 it changes behaviour session-wide; the tool's shape (a few short options) does
 not fit open-ended questions, so pushing hard would produce *worse questions in
@@ -321,14 +310,16 @@ Only relevant if E12 is built.
 ---
 
 ### E11 — Multi-message interactivity
-**Status:** proposed
+**Status:** proposed · added by 2026-10-14
+
 Marking older messages, not just the last (relaxing D24). Reintroduces the
 stale-mark problem D24 exists to avoid, and requires E13.
 
 ---
 
 ### E12 — `AskUserQuestion` interception (was D9, D11, D12, D13)
-**Status:** proposed
+**Status:** proposed · added by 2026-10-14
+
 Hold the tool call, render questions inline with their options, gate the resume
 on all questions being answered, and fix Discuss so it does not destroy its
 siblings.
@@ -348,14 +339,16 @@ partial (D13).
 ---
 
 ### E13 — Persisted block identity (was D5's `session.append`)
-**Status:** proposed
+**Status:** proposed · added by 2026-10-14
+
 Assign stable IDs at store time so marks survive a restart and can attach to
 messages that are no longer last. Prerequisite for E11.
 
 ---
 
 ### E14 — Custom structured payload via `$.tool.register` (was half of D7)
-**Status:** proposed
+**Status:** proposed · added by 2026-10-14
+
 A mod-registered tool letting Claude hand over arbitrary structured items.
 **Depends on** Claude choosing to call a tool it has no habit of calling, and
 sits in tension with P1.
@@ -365,9 +358,9 @@ sits in tension with P1.
 ## Superseded
 
 ### D7 — Structure comes from tool payloads, not prose markup
-**Status:** superseded → E12, E14 · the principle survives as P1
+**Status:** superseded → E12, E14 · added by 2026-10-14
 
-Never ask Claude to emit `{?}` / `<block>` markers in prose: a schema cannot
+The principle survives as P1. Never ask Claude to emit `{?}` / `<block>` markers in prose: a schema cannot
 drift, markup degrades indistinguishably from "nothing to mark", must be
 stripped before drawing, and leaks into `claude -p` and subagent output.
 
@@ -382,9 +375,9 @@ deterministically from response text (D4, D5).
 ---
 
 ### D8 — Tool-driven items anchor by quote
-**Status:** dead · killed by P1, then moot under E12
+**Status:** dead · added by 2026-10-14
 
-Proposed that each tool-supplied item carry an `anchor_quote` so its control
+Killed by P1, then moot under E12. Proposed that each tool-supplied item carry an `anchor_quote` so its control
 could be drawn inline. That required the model to send a field it does not
 currently send — exactly what P1 forbids. The conflict was not noticed when D8
 was written.
@@ -395,7 +388,7 @@ order, which is where Claude Code puts them anyway.
 ---
 
 ### D9 — Unified question model
-**Status:** superseded → E12 · moved to E12
+**Status:** superseded → E12 · added by 2026-10-14
 
 Was the design's keystone: one `Question` schema, two sources (tool and prose),
 two resume paths. It was load-bearing only because tool questions existed.
@@ -407,7 +400,7 @@ with `c` like any other block. Same verb, same tray, same compile step.
 ---
 
 ### D10 — Build the prose path first
-**Status:** superseded → D4 · no longer a separate decision
+**Status:** superseded → D4 · added by 2026-10-14
 
 Its content — prose questions need no model cooperation, detection is a dumb
 heuristic, a miss is harmless — is now simply how blocks work. There is no
@@ -416,7 +409,7 @@ second path to build first.
 ---
 
 ### D11, D12, D13 — Held tool calls, Discuss, answer-and-forward
-**Status:** superseded → E12
+**Status:** superseded → E12 · added by 2026-10-14
 
 All three existed to manage a held tool call: the gate (D11), the fix for
 Discuss destroying sibling questions (D12), and the escape hatch for typing
@@ -429,5 +422,7 @@ long Claude Code tolerates a held call.
 ---
 
 ### D25 — Nudging Claude toward `AskUserQuestion`
-**Status:** superseded → E9 · now also in tension with P1
+**Status:** superseded → E9 · added by 2026-10-14
+
+Moved to E9 as an extension; now also in tension with P1.
 
