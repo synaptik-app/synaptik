@@ -81,54 +81,43 @@ a round trip, since the agent re-emits it before running it.
 
 ---
 
-### D3 — Deferred vs waiting; threads commit explicitly
+### D3 — A thread sends nothing unless included
 **Status:** settled · added by 2026-10-14
 
-- **Accept / reject / comment** — deferred. Nothing reaches the agent until the
-  prompt is sent.
-- **Thread** — opens immediately, but sends nothing unless included.
+**A thread is consequence-free until included.** It is fully interactive, but has
+no effect on the main conversation unless its switch is on. Leave it off and it
+is as if it never happened.
 
-**Threads are consequence-free until included.** A thread is fully interactive,
-but has no effect on the main conversation unless its switch is on. Leave it off
-and it is as if it never happened.
-
-**Rationale:** most threads are read-only understanding, with nothing worth
-sending. Auto-sending them would pollute every prompt with explanations requested
+**Why:** most threads are read-only understanding, with nothing worth sending.
+Sending them by default would pollute every prompt with explanations asked for
 purely to understand. It also keeps "never mind, I was wrong" from reaching the
 agent.
 
-#### Including a thread
-
-The thread's pane shows an **include/exclude switch** and, while it is on, the
-summary that would go (D45). The thread's own fork writes the summary — *what was
-decided here, as an instruction to the main agent* — with a verdict that sets the
-switch's default; the person flips it, and the switch then follows them. The
-summary compiles with the other marks into the suggestion in the prompt box
-(D30), where it can be edited before sending.
-
-Per P2, the mod never analyses what is worth sending — the model summarizes and
-the person decides. Two review points, both free.
+**What is sent is a summary, never the transcript.** The thread's own fork writes
+it, as an instruction to the main agent, with a verdict that sets the switch's
+default; the person flips the switch, and edits the summary in the prompt box
+before sending. The model summarizes and the person decides (P2). How the pane
+shows all this is D45.
 
 **Rejected alternative:** stage the raw thread transcript. Zero machinery and
 nothing lost, but a ten-message thread dumps ten messages into the prompt and
 the main agent must re-derive the conclusion anyway.
 
-**Accepted caveat:** summarization is lossy and will occasionally drop the
-nuance the thread was about. Mitigated by the summary being editable. If it
-needs frequent rewriting, fix the summarizer prompt — not the mod.
-
-`Enter` in the prompt box with text of the person's own sends that text alone,
-and the marks are discarded, with a warning (D24).
+**Accepted caveat:** summarization is lossy and will occasionally drop the nuance
+the thread was about. Mitigated by the summary being editable. If it needs
+frequent rewriting, fix the summarizer prompt — not the mod.
 
 **Revisions**
 - **by 2026-10-14** — commit is a toggle, not a button: an include/exclude state
-  showing the summary, so auto-classification (E6) changes one default rather
-  than the UI.
+  showing the summary, so auto-classification changes one default rather than
+  the UI.
 - **2026-10-15** — the commit key, the band preview and the tray's submit and copy
-  keys give way to the suggestion in the prompt box (D29, D30).
+  keys give way to the suggestion in the prompt box (D30).
 - **2026-11-04** — the switch's default is the thread's own verdict, with each
-  answer (D45, settling E6). In MVP it was *excluded*, flipped by a commit key
-  that fired one more `fork` for the summary.
+  answer (D45). It was *excluded*, flipped by a commit key that fired one more
+  `fork` for the summary.
+- **2026-11-10** — scoped to threads, standing on its own; retitled from
+  "Deferred vs waiting; threads commit explicitly".
 
 ---
 

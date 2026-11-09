@@ -64,7 +64,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | P3 | One mechanism, many sources: review what the transcript already holds | [principles](00-principles.md#p3--one-mechanism-many-sources-review-what-the-transcript-already-holds) | settled |
 | D1 | The response is a fillable form, not a thread host | [review-model](01-review-model.md#d1--the-response-is-a-fillable-form-not-a-thread-host) | settled |
 | D2 | Verb set: four verbs, two mechanisms | [review-model](01-review-model.md#d2--verb-set-four-verbs-two-mechanisms) | settled |
-| D3 | Deferred vs waiting; threads commit explicitly | [review-model](01-review-model.md#d3--deferred-vs-waiting-threads-commit-explicitly) | settled |
+| D3 | A thread sends nothing unless included | [review-model](01-review-model.md#d3--a-thread-sends-nothing-unless-included) | settled |
 | D4 | Block segmentation: uniform verbs, flat navigation, structured output | [review-model](01-review-model.md#d4--block-segmentation-uniform-verbs-flat-navigation-structured-output) | settled |
 | D5 | Blocks are derived at render time; no IDs are stored or shown | [review-model](01-review-model.md#d5--blocks-are-derived-at-render-time-no-ids-are-stored-or-shown) | settled |
 | D6 | Reference expansion by truncated quote | [sending](06-sending.md#d6--reference-expansion-by-truncated-quote) | dead |
