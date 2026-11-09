@@ -35,7 +35,7 @@ binary, not the documented API.
 ### D33 — Share Claude Code's surfaces with other mods; redraw only when needed
 **Status:** settled · added 2026-10-17
 
-Every surface Synaptik draws on except its own pane is shared with other mods,
+Every surface Synaptik draws on except its own panes is shared with other mods,
 and each is a **chain**: a hook that answers without `next(e)` hides every mod
 beneath it. Found with the test bench's `neighbour-mod` and its greedy toggle
 (#12):
@@ -46,28 +46,21 @@ beneath it. Found with the test bench's `neighbour-mod` and its greedy toggle
   (`next(e)` returns an opaque handle that cannot be edited), so it cannot add to
   what a mod beneath draws. Whichever mod is higher wins that reply; a mod above
   that wraps with `next(e)` coexists.
-- **The navigator cannot be taken away.** A pane belongs to one mod; with several,
-  they become tabs. A greedy mod above Synaptik removed its in-place marks and
-  band lines — and the navigator kept working: ↑/↓, verbs, comments, the
-  suggestion.
+- **A pane belongs to one mod;** with several, they become tabs.
 
 **Decisions:**
 1. **The band composes** with `next(e)`, Synaptik's lines last under a header,
-   during a review as well — so another mod's button is a stop in the ring, as
-   D41 says.
+   during a review as well — so another mod's button is a stop in the ring.
 2. **The reply is redrawn only when needed:** during a review, or when a block in
    that piece of the reply is marked or being commented. Otherwise it is passed
    through with `next(e)`. Most replies are never marked, so for most of a
    session Synaptik is invisible in the chain. During a fullscreen review the
-   reply is Synaptik's, each block a `Client` (D41), and another mod that changes
-   how replies are drawn is bypassed; the `Client`s are drawn only between
-   `ctrl+x tab` and the end of the review, since a `Client` holds the pointer and
-   blocks text selection.
-3. **In classic, everything essential lives in the navigator.** The in-place view
-   is a bonus another mod can take; the function must survive any neighbour
-   (bears on #19). **Fullscreen has no navigator (D41), so a greedy mod above
-   Synaptik can block the review:** it takes the reply, and with it the blocks'
-   focus and keys. Tested.
+   reply is Synaptik's, block by block (D41).
+3. **In classic, everything essential lives in the navigator,** which no other
+   mod can take: a greedy mod above Synaptik removed its in-place marks and band
+   lines, and the navigator kept working — ↑/↓, verbs, comments, the suggestion.
+   **Fullscreen has no navigator, so a greedy mod above Synaptik can block the
+   review:** it takes the reply, and with it the blocks' focus and keys. Tested.
 
 **Rejected:** calling `next(e)` for the reply and discarding the result — other
 mods would run, nothing of theirs would show, and the reply would be drawn twice.
@@ -85,6 +78,7 @@ appears; the upstream fix is a way to share one reply drawing (#23).
   the review's key legend dropped every mod loaded after Synaptik from the band,
   buttons and hotkeys too, and `ctrl+x tab` (the band's ring, every mod's) only
   ever reached Synaptik's actions.
+- **2026-11-10** — the navigator finding and decision 3 merged; classic only.
 
 ---
 
