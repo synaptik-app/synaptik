@@ -56,13 +56,24 @@ breaks P1. An exception has to be a decision of its own that says so.
 ### P2 — The mod relays, it does not analyse
 **Status:** settled · added 2026-10-12
 
-The mod never decides what the user meant, what is worth sending, or how to
+The mod never decides what the person meant, what is worth sending, or how to
 reconcile contradictions. It captures intent and hands it over verbatim; the
 agent does the interpreting.
 
-Visible in D3 (the model summarizes its own thread, the mod does not),
-D22 (conflicts go out unresolved), and the deletion of the capability matrix
-in D4.
+**In practice:**
+- **Every block takes every mark.** The mod doesn't judge that a mark makes no
+  sense on a kind of block.
+- **Contradictions go out as they are.** A block accepted and then discussed to
+  the opposite conclusion sends both; the agent reconciles them. No precedence
+  rules for the person to learn.
+- **Judgement comes from the model, never from mod logic.** A thread's summary,
+  and the include/exclude default, are written by the thread's own fork. The
+  person sees both and decides: they flip the switch, and edit the summary in
+  the prompt box.
+
+**Revisions**
+- **2026-11-10** — rewritten to stand on its own: the rules, not references to
+  where they show. Takes in D22 (conflicting marks).
 
 ---
 
@@ -120,15 +131,6 @@ activity.** Conflating them is what made the gating designs hard.
 | `TodoWrite` lists | arrives as structured data | zero parsing; comment, reorder, drop |
 | Failed command output | the tool result | comment on specific stderr lines instead of describing which error |
 | Plans (`ExitPlanMode`) | possibly just text in the transcript | **may come free** — if the plan renders as text, phase 1 marks it up already. Check in the spike. |
-
----
-
-### D22 — Conflicting marks are not resolved by the mod
-**Status:** settled · added by 2026-10-14
-
-If a block is accepted and then threaded to the opposite conclusion, send
-**both** without intervention. The agent resolves it in its next response.
-Avoids inventing precedence rules the user would have to learn. See P2.
 
 ---
 
@@ -250,3 +252,16 @@ a wishlist is how compliance budget gets spent on things that did not matter.
 **If it ships, it ships off by default**, with the switch as an `E10` option, and
 P1 remains the documented norm rather than a legacy mode.
 
+---
+
+## Superseded
+
+### D22 — Conflicting marks are not resolved by the mod
+**Status:** superseded → P2 · added by 2026-10-14
+
+If a block is accepted and then threaded to the opposite conclusion, send
+**both** without intervention. The agent resolves it in its next response.
+Avoids inventing precedence rules the user would have to learn.
+
+**Revisions**
+- **2026-11-10** — superseded by P2, which now states the rule.

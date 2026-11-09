@@ -177,7 +177,7 @@ can only read it that way if the output shows the nesting:
 Cheap to record now, impossible to retrofit once the compile format is fixed.
 
 **Genuinely ambiguous case:** rejecting a parent while accepting a child. Goes
-out as-is; the agent resolves it (D22, P2).
+out as-is; the agent resolves it (P2).
 
 **Revisions**
 - **by 2026-10-14** — the capability matrix is gone. Verbs were restricted by block
@@ -221,7 +221,7 @@ separate channels:
 | `d` on a threaded block | Reopens that thread with its history. |
 | `Backspace` on a block | Clears it: mark gone, thread flipped to excluded. |
 | Clear-all | Empties the tray in one action. |
-| Mark **and** committed thread on one block | Both go out; agent resolves (D22). |
+| Mark **and** committed thread on one block | Both go out; agent resolves (P2). |
 
 **Invariant: clearing unstages, it never destroys.** A cleared thread keeps its
 conversation and can be flipped back to included — that is D3's toggle reached
