@@ -159,3 +159,61 @@ the numbers are not decision numbers.
 - `onScreen`, or a row measurement, per element rather than per message.
 - A narrower floor for a docked pane, or a reason it is ~23 columns.
 - A flag on `SessionMessage` for engine-written rows.
+
+---
+
+### Known limits
+
+| | |
+|---|---|
+| Hook execution | 10 s (time inside a mods API call does not count) |
+| `Markdown` / `Text` text | 10,000 characters per element before Claude Code 2.1.304 (a longer one fails the whole render) — so a block is drawn in pieces (`chunk()`, each code piece fenced again). From 2.1.304, any length. One drawing holds 100,000 characters in all: a reply piece over 90,000 is left to Claude Code and reviewed from the navigator (`MAX_DRAWN`). The test kit doesn't enforce that bound, so the terminal's behaviour past it is unverified ⚠️ |
+| `$.store` | 4 MiB of JSON, shared machine-wide |
+| `ui.render` redraws | throttled to ~10–30/s, coalesced |
+| Render hooks | may not write `$.state`; may call `$.ui.invalidate` |
+| Docked pane | ~23 columns in practice; a request for 4 was not honoured |
+| Unasked `$.ui.open` | waits undrawn below 144 columns (110 once opened by the person) |
+| Module reload | closes the mod's panes (`ui.close`, origin `unload`) |
+| `onScreen` | fullscreen only; per reply piece, not per element |
+
+---
+
+## 15. Spike checklist
+
+Answered by the spike on Claude Code 2.1.287 (macOS, fullscreen terminal).
+
+- [x] **Markdown fidelity.** Compared on and off on a reply with a numbered
+      list, nested items, a table, a code block and a blockquote (2026-10-17):
+      identical, numbering kept (`1. 2. 3.`). The only differences were the
+      mod's own column and a lost top margin, both fixed.
+- [x] **Background behind block text.** `Box` takes `backgroundColor`;
+      `Markdown` does not. A 1-cell `Box` with a background beside the block
+      stretches to its height — the accent bar.
+- [x] **Raw arrow keys.** No. `ui.press` fires only for `Button`s; keys reach a
+      mod only through a focus ring (band, panes), which is linear. ↑/↓ apart
+      from ←/→ needs a pane's scroll (§10).
+- [x] **Mouse.** Buttons drawn in a reply are clickable in the fullscreen
+      terminal.
+- [x] **`$.prompt.read()`** returns the box's text and cursor.
+- [x] **`$.model.fork`** — from the types: one tool-less question over the
+      session's transcript, cached; concurrency unknown. Not exercised. ⚠️
+- [x] **Entry key.** `abovePrompt:focus` (`ctrl+x tab` by default); a person can
+      bind a single chord. Tested on macOS only; Linux unchecked. ⚠️
+- [x] **Sibling `src/` imports** resolve from a hooks module inside the plugin
+      root.
+- [x] **`claude plugin test`** runs `src/*.test.ts` with no session and no mock
+      `$`.
+
+Found along the way, not on the original list:
+
+- `AssistantMessage` fires per text block of a reply, not per reply.
+- Esc raises no `ui.focus`; a pane's `isFocused` prop is the reliable signal.
+- An `Input` keeps typed text across redraws under the same key and value.
+- `$.prompt.suggest` shows multi-line text; its first cell sits under the
+  cursor; it cannot be withdrawn.
+- `$.ui.scroll` cannot target a transcript element by key.
+- Resuming appends a synthetic `No response requested.` assistant row.
+
+Read the types Claude Code writes for your build —
+`.claude-plugin/types/claude-code/index.d.ts` after loading any mod with
+`--plugin-dir`. **Trust those over the published docs.**

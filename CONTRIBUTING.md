@@ -58,6 +58,81 @@ Before opening one:
 
 The PR template lists the same checks.
 
+## 14. Repo layout
+
+```
+synaptik/
+├── docs/
+│   ├── SPEC.md                    this file
+│   ├── decisions/                 rationale, one file per topic
+│   ├── log/                       history
+│   └── spec/                      the spec, as it is split out of this file
+├── hosts/
+│   └── claude-code/
+│       ├── .claude-plugin/
+│       │   └── plugin.json        manifest
+│       ├── hooks/
+│       │   ├── hooks.json         { "modules": ["./register.tsx"] }
+│       │   ├── register.tsx       every hook; the only file that touches $
+│       │   ├── ui.ts              constants shared with the views
+│       │   └── views/             reply, navigator, band, key menu: data in, elements out
+│       ├── types/
+│       │   └── index.d.ts         $.state contract, named in plugin.json
+│       └── src/
+│           ├── blocks.ts          text → Block[]
+│           ├── tray.ts            state + transitions (#51)
+│           ├── compile.ts         Tray + Block[] → string
+│           ├── turn.ts            transcript rows → the last reply
+│           ├── layout.ts, tally.ts, counter.ts       sizes and counts
+│           └── *.test.ts
+
+**`$` never crosses an import:** the mod loader follows it only into functions
+in the same file, so every hook and every `$` call is in `register.tsx`; views
+take elements, plain data and callbacks (#49).
+└── CLAUDE.md
+```
+
+### Extensibility, without the abstraction
+
+Another terminal agent may one day offer a UI-extension framework. **Do not
+build for it yet** — an abstraction designed against an unknown API is usually
+the wrong one. Two things make a second host cheap, and both are free today:
+
+**1. `docs/SPEC.md` is the portable artifact, not the code.** Other agents are
+written in other languages (Codex's CLI is Rust), so a shared TypeScript core
+would be worth nothing to them. A second host reimplements this spec in its own
+language. Sections 2–5 and 9 are host-neutral behaviour; 6, 7, 10 and 11 are
+Claude Code specifics.
+
+**2. `src/` never mentions a host type.** Its functions take and return plain
+data — strings, arrays, the `Tray` map. No `$`, no event objects, no element
+trees in any signature. `register.ts` depends on `src/`; never the reverse.
+
+**The test for whether this has held:** `claude plugin test` runs everything in
+`src/` with no session. **If a test needs a mock `$`, the separation has
+leaked.**
+
+Deliberately **not** done now: interfaces with one implementor, an abstract
+renderer, a host-adapter layer. When `hosts/codex/` exists, lift the shared part
+out then — by which point the real boundary will be known rather than guessed.
+
+### Commands
+
+```bash
+claude --plugin-dir ./hosts/claude-code    # load for one session; reloads on save
+claude plugin validate ./hosts/claude-code # list hooks and API calls without running
+claude plugin test ./hosts/claude-code     # run *.test.ts with no session
+```
+
+⚠️ `--plugin-dir` makes `hosts/claude-code/` the plugin root, so `register.ts`
+importing from `./src/` stays inside it. Keep it that way — imports *above* the
+plugin root may not resolve, which is the reason `src/` lives under the host
+rather than at the top level.
+
+Requires Claude Code **v2.1.301+**, in the terminal (D40): the fullscreen review watches the prompt box with `prompt.change` (2.1.300), and multi-line comments use `Input`'s `rows` (2.1.301, #16). `Raster` and `Image`
+are terminal-only and unused; the mod draws with `Box`, `Text`, `Button`,
+`Input` and `Markdown`.
+
 ## License
 
 By contributing, you agree that your contribution is licensed under the
