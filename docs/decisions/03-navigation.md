@@ -62,25 +62,38 @@ focus goes, never which key sent it. So:
 
 ---
 
-### D31 — The navigator: a docked pane that maps the reply
+### D31 — Classic reviews in a pane: the navigator
 **Status:** settled · added 2026-10-15
 
 **In the classic renderer, a pane carries the review** (fullscreen has none: it
 reviews in the reply, D41). It opens **inline**, full width, above the band, and
 does two jobs:
 
-1. **Keys** — the scroll trick for ↑/↓, the ring for ←/→ (D20). Its verb buttons
-   are drawn hidden; the reply shows the cursor.
+1. **Keys.** A pane's ↑/↓ scroll, and `ui.scroll` carries a signed direction. The
+   pane's tree is kept two rows taller than its window, with the window pinned in
+   the middle, so every ↑/↓ is a direction signal: the mod moves the selection
+   and cancels the scroll. ←/→ or Tab walk the verbs on the pane's ring; the verb
+   buttons are drawn hidden, and the reply shows the cursor.
 2. **A block viewer** (#31) — the selected block in full with its mark, menu and
    comment, its neighbours' opening words, the counts on top and the position at
-   the bottom. The reply above cannot be redrawn once scrolled off, so the pane is
-   the one surface that stays current. Sized once per reply; trimmed with
-   PgUp/PgDn beyond a third of the screen.
+   the bottom. Sized once per reply; trimmed with PgUp/PgDn beyond a third of the
+   screen.
+
+**Why a pane:**
+- **Only a pane separates ↑/↓ from ←/→.** The band raises no scroll event when it
+  has nothing to scroll (tested 2026-10-18), and making it overflow would take
+  half the screen.
+- **Classic cannot redraw a reply once it has scrolled off,** so the pane is the
+  one surface that stays current.
+- **No other mod can take it** (D33).
+
+Chosen over a review on the band alone: every arrow moving blocks on the band's
+ring, verbs by letter keys (#19).
 
 **Limits found:** an unasked open waits undrawn below 144 columns; a module reload
 closes it; the size a person sets is remembered and wins. Two things were tried and
 dropped, both because the mod cannot see how the reply wraps: mirroring the reply
-line for line, and highlighting the blocks the terminal shows (§11, item 16).
+line for line, and highlighting the blocks the terminal shows.
 
 **Revisions**
 - **2026-10-18** — the pane stays, in both renderers (#19, D20). In classic it is a
@@ -88,6 +101,8 @@ line for line, and highlighting the blocks the terminal shows (§11, item 16).
   block sized by length, marks and opening words, which used the ~23 columns a
   docked pane can't go below.
 - **2026-10-27** — classic only: fullscreen reviews in the reply (D41).
+- **2026-11-10** — takes in the scroll trick and the reasons for a pane, from D20;
+  retitled from "The navigator: a docked pane that maps the reply".
 
 ---
 

@@ -87,7 +87,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D28 | Mods do not intervene in Claude Code's own tool runs | [principles](00-principles.md#d28--mods-do-not-intervene-in-claude-codes-own-tool-runs) | superseded → P3 |
 | D29 | The band is the source of truth; the prompt box is a scratch copy | [sending](06-sending.md#d29--the-band-is-the-source-of-truth-the-prompt-box-is-a-scratch-copy) | superseded → D30 |
 | D30 | Send by live suggestion in the prompt box | [sending](06-sending.md#d30--send-by-live-suggestion-in-the-prompt-box) | settled |
-| D31 | The navigator: a docked pane that maps the reply | [navigation](03-navigation.md#d31--the-navigator-a-docked-pane-that-maps-the-reply) | settled |
+| D31 | Classic reviews in a pane: the navigator | [navigation](03-navigation.md#d31--classic-reviews-in-a-pane-the-navigator) | settled |
 | D32 | Key bindings belong to the person | [keys](04-keys.md#d32--key-bindings-belong-to-the-person) | settled |
 | D33 | Share Claude Code's surfaces with other mods; redraw only when needed | [rendering](02-rendering.md#d33--share-claude-codes-surfaces-with-other-mods-redraw-only-when-needed) | settled |
 | D34 | The spike evolves into phase 1 | [project](09-project.md#d34--the-spike-evolves-into-phase-1) | settled |
