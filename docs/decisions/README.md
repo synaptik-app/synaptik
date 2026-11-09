@@ -98,7 +98,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D39 | The `/synaptik` command | [keys](04-keys.md#d39--the-synaptik-command) | settled |
 | D40 | Target surfaces: the terminal only | [project](09-project.md#d40--target-surfaces-the-terminal-only) | settled |
 | D41 | Fullscreen reviews in the reply itself; classic keeps its pane | [rendering](02-rendering.md#d41--fullscreen-reviews-in-the-reply-itself-classic-keeps-its-pane) | settled |
-| D42 | No key setup: Synaptik reads and writes no key bindings | [keys](04-keys.md#d42--no-key-setup-synaptik-reads-and-writes-no-key-bindings) | settled |
+| D42 | No key setup: Synaptik reads and writes no key bindings | [keys](04-keys.md#d42--no-key-setup-synaptik-reads-and-writes-no-key-bindings) | superseded → D32 |
 | D43 | Step into a code block, drawn as windows of the whole block | [navigation](03-navigation.md#d43--step-into-a-code-block-drawn-as-windows-of-the-whole-block) | settled |
 | D44 | Step into a table, placing its rows with Claude Code's own layout | [navigation](03-navigation.md#d44--step-into-a-table-placing-its-rows-with-claude-codes-own-layout) | settled |
 | D45 | Threads in a pane of their own, one per block | [thread](05-thread.md#d45--threads-in-a-pane-of-their-own-one-per-block) | settled |

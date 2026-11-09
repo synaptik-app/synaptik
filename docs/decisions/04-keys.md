@@ -3,21 +3,29 @@
 ### D32 — Key bindings belong to the person
 **Status:** settled · added 2026-10-15
 
-A mod cannot declare key bindings or actions. So the mod **works with Claude
-Code's defaults** (`ctrl+x tab`, ↑↓, Tab, ⏎, letter hotkeys, Esc), and better keys
-are the person's own `keybindings.json`: documented, never read or written by the
-mod (D42). The band names Claude Code's defaults.
+A mod cannot declare key bindings or actions. So **Synaptik works with Claude
+Code's defaults** (`ctrl+x tab`, the arrows, Tab, ⏎, letter hotkeys), and the
+band names those defaults. Better keys are the person's own `keybindings.json`:
+documented, and **never read or written by Synaptik**. A mod that reads the
+person's environment and writes one of their files needs a reason far stronger
+than one key setting.
 
-Recommended: a single chord for `abovePrompt:focus` in `Chat`, and ←/→ for
-`abovePrompt:previous/next` in `Pane`. Costs to state alongside: `ctrl+s` gives up
-`chat:stash`; the `Pane` arrows apply to every mod's pane and swallow the second
-key of `ctrl+x ←/→` (pane resize).
+**Cost, accepted:** someone who rebound those keys sees the default named; their
+keys still work.
+
+Recommended, for classic's pane: a single chord for `abovePrompt:focus` in
+`Chat`, and ←/→ for `abovePrompt:previous/next` in `Pane`. Costs to state
+alongside: `ctrl+s` gives up `chat:stash`; the `Pane` arrows apply to every mod's
+pane and swallow the second key of `ctrl+x ←/→` (pane resize).
 
 **Revisions**
-- **2026-10-20** — the candidate `/synaptik configure`, which would merge the
-  bindings into the file after confirmation, became D38.
-- **2026-10-31** — the band no longer names the chord the person bound, read from
-  the file: Synaptik reads no key bindings (D42).
+- **2026-10-20** — `/synaptik config` would merge the bindings into the file after
+  confirmation (D38).
+- **2026-10-31** — no key setup, and the file is never read: since D41 only
+  classic used it, for one setting (←/→ in place of Tab/⇧Tab, which work), and a
+  marketplace submission was near (D42). The band named the chord the person
+  bound; now it names the defaults.
+- **2026-11-10** — takes in D42.
 
 ---
 
@@ -28,31 +36,18 @@ One command, its subcommands as arguments:
 
 | Command | Does |
 |---|---|
-| `/synaptik` | opens the navigator — also when Claude Code held it back on a narrow terminal (#20) |
+| `/synaptik` | classic: opens the navigator — also when Claude Code held it back on a narrow terminal (#20). Fullscreen: says how to start a review |
 | `/synaptik help` | lists the commands and what each does |
-| `/synaptik on` / `off` | the kill switch (§12), **this session only**; disabling the mod for good is `/plugin` |
-| `/synaptik log` | what the hooks observed, for debugging |
+| `/synaptik on` / `off` | the kill switch, **this session only**. Off closes the threads but keeps them; on brings them back with `d`. Disabling the mod for good is `/plugin` |
+| `/synaptik log` | what the hooks observed, for bug reports |
 
 **Why a bare `/synaptik` opens rather than toggles:** a bare command that switches
-the mod off is easy to hit by accident, and opening the navigator is what a
-person typing the mod's name most likely wants. `on`/`off` are explicit.
+the mod off is easy to hit by accident, and opening the review is what a person
+typing the mod's name most likely wants. `on`/`off` are explicit.
 
 **Revisions**
-- **2026-10-31** — `/synaptik config` (the key setup, D38) removed with D42.
-
----
-
-### D42 — No key setup: Synaptik reads and writes no key bindings
-**Status:** settled · added 2026-10-31
-
-There is no `/synaptik config`, and Synaptik never reads `keybindings.json`. This
-supersedes D38 and D32's reading of the file. Since D41 only the classic renderer
-used them, for one setting: ←/→ in place of Tab/⇧Tab, which work. That doesn't
-justify a mod that reads the person's environment and writes one of their files,
-least of all before a marketplace submission.
-
-**Cost, accepted:** the band names Claude Code's defaults (`ctrl+x tab`, `tab/⇧tab`).
-Someone who rebound those keys sees the default named; their keys still work.
+- **2026-10-27** — fullscreen has no navigator (D41): there it points to the review.
+- **2026-10-31** — `/synaptik config` (the key setup) removed.
 
 ---
 
@@ -86,6 +81,23 @@ anticipation of one.
 ---
 
 ## Superseded
+
+### D42 — No key setup: Synaptik reads and writes no key bindings
+**Status:** superseded → D32 · added 2026-10-31
+
+There is no `/synaptik config`, and Synaptik never reads `keybindings.json`. This
+supersedes D38 and D32's reading of the file. Since D41 only the classic renderer
+used them, for one setting: ←/→ in place of Tab/⇧Tab, which work. That doesn't
+justify a mod that reads the person's environment and writes one of their files,
+least of all before a marketplace submission.
+
+**Cost, accepted:** the band names Claude Code's defaults (`ctrl+x tab`, `tab/⇧tab`).
+Someone who rebound those keys sees the default named; their keys still work.
+
+**Revisions**
+- **2026-11-10** — superseded by D32, which now states the rule, its reason and its cost.
+
+---
 
 ### D26 — Config surface
 **Status:** superseded → E10 · added by 2026-10-14

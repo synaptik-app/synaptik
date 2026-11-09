@@ -338,7 +338,7 @@ Synaptik's, whichever mod had the ring and whatever the load order. Claude Code'
 `Box` with `width` is refused** — the whole band falls back to Claude Code's own —
 so `width` is set only on the box around Synaptik's own lines.
 
-The keys named are Claude Code's defaults: `ctrl+x tab` to enter, `tab/⇧tab` for the verbs. Synaptik reads no bindings (D42).
+The keys named are Claude Code's defaults: `ctrl+x tab` to enter, `tab/⇧tab` for the verbs. Synaptik reads no bindings (D32).
 
 ### Sending: a live suggestion
 
@@ -800,7 +800,7 @@ then ends the review.
 | Apply a verb directly | `a` `x` `c` `d` | same |
 | Leave | Esc | same |
 
-**A mod cannot ship key bindings,** and Synaptik doesn't touch the person's: the band names Claude Code's defaults (D42).
+**A mod cannot ship key bindings,** and Synaptik doesn't touch the person's: the band names Claude Code's defaults (D32).
 
 Esc raises no `ui.focus` event, so whether the navigator holds the keyboard is
 read from its own drawing (`e.props.isFocused`) and passed to the band and reply

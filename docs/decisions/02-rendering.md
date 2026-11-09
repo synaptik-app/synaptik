@@ -158,7 +158,7 @@ letter or digit.
 
 **Classic keeps its pane** above the band, as it is. It cannot redraw a reply
 that has scrolled off, so its block viewer is how those blocks are reviewed, and
-it has no clicks. Its pane takes Tab/⇧Tab for the actions (D42).
+it has no clicks. Its pane takes Tab/⇧Tab for the actions (D32).
 
 **How it holds together:**
 - **One `Client` per block,** so a click is exact. Estimating each block's rows
