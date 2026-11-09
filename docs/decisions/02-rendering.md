@@ -108,68 +108,57 @@ staged, whatever the reply shows.
 **Status:** settled · added 2026-10-27
 
 **In fullscreen there is no navigator pane: the review happens in the reply.**
-Decided on a spike (`spike/client-reply`, Claude Code 2.1.308), built on #39; it
-revises D20, D31 and D38.
-
-**A review starts two ways**, both named by the band's hint line, a `Client` that
-alternates `ctrl+x tab to review the reply` and `click here to review the reply`
-on its own timer:
-- **A click on the hint** starts the review and hands it the raw keys.
-- **`ctrl+x tab`** focuses the band, and the review runs from there. Claude Code
-  reports a click elsewhere in the band exactly as `ctrl+x tab`, so that click
-  starts a band review too.
-
-**During a review each block is drawn by its own `Client`** (a region the mod's
-own module draws), so **a click on a block selects it** and hands the reply the
-keyboard:
-- ↑/↓ and Home/End move between blocks;
-- ←/→ walk the menu of actions under the selected block, and ⏎ applies;
-- `a` / `x` / `c` / `d` act directly;
-- Backspace takes a mark off (#100). The legend names it `⌫ unmark`: "clear"
-  reads as deleting the text, which stays for `c`;
-- a comment is typed in place under its block: dim, with a cursor, `\` + Enter
-  for a new line, `ctrl+u` to empty it (#122), and a paste moved into it from the
-  prompt box.
-
-**Outside a review** the reply is drawn as in classic — passed through, or with
-its marks in place — so its text selects and copies as usual: a `Client` holds
-the pointer from down to up, and the transcript selects nothing inside one.
-
-**The keyboard path goes through the band.** Only a click focuses a `Client`.
-There, `j` / `k` move between blocks (↑/↓ are taken by scrolling the band,
-Shift+↑/↓ by extending the text selection; Claude Code's own lists use J/K too).
-←/→ walk the actions, since Claude Code binds them in the band by default, and a
-comment is typed in a field in the band. The selection and the menu still show in
-the reply. Both paths are always on, with no setting.
-
-**`q` ends a review**, from the reply, the band or the hint (in a comment, `q`
-types a `q`). Ending a review draws the band's controls under new keys: the one
-holding the keyboard disappears, and Claude Code hands the keyboard back to the
-prompt, which a mod cannot do directly. If Claude Code ever reports Esc, it joins
-`q`, and `q` stays unadvertised.
-
-**The band:** the header `Synaptik`; the staged line in glyph counts
-(`✓2 ✗1 ✎1`) with a note on the prompt box **only outside a review** (during one
-⏎ applies an action) — `tab, then ⏎ to send`, `⏎ sends your feedback`, or in
-yellow `⏎ sends what you typed`; and the hint line, which stays drawn during the
-review as the legend (`Block N of M`, the keys), because removing the element that
-holds the keyboard gives it back to the prompt. Prompt edits and changes redraw
-it, so the note follows the box.
-
-**The band's ring stays shared.** Synaptik's hidden actions are in the band, the
-first takes the ring, and another mod's button is a stop among them. ←/→ past the
-actions land on it, and the review ends. Its hotkey works while the band has the
-keyboard; after a click on a block the keys are the `Client`'s, and it does not.
-
-**Classic keeps its pane** above the band, as it is. It cannot redraw a reply
-that has scrolled off, so its block viewer is how those blocks are reviewed, and
-it has no clicks. Its pane takes Tab/⇧Tab for the actions (D42).
+During a review each block is drawn by its own `Client` (a region the mod's own
+module draws), so **a click on a block selects it** and hands the reply the
+keyboard: the arrows, the action keys, and typing a comment in place under its
+block. The full keymap and the band's wording are SPEC §10.
 
 **Why:** the pane existed to turn ↑/↓ into blocks (the scroll trick, D20) and to
 hold the comment field. A `Client` receives every key once clicked, arrows and
 typed text included, so the review can happen where the reply is. The ~24 columns
 beside the transcript, which #39 never found a good use for, go back to the
 reply.
+
+**Block `Client`s exist only during a review.** A `Client` holds the pointer from
+down to up, and the transcript selects nothing inside one, so a reply drawn as
+`Client`s could not be selected or copied. Outside a review the reply is drawn as
+in classic — passed through, or with its marks in place — and selects as usual.
+So a click on a block selects within a review; it doesn't start one.
+
+**A review starts two ways**, both named by the band's hint line, a `Client` that
+alternates them on its own timer:
+- **A click on the hint** starts the review and hands it the raw keys.
+- **`ctrl+x tab`** focuses the band, and the review runs from there. Only a click
+  can focus a `Client`, so the keyboard path goes through the band: `j` / `k`
+  move between blocks (↑/↓ scroll the band there), ←/→ walk the actions, and a
+  comment is typed in a field in the band. The selection and the menu still show
+  in the reply. Claude Code reports a click elsewhere in the band exactly as
+  `ctrl+x tab`, so that click starts a band review too.
+
+Both paths are always on, with no setting. The hint stays drawn during the review
+as its legend, because removing the element that holds the keyboard gives the
+keyboard back to the prompt.
+
+**`q` ends a review**, from the reply, the band or the hint (in a comment, `q`
+types a `q`). Ending a review draws the band's controls under new keys: the one
+holding the keyboard disappears, and Claude Code hands the keyboard back to the
+prompt, which a mod cannot do directly. **Esc is the natural key, but no mod sees
+it.** If Claude Code ever reports Esc, Esc ends the review and is what the legend
+names; `q` keeps working, unadvertised.
+
+**The band's ring stays shared.** Synaptik's hidden actions are in the band, the
+first takes the ring, and another mod's button is a stop among them. ←/→ past the
+actions land on it, and the review ends. Its hotkey works while the band has the
+keyboard; after a click on a block the keys are the `Client`'s, and it does not.
+**Rejected:** refusing other mods' stops during a review (`ui.focus`,
+`{ deny }`). It worked, but a button with no hotkey could then not be reached from
+the keyboard at all. Those stops are not Synaptik's to take away, and no "next
+mod" key can replace them: mods share the one band, and a hotkey is a single
+letter or digit.
+
+**Classic keeps its pane** above the band, as it is. It cannot redraw a reply
+that has scrolled off, so its block viewer is how those blocks are reviewed, and
+it has no clicks. Its pane takes Tab/⇧Tab for the actions (D42).
 
 **How it holds together:**
 - **One `Client` per block,** so a click is exact. Estimating each block's rows
@@ -181,34 +170,22 @@ reply.
   confirmed, and the hooks apply each action once, by id.
 - **A `Client`'s props are plain data:** a missing value is refused, and the
   whole reply falls back to Claude Code's own drawing.
-- **The suggestion** is proposed after every action, and again whenever the
-  prompt box becomes empty. It cannot show while the box holds text.
 
 **Known limits, asked of Claude Code (#23, #64):**
-- **Esc is invisible**, from a `Client` and from the band alike: neither is told
-  it lost the keyboard, and Esc raises no event or redraw. Hence `q`.
+- **Esc is invisible**, from a `Client` and from the band alike. Hence `q`.
 - **The keyboard cannot focus a `Client`.** Hence the band path.
 - **Revealing the reply works only from `j` / `k`.** `$.ui.scroll` moves a
-  transcript row only in answer to the person's own input. `j` / `k` are presses;
-  a key in a `Client` reaches the hooks as a post, which is refused (`not
-  person-initiated`). So after a click ↑/↓ never scroll the reply. Handing the keys
-  back to the band would lose ↑/↓ and comments typed in place; the fix is Claude
-  Code's (#64).
+  transcript row only in answer to the person's own input; a key in a `Client`
+  reaches the hooks as a post, which is refused (`not person-initiated`). So
+  after a click ↑/↓ never scroll the reply.
 - **Backspace and `ctrl+u` work after a click only.** The band and the pane can't
-  bind Backspace (#23), so from the band a ✎ goes only by overwriting it. `ctrl+c`,
-  the prompt box's clear, never reaches a mod. The `Input` on the band path and in
-  the pane is Claude Code's: there `ctrl+u` empties only the current line, and a
-  mod can't change that, since `ui.input` reports the text and not the key.
-
-**Rejected: refusing other mods' stops during a review** (`ui.focus`, `{ deny }`).
-It worked, and a click on the button still fired, but a button with no hotkey could
-then not be reached from the keyboard at all: `ctrl+x tab` always lands on
-Synaptik, and `q` hands the keyboard back to the prompt. Those stops are not
-Synaptik's to take away. No "next mod" key can replace them: `ctrl+x tab` moves
-between sites (the band, a pane), mods share the one band, and a hotkey is a
-single letter or digit.
+  bind Backspace, so from the band a ✎ goes only by overwriting it; there `ctrl+u`
+  empties only the current line of Claude Code's own `Input`.
 
 **Revisions**
+- **2026-10-27** — decided on a spike (`spike/client-reply`, Claude Code 2.1.308),
+  built on #39. It revises D20 (navigation), D31 (the pane, now classic only) and
+  D38 (the key setup, now classic only).
 - **2026-10-28** — review mode: the block `Client`s are drawn only during a review,
   since they block text selection, so a click on a block selects within a review
   rather than starting one. The band's hint names the two ways in; `q` ends a
@@ -216,6 +193,8 @@ single letter or digit.
 - **2026-10-30** — found on the test bench (2.1.308): the band's ring stays
   shared; revealing works only from `j` / `k`; Backspace unmarks and `ctrl+u`
   empties a comment, after a click.
+- **2026-11-10** — condensed to the decisions and their reasons; the keymap and
+  the band's wording are the spec's.
 
 ---
 
