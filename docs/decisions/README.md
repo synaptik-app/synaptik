@@ -83,16 +83,16 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D24 | Only the last reply is reviewed | [review-model](01-review-model.md#d24--only-the-last-reply-is-reviewed) | settled |
 | D25 | Nudging Claude toward `AskUserQuestion` | [review-model](01-review-model.md#d25--nudging-claude-toward-askuserquestion) | superseded → E9 |
 | D26 | Config surface | [keys](04-keys.md#d26--config-surface) | superseded → E10 |
-| D27 | A throwaway spike, then two thin phases | [project](09-project.md#d27--a-throwaway-spike-then-two-thin-phases) | settled |
+| D27 | Build in thin, end-to-end slices | [project](09-project.md#d27--build-in-thin-end-to-end-slices) | settled |
 | D28 | Mods do not intervene in Claude Code's own tool runs | [principles](00-principles.md#d28--mods-do-not-intervene-in-claude-codes-own-tool-runs) | superseded → P3 |
 | D29 | The band is the source of truth; the prompt box is a scratch copy | [sending](06-sending.md#d29--the-band-is-the-source-of-truth-the-prompt-box-is-a-scratch-copy) | superseded → D30 |
 | D30 | Send by live suggestion in the prompt box | [sending](06-sending.md#d30--send-by-live-suggestion-in-the-prompt-box) | settled |
 | D31 | Classic reviews in a pane: the navigator | [navigation](03-navigation.md#d31--classic-reviews-in-a-pane-the-navigator) | settled |
 | D32 | Key bindings belong to the person | [keys](04-keys.md#d32--key-bindings-belong-to-the-person) | settled |
 | D33 | Share Claude Code's surfaces with other mods; redraw only when needed | [rendering](02-rendering.md#d33--share-claude-codes-surfaces-with-other-mods-redraw-only-when-needed) | settled |
-| D34 | The spike evolves into phase 1 | [project](09-project.md#d34--the-spike-evolves-into-phase-1) | settled |
+| D34 | The spike evolves into phase 1 | [project](09-project.md#d34--the-spike-evolves-into-phase-1) | superseded → D27 |
 | D35 | In-place marks stay after the review | [rendering](02-rendering.md#d35--in-place-marks-stay-after-the-review) | settled |
-| D36 | Distribution: a release zip now, a marketplace at v0.1, npm held | [project](09-project.md#d36--distribution-a-release-zip-now-a-marketplace-at-v01-npm-held) | settled |
+| D36 | Distribution: the repository is its own marketplace, a zip per release, npm held | [project](09-project.md#d36--distribution-the-repository-is-its-own-marketplace-a-zip-per-release-npm-held) | settled |
 | D37 | Blocks move by keys or a click; the wheel scrolls the reply | [navigation](03-navigation.md#d37--blocks-move-by-keys-or-a-click-the-wheel-scrolls-the-reply) | settled |
 | D38 | `/synaptik config` writes the key bindings, after the person confirms | [keys](04-keys.md#d38--synaptik-config-writes-the-key-bindings-after-the-person-confirms) | superseded → D42 |
 | D39 | The `/synaptik` command | [keys](04-keys.md#d39--the-synaptik-command) | settled |
