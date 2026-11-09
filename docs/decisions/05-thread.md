@@ -128,7 +128,7 @@ own: a code line in its block's fences (keeping its colours), a row under its
 table's header, drawn whole rather than cut at three rows.
 
 **In the review** the summary nests under the line's reference, as a mark on the
-line does, and its block is quoted first for context (SPEC §9). Clearing follows
+line does, and its block is quoted first for context (`spec/06-sending.md` §9). Clearing follows
 the marks: Backspace on the block takes out its own mark or included thread first,
 then its lines' marks and included threads, so nothing cleared is still sent.
 

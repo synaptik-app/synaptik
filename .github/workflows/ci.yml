@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         # Pinned: a new Claude Code release cannot break CI without a deliberate
-        # bump. The oldest version Synaptik supports (README, SPEC §14), and the
+        # bump. The oldest version Synaptik supports (README, docs/spec/08-claude-code-api.md), and the
         # newest it is tested on.
         claude-code: ['2.1.301', '2.1.308']
     env:

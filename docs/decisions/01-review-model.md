@@ -142,7 +142,7 @@ behalf, that a mark is semantically invalid.
 | Horizontal rule | **no** |
 
 The detailed rules — what belongs to a list item, nesting by structure — are
-SPEC §3.
+`spec/01-review-model.md` §3.
 
 **Flat navigation.** Sub-items are often where the real decisions live, so
 collapsing them into a parent would hide exactly what the person wants to mark.

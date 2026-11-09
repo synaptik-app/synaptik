@@ -47,13 +47,13 @@ and are not in the repository. So a type error can merge — watch for one.
    call, or a new argument shape, on a path no test exercises: that is where
    one gets through. The types are not in the checkout: do not guess — say
    which call to check against `.claude-plugin/types/claude-code/index.d.ts`.
-   Anything marked ⚠️ in `docs/SPEC.md` must not be relied on.
-4. **Correctness.** Wrong behavior against `docs/SPEC.md`; edge cases — an
+   Anything marked ⚠️ in `docs/spec/` must not be relied on.
+4. **Correctness.** Wrong behavior against `docs/spec/`; edge cases — an
    empty reply, one block, a very long reply, the last block, the classic and
    fullscreen renderers (D41); keys the person rebound (D32).
 5. **Tests.** A change to `src/` without a test that would have failed before
    it. A test that cannot fail.
-6. **Docs.** Behavior changed but `docs/SPEC.md` did not; a decision changed
+6. **Docs.** Behavior changed but `docs/spec/` did not; a decision changed
    but `docs/decisions/` did not, or a decision was renumbered or reused.
 7. **TypeScript that hides a bug**: `any`, `!` or `as` that silences a real
    `undefined`, a promise that is neither awaited nor caught, mutating data the

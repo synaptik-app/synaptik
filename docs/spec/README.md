@@ -1,23 +1,35 @@
-# Synaptik — Build Spec
+# Synaptik — spec
 
 **What it is:** review an agent's last reply in place — accept, reject,
 comment, discuss — and turn that review into one prompt.
 
-**This spec covers the Claude Code host**, the only one that exists. Sections
-2–5 and 9 describe host-neutral behaviour; 6, 7, 10 and 11 are Claude Code
-specifics. See §14 for how a second host would fit.
+**This is the contract: what to build**, in the present tense, with examples.
+Why it is built this way is in [`../decisions/`](../decisions/README.md), under
+the same file numbers and names. If the two disagree, the spec is wrong — fix it.
 
-**Status:** spike done (branch `spike/rendering`, Claude Code 2.1.287). §15 holds
-its answers; §6, §7, §10 and §11 describe what it showed works. Anything still
-marked ⚠️ is unverified. Open design questions are listed in `spec/08-claude-code-api.md` §11.
+**It covers the Claude Code host**, the only one that exists. The review model
+and the compile format are host-neutral; the rest is Claude Code specifics.
+Anything marked ⚠️ is unverified against the mods API; what is verified, and
+what is still open, is in [`08-claude-code-api.md`](08-claude-code-api.md).
 
-> **For the rationale** behind anything here — why Run was cut, why there are no
-> block IDs, what was parked — see `decisions/`. This file says only what to
-> build. If the two disagree, this file is wrong; fix it.
+## Files
+
+| File | Holds | Was `SPEC.md` |
+|---|---|---|
+| `README.md` | the problem, the loop, scope, must-hold properties | §1, §2, §12 |
+| [`01-review-model.md`](01-review-model.md) | blocks, verbs, tray state | §3, §4, §5 |
+| [`02-rendering.md`](02-rendering.md) | drawing the reply; the fullscreen review; the classic renderer | §6, part of §10 |
+| [`03-navigation.md`](03-navigation.md) | the navigator, stepping in, keys, the `/synaptik` command | §10 |
+| [`05-thread.md`](05-thread.md) | threads | §8 |
+| [`06-sending.md`](06-sending.md) | the band, the suggestion, the discard warning, the compile format | §7, §9 |
+| [`08-claude-code-api.md`](08-claude-code-api.md) | the API in use, known limits, the spike's answers and open items | part of §14, §15 |
+
+Sections keep their old numbers as headings, so "SPEC §N" in code comments and
+older issues still names a section: the last column finds its file.
 
 ---
 
-## 1. Problem statement
+## Problem statement
 
 Claude Code renders a linear transcript. Responding to part of it means
 scrolling up, re-reading, and hand-writing prose that points back at it
@@ -45,8 +57,6 @@ discuss), then serialize those marks into prose by hand.
 **The mod's job is to let the user mark in place and compile the prompt for
 them.** The response becomes a form to fill in; threads are one verb within
 that, not the central metaphor.
-
----
 
 ---
 
@@ -109,7 +119,8 @@ skipped. Give every registration `.catch(handler)` returning `next(e)`, so a
 failure leaves **plain Claude Code rendering** — never a half-drawn transcript.
 
 **Hold no state the conversation depends on.** Blocks are derived at render time;
-nothing is stored in the conversation. Disabling mid-flow costs only the tray.
+nothing is stored in the conversation. Disabling mid-flow costs only the review
+in progress.
 Check every future feature against this.
 
 **Ship a kill switch.** A key or `/command` that makes the render hooks pass
@@ -125,7 +136,5 @@ and never blocks or rewrites a turn.
 **Keep the logic free of `$.` calls.** Segmentation, tray state and the compile
 step are plain functions over text and data, living in `src/` with the hooks as a
 thin shell over them. No `$`, no event objects, no element trees in any `src/`
-signature. See §14 — this is what makes the logic testable without a session,
-and what a second host would build on.
-
----
+signature. See *Repo layout* in `CONTRIBUTING.md` — this is what makes the logic
+testable without a session, and what a second host would build on.

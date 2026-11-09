@@ -72,7 +72,7 @@ Symbol, short quote, optional text, nesting preserved (D4). Quotes run to roughl
 the first 6–8 words — long enough to locate, short enough to stay readable in a
 stack of marks — and a cut quote ends in three plain dots (`...`), not the single
 `…` character. **Threads contribute only their included summary**, with no
-mention that a discussion happened or what was asked. The full format is SPEC §9.
+mention that a discussion happened or what was asked. The full format is `spec/06-sending.md` §9.
 
 **Why:** the agent wrote this message one turn ago, so a six-word quote locates
 anything — the user is annotating, not re-explaining. No header is the closest
@@ -94,7 +94,7 @@ thing to text a person would type (P1).
 and D30 unchanged. As it stood: the person sees the exact text before it is sent, and the mod never merges its
 text into what they typed. The compiled prompt is shown in the prompt box, as a
 suggestion (D30); the band above the box (`AbovePrompt`) holds a one-line summary
-and an action line (SPEC §7), never the prompt itself.
+and an action line (`spec/06-sending.md` §7), never the prompt itself.
 
 **Why:** the band is the mod's own surface and the box is the person's. Keeping
 the mod's text out of what they typed removes all merge logic — there is no case

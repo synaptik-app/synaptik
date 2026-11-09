@@ -111,7 +111,8 @@ staged, whatever the reply shows.
 During a review each block is drawn by its own `Client` (a region the mod's own
 module draws), so **a click on a block selects it** and hands the reply the
 keyboard: the arrows, the action keys, and typing a comment in place under its
-block. The full keymap and the band's wording are SPEC §10.
+block. The full keymap and the band's wording are in `spec/02-rendering.md` and
+`spec/03-navigation.md`.
 
 **Why:** the pane existed to turn ↑/↓ into blocks (the scroll trick, D20) and to
 hold the comment field. A `Client` receives every key once clicked, arrows and

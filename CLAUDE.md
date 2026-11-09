@@ -5,8 +5,9 @@ comment, discuss — and compile that review into one prompt.
 
 ## Read first
 
-- **`docs/SPEC.md`** — what to build. Present tense, examples throughout. This is
-  the contract; follow it.
+- **`docs/spec/`** — what to build. Present tense, examples throughout. This is
+  the contract; follow it. One file per topic, numbered and named as the DRs;
+  start at its `README.md`.
 - **`docs/decisions/`** — the decision records (**DRs**): why it is built this
   way, and what was deliberately left out. One file per topic, every DR indexed
   in its `README.md`. Read it before proposing a change to the spec, because
@@ -16,11 +17,11 @@ comment, discuss — and compile that review into one prompt.
 `E` extension (proposed) — "D29", "E15". A topic's DRs are cited by file:
 "navigation DRs" = `docs/decisions/03-navigation.md`.
 
-If the two disagree, SPEC.md is wrong — fix it.
+If the two disagree, the spec is wrong — fix it.
 
 Anything marked ⚠️ in the spec is **unverified against the mods API**. Do not
-rely on it or build on it without checking first. `docs/SPEC.md` §15 holds what
-the spike answered; `docs/spec/08-claude-code-api.md` §11 lists what is still
+rely on it or build on it without checking first.
+`docs/spec/08-claude-code-api.md` holds what the spike answered and what is still
 open.
 
 ## Layout

@@ -12,7 +12,7 @@ row in it. **It never touches the main conversation.**
 - Threads are flat. A thread cannot spawn a thread.
 - `d` or `💬 discuss` on a block opens its thread; on a threaded block it reopens
   that thread with its history. A block's thread shows `💬` in the margin.
-- **Stepped into a code block or table** (`s`, SPEC §10), `d` opens a thread on the
+- **Stepped into a code block or table** (`s`, `03-navigation.md`), `d` opens a thread on the
   selected line or row, its own and apart from the block's. The pane shows the
   part alone: a code line in its block's fences, a row under its table's header.
   The fork gets the whole block and which part (`The thread is about line 2:
