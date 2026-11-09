@@ -3,42 +3,41 @@
 ### D1 — The response is a fillable form, not a thread host
 **Status:** settled · added by 2026-10-14
 
-The central metaphor is in-place marking of response blocks that
-compiles into a single prompt. Interactions fall into three classes:
+**The reply is a form to fill in.** Each block is marked in place, and the marks
+compile into a single prompt. Most of what a person does with a reply is marking
+— approving in bulk, a small amendment, a word on a proposed command — and only
+some of it is discussion. A thread for each would be heavier than the prose being
+typed today.
 
-| Class | Input | Waits for a reply | Resume path |
+Interactions fall into three classes:
+
+| Class | Input | Waits for a reply | Reaches the prompt as |
 |---|---|---|---|
-| **Options** (accept, reject) | none | no | staged |
-| **Comment** ("ok, but change x to 5") | free-form | no | staged |
-| **Thread** | free-form | yes | its own, then staged |
+| **Options** (accept, reject) | none | no | a mark |
+| **Comment** ("ok, but change x to 5") | free-form | no | a mark with its text |
+| **Thread** | free-form | yes | its summary, if included |
 
 **The axis is "does it expect a reply before you continue?"** — *not* "does it
 need typing." Comment groups with accept and reject: all three are deferred
-marks that compile into one prompt, and only a thread interrupts the flow.
+marks, and only a thread interrupts the flow. **A comment does not turn into a
+thread:** discuss is its own action on the block, and the person decides to open
+one.
 
-**A comment does not turn into a thread.** Discuss is its own action on the
-block: the person decides to open a thread.
-
-**Rationale:** of the five frictions in the problem statement
-(`spec/README.md`), only one is genuinely a discussion. The other four are
-marking. A thread for each would be heavier than the prose being typed today.
-
-**Accepted consequences:**
-- The staging tray and compile step are core infrastructure, built in slice 1.
-- Default UI state is *marking*, not *discussing*.
-- Threads are cuttable — the mod is useful without them.
-- The project's working name, "step threads", is now a misnomer.
+**Marking is the default,** not discussing. Threads are optional: the mod is
+useful without them.
 
 **Rejected alternative:** *thread-first* — every interaction opens a discussion
-pane, marking is a shortcut for the trivial case. Better if the real pain is
-*thinking through* responses; worse if it is *processing* them quickly.
+pane, and marking is a shortcut for the trivial case. Better if the real pain is
+*thinking through* replies; worse if it is *processing* them quickly.
 
 **Revisions**
 - **by 2026-10-14** — verbs were grouped by *typed vs untyped*, and the free-form
   mark was "amend": renamed **comment**, since amend implies editing Claude's
   text when the user is annotating it. Regrouped by *deferred vs waiting*.
-- **2026-11-08** — no comment ↔ thread conversion. A comment could be promoted to a
-  thread with one key, its text the opening message, until the first exchange.
+- **2026-11-08** — no comment ↔ thread conversion. A comment could be promoted to
+  a thread with one key, its text the opening message, until the first exchange.
+- **2026-11-10** — rewritten to stand on its own; history dropped from the
+  consequences.
 
 ---
 
