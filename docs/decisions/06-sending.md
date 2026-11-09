@@ -34,12 +34,11 @@ the box holding the whole text, so a clear brought a long suggestion back.
   person might type and safe to send by accident, guessing nothing about intent.
 - When the box holds exactly the taken suggestion the band says `⏎ sends your
   feedback`; any other text brings back the discard warning.
-- Leans on `prompt.change`, which the plugin directory doesn't list. Dropping the
-  hook means finding another way to fill in the full text.
+- Relies on `prompt.change`, which isn't in the published event list; without it,
+  the full text needs another way in.
 
-**Open:** what the band says once the taken suggestion is edited
-(`spec/08-claude-code-api.md` §11, item 6); whether to veto Claude Code's own
-suggestions while feedback is staged (item 7).
+**Open:** what the band says once the taken suggestion is edited; whether to veto
+Claude Code's own suggestions while feedback is staged.
 
 **Revisions**
 - **2026-10-24** — `s` (send from the navigator, `$.prompt.submit`) removed: the
