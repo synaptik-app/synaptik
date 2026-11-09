@@ -281,7 +281,8 @@ reply,** not a confirm dialog.
 Execute a proposed command from the response directly, with edits.
 **Requires:** `$.process.run`, output capture, and **feeding results back** —
 running without feedback silently desyncs the agent's picture of the world.
-**Weak case now:** D15's delegate loop covers it at the cost of one round trip.
+**Weak case now:** a comment, or a thread's summary (D45), hands the command to
+the main agent, at the cost of one round trip.
 
 ---
 

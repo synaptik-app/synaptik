@@ -74,7 +74,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D10 | Build the prose path first | [review-model](01-review-model.md#d10--build-the-prose-path-first) | superseded → D4 |
 | D11, D12, D13 | Held tool calls, Discuss, answer-and-forward | [review-model](01-review-model.md#d11-d12-d13--held-tool-calls-discuss-answer-and-forward) | superseded → E12 |
 | D14 | Thread isolation via `$.model.fork` | [thread](05-thread.md#d14--thread-isolation-via-modelfork) | settled |
-| D15 | Escalation ladder | [thread](05-thread.md#d15--escalation-ladder) | settled |
+| D15 | Escalation ladder | [thread](05-thread.md#d15--escalation-ladder) | dead |
 | D16–D19 | Branched sessions, depth, merge, worktrees | [thread](05-thread.md#d16d19--branched-sessions-depth-merge-worktrees) | superseded → E1–E4 |
 | D20 | Modal navigation with visible controls on the selected block | [navigation](03-navigation.md#d20--modal-navigation-with-visible-controls-on-the-selected-block) | settled |
 | D21 | The selected block takes the selection colour | [rendering](02-rendering.md#d21--the-selected-block-takes-the-selection-colour) | settled |

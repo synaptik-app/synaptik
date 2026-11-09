@@ -28,29 +28,6 @@ reads the main conversation from the cache, so a thread costs about its own text
 
 ---
 
-### D15 — Escalation ladder
-**Status:** settled · added by 2026-10-14
-
-```
-accept/reject → comment → thread → delegate to main agent
-```
-
-Each rung is one keypress from the last. Start at the cheapest; promote when it
-is not enough.
-
-**A thread that needs tools does not abandon — it asks.** Its committed conclusion can say "this needs running";
-the main agent executes next turn and the result arrives in a response that can
-itself be marked up.
-
-**This closes the loop:** thread → conclusion with an action → main agent runs
-it → new response → mark that up. The mod is iterative, not one-shot.
-
-**Revisions**
-- **by 2026-10-14** — the fourth rung was a branched session with tools; it moved to
-  E1, and delegating to the main agent took its place.
-
----
-
 ### D45 — Threads in a pane of their own, one per block
 **Status:** settled · added 2026-11-02
 
@@ -177,8 +154,8 @@ subagent view.
 **Open:** whether a mod can trigger `/branch` via `$.command.run`, or must start
 the session another way *(was Q4)*. `session.end` fires on `/branch` with reason
 `resume`, so a branch must not be treated as a real session end.
-**The case is context isolation**, not tool access (D15's delegate loop covers
-that), and it is a real need: one session exploring the database, the cloud setup,
+**The case is context isolation**, not tool access: a thread already hands tool
+work to the main agent through its summary (D45). Isolation is a real need: one session exploring the database, the cloud setup,
 or the front and back ends deserves its own context each. Branching goes through
 Claude Code's own `/branch`, from a thread (E2, #106). **Not pursued:** a
 Synaptik-owned session tree, and hiding branches from the resume list.
@@ -247,6 +224,33 @@ discussion; applied file changes need a real git merge, not a conversation merge
 ---
 
 ## Superseded
+
+### D15 — Escalation ladder
+**Status:** dead · added by 2026-10-14
+
+```
+accept/reject → comment → thread → delegate to main agent
+```
+
+Each rung is one keypress from the last. Start at the cheapest; promote when it
+is not enough.
+
+**A thread that needs tools does not abandon — it asks.** Its committed conclusion
+can say "this needs running";
+the main agent executes next turn and the result arrives in a response that can
+itself be marked up.
+
+**This closes the loop:** thread → conclusion with an action → main agent runs
+it → new response → mark that up. The mod is iterative, not one-shot.
+
+**Revisions**
+- **by 2026-10-14** — the fourth rung was a branched session with tools, now a
+  proposal; delegating to the main agent took its place.
+- **2026-11-10** — dead: there is no ladder. Each action stands on its own (D1),
+  and a comment doesn't turn into a thread. That a thread hands tool work to the
+  main agent, through its summary, is D14 and D45.
+
+---
 
 ### E6 — Auto-classify thread outcomes
 **Status:** superseded → D45 · added by 2026-10-14
