@@ -175,52 +175,51 @@ it (P2).
 ### D5 — Blocks are derived at render time; no IDs are stored or shown
 **Status:** settled · added by 2026-10-14
 
-Split the message text into blocks at render time and key marks by **position**
-(the block's index, or `block.line` for a line inside a code block). No stored
-IDs, no `session.append` hook, no persistence.
+Split the reply into blocks at render time and key marks by **position**: the
+block's index, or `block.line` (`3.5`) for a line or row stepped into. No stored
+IDs, no persistence.
 
-**Stability is free:** per D24 only the completed last message is markable, so
-its text is fixed, so parsing it repeatedly yields identical blocks.
-Deterministic input, deterministic output. Users never type block references
-(D20), so nothing needs an ID.
+**Stability is free:** only the completed last reply is markable (D24), so its
+text is fixed, so parsing it again yields identical blocks. Deterministic input,
+deterministic output. Nobody types block references, so nothing needs an ID.
+**Marks live as long as the reply:** they don't survive a restart or a new
+reply.
 
-**Rule that falls out: marking is disabled while streaming.** Mid-stream the
-text is still growing, so indices would shift. Gate on `turn.complete`.
-
-**`session.append` is an extension** (E13), where it earns its place:
-marks surviving a restart, or multi-message interactivity (E11) where "it is the
-last message and the text is fixed" no longer holds.
+**Marking is off while streaming.** Mid-stream the text is still growing, so
+positions would shift. Marking starts at `turn.complete`.
 
 #### State model
 
-The mod keeps its own structured state and **generates** the final prompt from
-it at submit time. Nothing is accumulated as text along the way.
+The mod keeps its own structured state, the tray, and **generates** the prompt
+from it after every change. Nothing is accumulated as text along the way.
 
-Per block, at most **one mark** and **one committed thread summary** — two
-separate channels:
+Per block, at most **one mark** and **one thread** — two separate channels:
 
 | Action | Effect |
 |---|---|
 | Change a mark (`a` then `x`) | Overwrites. One slot, last write wins. |
-| Press the same verb twice | Unmarks (toggle off). |
-| `c` on a commented block | Reopens the input pre-filled — edit, don't retype. |
-| `d` on a threaded block | Reopens that thread with its history. |
-| `Backspace` on a block | Clears it: mark gone, thread flipped to excluded. |
-| Clear-all | Empties the tray in one action. |
-| Mark **and** committed thread on one block | Both go out; agent resolves (P2). |
+| Accept or reject twice | Unmarks. |
+| `c` on a commented block | Reopens the comment pre-filled — edit, don't retype. |
+| `d` on a block with a thread | Reopens that thread with its history. |
+| `Backspace` on a block | Clears it in steps. First the block's own mark and included thread; a second Backspace clears everything on its lines or rows. A block with nothing of its own is cleared inside on the first Backspace. Threads cleared this way are excluded, not deleted. |
+| Mark **and** included thread on one block | Both go out; the agent resolves (P2). |
 
-**Invariant: clearing unstages, it never destroys.** A cleared thread keeps its
-conversation and can be flipped back to included — that is D3's toggle reached
-from the block rather than the pane, not a second mechanism. A cleared comment
-keeps its text, so a misfire costs nothing.
+The tray empties when the prompt is sent, and when a new reply arrives.
+
+**Clearing unstages; it never destroys.** A cleared thread keeps its
+conversation and can be switched back on. A cleared comment keeps its text, so a
+misfire costs nothing.
 
 The reply shows the result directly: a cleared block drops its glyph. No state
-the user cannot see.
+the person cannot see.
 
 **Revisions**
 - **by 2026-10-14** — no stored IDs. They were assigned in `session.append` for
-  anchor stability, on the assumption that the user would *type* block references
-  into a prompt; moved to E13.
+  anchor stability, on the assumption that the person would *type* block
+  references into a prompt.
+- **2026-11-10** — rewritten to stand on its own: the prompt is generated after
+  every change, lines and rows have positions, Backspace clears in steps, and
+  there is no clear-all.
 
 ---
 
