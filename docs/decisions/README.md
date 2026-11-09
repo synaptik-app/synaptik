@@ -49,6 +49,9 @@ What holds today, and why — rewritten when it changes, never appended to.
 - **A superseded or dead DR** is written as it stood when it was replaced, and
   says what replaced it or why it died.
 - **A rule between every DR**, so each reads as one unit.
+- **A DR stands on its own.** It states its rule in its own words and cites
+  another DR only where it depends on it. Proposals (E) are not cited from
+  settled DRs: an extension shapes nothing until it becomes a D.
 
 ---
 
@@ -61,7 +64,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | P3 | One mechanism, many sources: review what the transcript already holds | [principles](00-principles.md#p3--one-mechanism-many-sources-review-what-the-transcript-already-holds) | settled |
 | D1 | The response is a fillable form, not a thread host | [review-model](01-review-model.md#d1--the-response-is-a-fillable-form-not-a-thread-host) | settled |
 | D2 | Verb set: four verbs, two mechanisms | [review-model](01-review-model.md#d2--verb-set-four-verbs-two-mechanisms) | settled |
-| D3 | Deferred vs waiting; threads commit explicitly | [review-model](01-review-model.md#d3--deferred-vs-waiting-threads-commit-explicitly) | settled |
+| D3 | A thread sends nothing unless included | [review-model](01-review-model.md#d3--a-thread-sends-nothing-unless-included) | settled |
 | D4 | Block segmentation: uniform verbs, flat navigation, structured output | [review-model](01-review-model.md#d4--block-segmentation-uniform-verbs-flat-navigation-structured-output) | settled |
 | D5 | Blocks are derived at render time; no IDs are stored or shown | [review-model](01-review-model.md#d5--blocks-are-derived-at-render-time-no-ids-are-stored-or-shown) | settled |
 | D6 | Reference expansion by truncated quote | [sending](06-sending.md#d6--reference-expansion-by-truncated-quote) | dead |
@@ -71,31 +74,31 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D10 | Build the prose path first | [review-model](01-review-model.md#d10--build-the-prose-path-first) | superseded → D4 |
 | D11, D12, D13 | Held tool calls, Discuss, answer-and-forward | [review-model](01-review-model.md#d11-d12-d13--held-tool-calls-discuss-answer-and-forward) | superseded → E12 |
 | D14 | Thread isolation via `$.model.fork` | [thread](05-thread.md#d14--thread-isolation-via-modelfork) | settled |
-| D15 | Escalation ladder | [thread](05-thread.md#d15--escalation-ladder) | settled |
+| D15 | Escalation ladder | [thread](05-thread.md#d15--escalation-ladder) | dead |
 | D16–D19 | Branched sessions, depth, merge, worktrees | [thread](05-thread.md#d16d19--branched-sessions-depth-merge-worktrees) | superseded → E1–E4 |
 | D20 | Modal navigation with visible controls on the selected block | [navigation](03-navigation.md#d20--modal-navigation-with-visible-controls-on-the-selected-block) | settled |
-| D21 | Selection highlighting is a gutter column | [rendering](02-rendering.md#d21--selection-highlighting-is-a-gutter-column) | settled |
-| D22 | Conflicting marks are not resolved by the mod | [principles](00-principles.md#d22--conflicting-marks-are-not-resolved-by-the-mod) | settled |
+| D21 | The selected block takes the selection colour | [rendering](02-rendering.md#d21--the-selected-block-takes-the-selection-colour) | settled |
+| D22 | Conflicting marks are not resolved by the mod | [principles](00-principles.md#d22--conflicting-marks-are-not-resolved-by-the-mod) | superseded → P2 |
 | D23 | The mod must be trivially disableable, and must fail to vanilla | [principles](00-principles.md#d23--the-mod-must-be-trivially-disableable-and-must-fail-to-vanilla) | settled |
-| D24 | MVP scope: last message only | [review-model](01-review-model.md#d24--mvp-scope-last-message-only) | settled |
+| D24 | Only the last reply is reviewed | [review-model](01-review-model.md#d24--only-the-last-reply-is-reviewed) | settled |
 | D25 | Nudging Claude toward `AskUserQuestion` | [review-model](01-review-model.md#d25--nudging-claude-toward-askuserquestion) | superseded → E9 |
 | D26 | Config surface | [keys](04-keys.md#d26--config-surface) | superseded → E10 |
-| D27 | A throwaway spike, then two thin phases | [project](09-project.md#d27--a-throwaway-spike-then-two-thin-phases) | settled |
-| D28 | Mods do not intervene in Claude Code's own tool runs | [principles](00-principles.md#d28--mods-do-not-intervene-in-claude-codes-own-tool-runs) | settled |
+| D27 | Build in thin, end-to-end slices | [project](09-project.md#d27--build-in-thin-end-to-end-slices) | settled |
+| D28 | Mods do not intervene in Claude Code's own tool runs | [principles](00-principles.md#d28--mods-do-not-intervene-in-claude-codes-own-tool-runs) | superseded → P3 |
 | D29 | The band is the source of truth; the prompt box is a scratch copy | [sending](06-sending.md#d29--the-band-is-the-source-of-truth-the-prompt-box-is-a-scratch-copy) | superseded → D30 |
 | D30 | Send by live suggestion in the prompt box | [sending](06-sending.md#d30--send-by-live-suggestion-in-the-prompt-box) | settled |
-| D31 | The navigator: a docked pane that maps the reply | [navigation](03-navigation.md#d31--the-navigator-a-docked-pane-that-maps-the-reply) | settled |
+| D31 | Classic reviews in a pane: the navigator | [navigation](03-navigation.md#d31--classic-reviews-in-a-pane-the-navigator) | settled |
 | D32 | Key bindings belong to the person | [keys](04-keys.md#d32--key-bindings-belong-to-the-person) | settled |
 | D33 | Share Claude Code's surfaces with other mods; redraw only when needed | [rendering](02-rendering.md#d33--share-claude-codes-surfaces-with-other-mods-redraw-only-when-needed) | settled |
-| D34 | The spike evolves into phase 1 | [project](09-project.md#d34--the-spike-evolves-into-phase-1) | settled |
-| D35 | In-place marks after review: a configuration option, on by default | [rendering](02-rendering.md#d35--in-place-marks-after-review-a-configuration-option-on-by-default) | settled |
-| D36 | Distribution: a release zip now, a marketplace at v0.1, npm held | [project](09-project.md#d36--distribution-a-release-zip-now-a-marketplace-at-v01-npm-held) | settled |
-| D37 | Blocks move by the keys only; the wheel scrolls the reply | [navigation](03-navigation.md#d37--blocks-move-by-the-keys-only-the-wheel-scrolls-the-reply) | settled |
+| D34 | The spike evolves into phase 1 | [project](09-project.md#d34--the-spike-evolves-into-phase-1) | superseded → D27 |
+| D35 | In-place marks stay after the review | [rendering](02-rendering.md#d35--in-place-marks-stay-after-the-review) | settled |
+| D36 | Distribution: the repository is its own marketplace, a zip per release, npm held | [project](09-project.md#d36--distribution-the-repository-is-its-own-marketplace-a-zip-per-release-npm-held) | settled |
+| D37 | Blocks move by keys or a click; the wheel scrolls the reply | [navigation](03-navigation.md#d37--blocks-move-by-keys-or-a-click-the-wheel-scrolls-the-reply) | settled |
 | D38 | `/synaptik config` writes the key bindings, after the person confirms | [keys](04-keys.md#d38--synaptik-config-writes-the-key-bindings-after-the-person-confirms) | superseded → D42 |
 | D39 | The `/synaptik` command | [keys](04-keys.md#d39--the-synaptik-command) | settled |
 | D40 | Target surfaces: the terminal only | [project](09-project.md#d40--target-surfaces-the-terminal-only) | settled |
 | D41 | Fullscreen reviews in the reply itself; classic keeps its pane | [rendering](02-rendering.md#d41--fullscreen-reviews-in-the-reply-itself-classic-keeps-its-pane) | settled |
-| D42 | No key setup: Synaptik reads and writes no key bindings | [keys](04-keys.md#d42--no-key-setup-synaptik-reads-and-writes-no-key-bindings) | settled |
+| D42 | No key setup: Synaptik reads and writes no key bindings | [keys](04-keys.md#d42--no-key-setup-synaptik-reads-and-writes-no-key-bindings) | superseded → D32 |
 | D43 | Step into a code block, drawn as windows of the whole block | [navigation](03-navigation.md#d43--step-into-a-code-block-drawn-as-windows-of-the-whole-block) | settled |
 | D44 | Step into a table, placing its rows with Claude Code's own layout | [navigation](03-navigation.md#d44--step-into-a-table-placing-its-rows-with-claude-codes-own-layout) | settled |
 | D45 | Threads in a pane of their own, one per block | [thread](05-thread.md#d45--threads-in-a-pane-of-their-own-one-per-block) | settled |
@@ -117,3 +120,4 @@ What holds today, and why — rewritten when it changes, never appended to.
 | E14 | Custom structured payload via `$.tool.register` (was half of D7) | [review-model](01-review-model.md#e14--custom-structured-payload-via-toolregister-was-half-of-d7) | proposed |
 | E15 | Review the files a turn touched, in the same review | [file-review](07-file-review.md#e15--review-the-files-a-turn-touched-in-the-same-review) | proposed |
 | E16 | Extended mode: cooperate with the agent (**analysis needed**) | [principles](00-principles.md#e16--extended-mode-cooperate-with-the-agent-analysis-needed) | proposed |
+| E17 | Marks only while reviewing | [rendering](02-rendering.md#e17--marks-only-while-reviewing) | proposed |

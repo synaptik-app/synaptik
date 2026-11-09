@@ -1,60 +1,31 @@
 # Project
 
-### D27 — A throwaway spike, then two thin phases
+### D27 — Build in thin, end-to-end slices
 **Status:** settled · added by 2026-10-13
 
-Each phase is **thin but end-to-end** rather than a layer (all the parsing, then
+**Each slice is thin but end-to-end** rather than a layer (all the parsing, then
 all the state, then all the UI), so something usable exists at the end of each.
+**The riskiest part goes first**, as cheaply as possible: the part that can't be
+settled on paper — how a marked-up reply looks in a terminal — was a spike
+before any machinery depended on it.
 
-| | What | Delivers |
-|---|---|---|
-| **Spike** | a mod drawing one hardcoded message with a gutter, fake mark symbols and a selected row | answers Q3, Q10, the highlight question and the entry key — and whether the look holds up |
-| **Phase 1** | real segmentation, accept/reject/comment, tray, band preview, submit | a mod usable daily. **No threads.** |
-| **Phase 2** | threads via `fork`, commit toggle, model-written summary | the discussion half |
-
-Rendering goes first, in the spike: D21 is the one part of the design that cannot
-be settled on paper, and finding a rendering problem *after* building the
-machinery that depends on it is the expensive order. The spike costs almost
-nothing: `--plugin-dir`, one `register.ts`, reloads on save. It is not thrown
-away: phase 1 evolves it (D34).
-
-**Phase 1 is the real test.** If marking without threads does not change how the
-work feels, phase 2 will not save it.
+**Evolve tested code; don't rewrite it.** Code that has been tested against real
+use — the bench's fixtures, both renderers, other mods — is kept and refined, not
+rebuilt from the spec. A rewrite redoes work that was proven.
 
 **Rationale:** the project's real risk is scope growth, not poor tracking.
 
 **Revisions**
 - **2026-10-13** — the first slice no longer bundles rendering and state:
   rendering goes first, as the spike.
-- **2026-10-18** — the spike is no longer throwaway; it evolves into phase 1
-  (D34).
+- **2026-10-18** — the spike is not thrown away; phase 1 evolves it (D34).
+- **2026-11-10** — the spike, phase 1 (marking) and phase 2 (threads) are done;
+  what stays is the rule. Takes in D34; retitled from "A throwaway spike, then
+  two thin phases".
 
 ---
 
-### D34 — The spike evolves into phase 1
-**Status:** settled · added 2026-10-18
-
-Phase 1 evolves the spike's code rather than building fresh from `SPEC.md`, as
-D27 first had it. By the end of spike 0 the code had been tested against the
-bench's fixtures, the classic renderer and a second mod, with real fixes in it —
-the whole turn as the reply, multi-paragraph items, the shared band, focus
-handling, the suggestion's re-proposal.
-
-**Phase 1, deliberately:**
-- **Keep** the hooks file's tested behaviour and the tested `src/` pieces
-  (`lastTurnText`, the compile step), renamed out of `spike-*`.
-- **Rewrite the segmenter** properly from SPEC §3 — the most naive part; tables,
-  quotes, code and multi-paragraph items with tests from the bench's fixtures.
-- **Add a tray module** for §5's state rules, with tests.
-- **Split the hooks file** (~700 lines) into a few files by surface.
-
-**Why not rewrite:** it would redo work that was tested against real use, and
-D27's reason — finding out whether rendering could work before building state on
-it — has been served. D27's other point stands: phases stay thin but end-to-end.
-
----
-
-### D36 — Distribution: a release zip now, a marketplace at v0.1, npm held
+### D36 — Distribution: the repository is its own marketplace, a zip per release, npm held
 **Status:** settled · added 2026-10-18
 
 **The repository is its own marketplace** — `.claude-plugin/marketplace.json`
@@ -114,14 +85,14 @@ review, so a command and a tray would be dead weight. The check is
 their own. Tried in the Desktop Code tab on 2026-10-21: a reply on a selected
 passage (several can go as one prompt — Synaptik's comment and batching), a
 side chat that can summarise into the main chat (D3's thread and summary), and
-line comments on the diff that reach Claude anchored to file and line (E15).
+line comments on the diff that reach Claude anchored to file and line.
 Only accept/reject with one key, and nesting, are missing. A Synaptik pane there
 would duplicate native features and leave people unsure which to use. The
 mobile app offers similar features, and draws no `Input` or `Select` besides.
 
 **Side note — the app's comments are agent-aware:** Claude receives a structured
-anchor (file, line) plus an instruction, the opposite of P1 — evidence that an
-agent-aware approach (E16) works well enough to ship.
+anchor (file, line) plus an instruction — the opposite of P1, and evidently good
+enough to ship.
 
 **The VS Code panel is next (#76)**, per the docs (unverified on the installed
 2.1.287, whose types already list the `vscode` surface without a `Client`): no
@@ -143,3 +114,33 @@ needed; emoji width (`💬`) is the one to watch.
 **Revisions**
 - **2026-10-29** — non-interactive sessions (#127): the command and reply
   adoption are skipped there; before, the hooks ran and only drew nothing.
+- **2026-11-10** — the side note no longer cites a proposal.
+
+---
+
+## Superseded
+
+### D34 — The spike evolves into phase 1
+**Status:** superseded → D27 · added 2026-10-18
+
+Phase 1 evolves the spike's code rather than building fresh from `SPEC.md`, as
+D27 first had it. By the end of spike 0 the code had been tested against the
+bench's fixtures, the classic renderer and a second mod, with real fixes in it —
+the whole turn as the reply, multi-paragraph items, the shared band, focus
+handling, the suggestion's re-proposal.
+
+**Phase 1, deliberately:**
+- **Keep** the hooks file's tested behaviour and the tested `src/` pieces
+  (`lastTurnText`, the compile step), renamed out of `spike-*`.
+- **Rewrite the segmenter** properly from SPEC §3 — the most naive part; tables,
+  quotes, code and multi-paragraph items with tests from the bench's fixtures.
+- **Add a tray module** for §5's state rules, with tests.
+- **Split the hooks file** (~700 lines) into a few files by surface.
+
+**Why not rewrite:** it would redo work that was tested against real use, and
+D27's reason — finding out whether rendering could work before building state on
+it — has been served. D27's other point stands: phases stay thin but end-to-end.
+
+**Revisions**
+- **2026-11-10** — superseded by D27: phase 1 is done, and its rule — evolve tested
+  code, don't rewrite it — is D27's.

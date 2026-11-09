@@ -3,42 +3,28 @@
 ### D14 — Thread isolation via `$.model.fork`
 **Status:** settled · added by 2026-10-14
 
-Threads use `$.model.fork` exclusively. A thread **never** calls
-`$.prompt.submit`.
+**A thread is a `$.model.fork`,** a separate model call whose request and reply
+never enter the main conversation's message list, so crosstalk is impossible by
+construction. Nothing from a thread reaches the main conversation except its
+summary, when included: compiled into the suggestion and sent by the person (P1,
+D3).
 
-**Rationale:** `fork` is a separate model call whose request and reply never
-enter the main conversation's message list, so crosstalk is impossible by
-construction. `$.prompt.submit` is the one call that would write into the main
-conversation.
+**The fork carries the mod's own instructions** (`src/prompts.ts`): answer the
+person's message about the block, briefly; any tool call is refused; then a
+summary and an include/exclude verdict, in tags the pane strips before anything
+is shown or sent. This is the mod instructing its own call, outside the main
+conversation (P1).
 
-**Known limitation:** `fork` is single-shot. For a multi-turn thread the mod
-re-sends the accumulated side Q&A on each message and owns that history itself.
-This is also what makes E2 possible later — the thread is a clean, mod-owned
-transcript that can be handed to another session deliberately. Where threads
-are drawn is D45.
-
----
-
-### D15 — Escalation ladder
-**Status:** settled · added by 2026-10-14
-
-```
-accept/reject → comment → thread → delegate to main agent
-```
-
-Each rung is one keypress from the last. Start at the cheapest; promote when it
-is not enough.
-
-**A thread that needs tools does not abandon — it asks.** Its committed conclusion can say "this needs running";
-the main agent executes next turn and the result arrives in a response that can
-itself be marked up.
-
-**This closes the loop:** thread → conclusion with an action → main agent runs
-it → new response → mark that up. The mod is iterative, not one-shot.
+**`fork` is single-shot.** For a multi-turn thread the mod re-sends the
+accumulated side Q&A on each message and owns that history itself, in memory. It
+reads the main conversation from the cache, so a thread costs about its own text
+(D45). Where threads are drawn is D45.
 
 **Revisions**
-- **by 2026-10-14** — the fourth rung was a branched session with tools; it moved to
-  E1, and delegating to the main agent took its place.
+- **2026-11-04** — the fork also writes the summary and a verdict with each answer
+  (D45).
+- **2026-11-10** — states the fork's instructions; "a thread never calls
+  `$.prompt.submit`" dropped, since the mod never submits.
 
 ---
 
@@ -62,8 +48,8 @@ one call, about a tenth more per message (#156). The verdict sets the switch unt
 the person touches it. Once they set it, no verdict is asked for: on, every
 answer's summary is written as one the person chose to send (`INCLUDED_ANYWAY`);
 off, only the answer is asked for, and switching on writes the summary then.
-Closing (Esc) writes a summary only when an answer came without one. This settles
-E6, by a verdict in the same call rather than `$.model.classify`.
+Closing (Esc) writes a summary only when an answer came without one. A verdict in
+the same call, rather than a separate classifier call (`$.model.classify`).
 
 **The summary is written for its use**, as the person's instruction to the agent,
 in sections: `Actions:` (changes and work to carry out — both are what the agent
@@ -131,9 +117,9 @@ threads (tabs come free when docked).
 **Status:** settled · added 2026-11-05
 
 Extends D43, D44 and D45. Stepped into a code block or table, `d` opens a thread
-on that part, keyed as its mark is
-(`3.5`). It is the block's thread's sibling, not part of it: a code block can hold
-a thread on line 4 and another on line 12, each with its own summary and switch.
+on that part, keyed as its mark is (`3.5`). It is the block's thread's sibling,
+not part of it: a code block can hold a thread on line 4 and another on line 12,
+each with its own summary and switch.
 
 **The fork reads the whole block, and which part.** A line alone loses what it is
 in, so the prompt quotes the block and names the part as the review would
@@ -168,8 +154,8 @@ subagent view.
 **Open:** whether a mod can trigger `/branch` via `$.command.run`, or must start
 the session another way *(was Q4)*. `session.end` fires on `/branch` with reason
 `resume`, so a branch must not be treated as a real session end.
-**The case is context isolation**, not tool access (D15's delegate loop covers
-that), and it is a real need: one session exploring the database, the cloud setup,
+**The case is context isolation**, not tool access: a thread already hands tool
+work to the main agent through its summary (D45). Isolation is a real need: one session exploring the database, the cloud setup,
 or the front and back ends deserves its own context each. Branching goes through
 Claude Code's own `/branch`, from a thread (E2, #106). **Not pursued:** a
 Synaptik-owned session tree, and hiding branches from the resume list.
@@ -238,6 +224,33 @@ discussion; applied file changes need a real git merge, not a conversation merge
 ---
 
 ## Superseded
+
+### D15 — Escalation ladder
+**Status:** dead · added by 2026-10-14
+
+```
+accept/reject → comment → thread → delegate to main agent
+```
+
+Each rung is one keypress from the last. Start at the cheapest; promote when it
+is not enough.
+
+**A thread that needs tools does not abandon — it asks.** Its committed conclusion
+can say "this needs running";
+the main agent executes next turn and the result arrives in a response that can
+itself be marked up.
+
+**This closes the loop:** thread → conclusion with an action → main agent runs
+it → new response → mark that up. The mod is iterative, not one-shot.
+
+**Revisions**
+- **by 2026-10-14** — the fourth rung was a branched session with tools, now a
+  proposal; delegating to the main agent took its place.
+- **2026-11-10** — dead: there is no ladder. Each action stands on its own (D1),
+  and a comment doesn't turn into a thread. That a thread hands tool work to the
+  main agent, through its summary, is D14 and D45.
+
+---
 
 ### E6 — Auto-classify thread outcomes
 **Status:** superseded → D45 · added by 2026-10-14

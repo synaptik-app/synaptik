@@ -3,42 +3,41 @@
 ### D1 — The response is a fillable form, not a thread host
 **Status:** settled · added by 2026-10-14
 
-The central metaphor is in-place marking of response blocks that
-compiles into a single prompt. Interactions fall into three classes:
+**The reply is a form to fill in.** Each block is marked in place, and the marks
+compile into a single prompt. Most of what a person does with a reply is marking
+— approving in bulk, a small amendment, a word on a proposed command — and only
+some of it is discussion. A thread for each would be heavier than the prose being
+typed today.
 
-| Class | Input | Waits for a reply | Resume path |
+Interactions fall into three classes:
+
+| Class | Input | Waits for a reply | Reaches the prompt as |
 |---|---|---|---|
-| **Options** (accept, reject) | none | no | staged |
-| **Comment** ("ok, but change x to 5") | free-form | no | staged |
-| **Thread** | free-form | yes | its own, then staged |
+| **Options** (accept, reject) | none | no | a mark |
+| **Comment** ("ok, but change x to 5") | free-form | no | a mark with its text |
+| **Thread** | free-form | yes | its summary, if included |
 
 **The axis is "does it expect a reply before you continue?"** — *not* "does it
 need typing." Comment groups with accept and reject: all three are deferred
-marks that compile into one prompt, and only a thread interrupts the flow.
+marks, and only a thread interrupts the flow. **A comment does not turn into a
+thread:** discuss is its own action on the block, and the person decides to open
+one.
 
-**A comment does not turn into a thread.** Discuss is its own action on the
-block: the person decides to open a thread.
-
-**Rationale:** of the five frictions in the problem statement
-(`spec/README.md`), only one is genuinely a discussion. The other four are
-marking. A thread for each would be heavier than the prose being typed today.
-
-**Accepted consequences:**
-- The staging tray and compile step are core infrastructure, built in slice 1.
-- Default UI state is *marking*, not *discussing*.
-- Threads are cuttable — the mod is useful without them.
-- The project's working name, "step threads", is now a misnomer.
+**Marking is the default,** not discussing. Threads are optional: the mod is
+useful without them.
 
 **Rejected alternative:** *thread-first* — every interaction opens a discussion
-pane, marking is a shortcut for the trivial case. Better if the real pain is
-*thinking through* responses; worse if it is *processing* them quickly.
+pane, and marking is a shortcut for the trivial case. Better if the real pain is
+*thinking through* replies; worse if it is *processing* them quickly.
 
 **Revisions**
 - **by 2026-10-14** — verbs were grouped by *typed vs untyped*, and the free-form
   mark was "amend": renamed **comment**, since amend implies editing Claude's
   text when the user is annotating it. Regrouped by *deferred vs waiting*.
-- **2026-11-08** — no comment ↔ thread conversion. A comment could be promoted to a
-  thread with one key, its text the opening message, until the first exchange.
+- **2026-11-08** — no comment ↔ thread conversion. A comment could be promoted to
+  a thread with one key, its text the opening message, until the first exchange.
+- **2026-11-10** — rewritten to stand on its own; history dropped from the
+  consequences.
 
 ---
 
@@ -49,91 +48,76 @@ pane, marking is a shortcut for the trivial case. Better if the real pain is
 |---|---|---|
 | ✓ Accept | `a` | staged mark |
 | ✗ Reject | `x` | staged mark |
-| ✎ Comment | `c` | staged mark + input |
-| 💬 Discuss | `d` | a thread (fork conversation) |
+| ✎ Comment | `c` | staged mark + text |
+| 💬 Discuss | `d` | a thread: a fork conversation, private until included |
 
-*Discuss* opens a **thread**, which is anchored and private until included, as a
-GitHub review thread is. Inside a thread, **branch** would turn it into a session
-of its own (E2): Claude Code's `/branch`, which creates a branch of the
-conversation at that point (`/fork` is a background session or agent; checked on
-2.1.308). Design of the thread pane and of branching: #106.
+The verbs act on a block, or, stepped into a code block or table, on a line or
+row. **A code block or table has a fifth action, step in (`s`)**: it moves rather
+than marks. Inside, `s` steps out, the menu's verbs apply to the selected line or
+row, and `q` steps out before it ends the review (D43, D44).
 
-**Verbs are idempotent entry points.** Pressing a verb again resumes or edits
-rather than duplicating: `c` reopens the comment input pre-filled, `d` reopens
-the existing thread with its history. **One comment and one thread per block,
+**Verbs are idempotent entry points.** Pressing one again never duplicates:
+accept or reject again unmarks; `c` reopens the comment pre-filled; `d` reopens
+the block's thread with its history. **One mark and one thread per block,
 maximum.**
 
-**Run was cut.** The mod does not execute anything. If Claude proposes a command
-in prose, the user comments *"run this with --verbose"*; the agent runs it next
-turn through its own Bash tool and permission flow, and the result returns in
-context. Building Run would have meant `$.process.run`, output capture, and
-feeding results back — and skipping the feedback would silently desync the
-agent's picture of the world. The comment loop removes that trap for free.
-*(→ E7.)*
+**The mod executes nothing — no Run verb.** If Claude proposes a command in
+prose, the person comments *"run this with --verbose"*; the agent runs it next
+turn through its own tools and permission flow, and the result returns in
+context. A Run verb would need `$.process.run`, output capture and feeding the
+result back — and skipping that feedback would silently desync the agent's
+picture of the world. **Cost, accepted:** responding to a proposed command takes
+a round trip, since the agent re-emits it before running it.
 
-**Known cost of cutting Run:** responding to a proposed command costs a round
-trip, because the agent must re-emit it before executing. Accepted, to avoid
-maintaining a parallel execution path with its own failure mode.
-
-**Explain is a thread.** Asking for an explanation is what a thread is for; no
-separate verb.
+**No Explain verb.** Asking for an explanation is what a thread is for.
 
 **Revisions**
-- **by 2026-10-14** — Run cut (E7); Explain collapsed into Thread, as `?`, a
-  thread pre-seeded with "explain this".
+- **by 2026-10-14** — Run cut; Explain collapsed into Thread, as `?`, a thread
+  pre-seeded with "explain this".
 - **2026-10-24** — the verbs are named accept · reject · comment · discuss (was
   "Thread"); `?` removed: a pre-seeded thread is not worth a second key.
+- **2026-11-01** — step in, a fifth action on code blocks, then tables (D43, D44).
+- **2026-11-10** — rewritten to stand on its own; the branch proposal dropped.
 
 ---
 
-### D3 — Deferred vs waiting; threads commit explicitly
+### D3 — A thread sends nothing unless included
 **Status:** settled · added by 2026-10-14
 
-- **Accept / reject / comment** — deferred. Nothing reaches the agent until the
-  prompt is sent.
-- **Thread** — opens immediately, but sends nothing unless included.
+**A thread is consequence-free until included.** It is fully interactive, but has
+no effect on the main conversation unless its switch is on. Leave it off and it
+is as if it never happened.
 
-**Threads are consequence-free until included.** A thread is fully interactive,
-but has no effect on the main conversation unless its switch is on. Leave it off
-and it is as if it never happened.
-
-**Rationale:** most threads are read-only understanding, with nothing worth
-sending. Auto-sending them would pollute every prompt with explanations requested
+**Why:** most threads are read-only understanding, with nothing worth sending.
+Sending them by default would pollute every prompt with explanations asked for
 purely to understand. It also keeps "never mind, I was wrong" from reaching the
 agent.
 
-#### Including a thread
-
-The thread's pane shows an **include/exclude switch** and, while it is on, the
-summary that would go (D45). The thread's own fork writes the summary — *what was
-decided here, as an instruction to the main agent* — with a verdict that sets the
-switch's default; the person flips it, and the switch then follows them. The
-summary compiles with the other marks into the suggestion in the prompt box
-(D30), where it can be edited before sending.
-
-Per P2, the mod never analyses what is worth sending — the model summarizes and
-the person decides. Two review points, both free.
+**What is sent is a summary, never the transcript.** The thread's own fork writes
+it, as an instruction to the main agent, with a verdict that sets the switch's
+default; the person flips the switch, and edits the summary in the prompt box
+before sending. The model summarizes and the person decides (P2). How the pane
+shows all this is D45.
 
 **Rejected alternative:** stage the raw thread transcript. Zero machinery and
 nothing lost, but a ten-message thread dumps ten messages into the prompt and
 the main agent must re-derive the conclusion anyway.
 
-**Accepted caveat:** summarization is lossy and will occasionally drop the
-nuance the thread was about. Mitigated by the summary being editable. If it
-needs frequent rewriting, fix the summarizer prompt — not the mod.
-
-`Enter` in the prompt box with text of the person's own sends that text alone,
-and the marks are discarded, with a warning (D24).
+**Accepted caveat:** summarization is lossy and will occasionally drop the nuance
+the thread was about. Mitigated by the summary being editable. If it needs
+frequent rewriting, fix the summarizer prompt — not the mod.
 
 **Revisions**
 - **by 2026-10-14** — commit is a toggle, not a button: an include/exclude state
-  showing the summary, so auto-classification (E6) changes one default rather
-  than the UI.
+  showing the summary, so auto-classification changes one default rather than
+  the UI.
 - **2026-10-15** — the commit key, the band preview and the tray's submit and copy
-  keys give way to the suggestion in the prompt box (D29, D30).
+  keys give way to the suggestion in the prompt box (D30).
 - **2026-11-04** — the switch's default is the thread's own verdict, with each
-  answer (D45, settling E6). In MVP it was *excluded*, flipped by a commit key
-  that fired one more `fork` for the summary.
+  answer (D45). It was *excluded*, flipped by a commit key that fired one more
+  `fork` for the summary.
+- **2026-11-10** — scoped to threads, standing on its own; retitled from
+  "Deferred vs waiting; threads commit explicitly".
 
 ---
 
@@ -142,146 +126,150 @@ and the marks are discarded, with a warning (D24).
 
 **Every block gets every verb.** No capability matrix: much of Claude's advice
 arrives as prose ("I'd recommend Redis here because…"), and accepting it is
-perfectly meaningful. Restricting verbs by block type would make the verb bar
-useless on half of real responses, and violate P2 — the mod deciding, on the
-user's behalf, that a mark is semantically invalid.
+perfectly meaningful. Restricting verbs by block type would make the menu useless
+on half of real replies, and violate P2 — the mod deciding, on the person's
+behalf, that a mark is semantically invalid.
 
 **What is a block:**
 
 | Element | Block? |
 |---|---|
-| Paragraph | Yes |
-| List item (incl. nested) | Yes — **flat**, each item its own block |
-| Fenced code block | Yes |
-| Table, blockquote | Yes, treated as paragraphs |
-| Heading | **No** — a label; marking it is ambiguous with marking its section |
-| Multi-paragraph list item | One block (kept whole) |
+| Paragraph | yes |
+| List item, including nested | yes — **flat**, each item its own block |
+| List item spanning several paragraphs | yes, as **one** block |
+| Fenced code block, table, blockquote | yes — **always its own block**, also inside a list item |
+| Heading | **no** — a label; marking it is ambiguous with marking its section |
+| Horizontal rule | **no** |
 
-**Flat nesting.** Sub-items are often where the real decisions live, so
-collapsing them into a parent would hide exactly what the user wants to mark.
+The detailed rules — what belongs to a list item, nesting by structure — are
+SPEC §3.
 
-**But segmentation records a parent pointer per block,** because *navigation is
-flat while the compiled prompt must preserve hierarchy.* Accepting a parent and
-rejecting one child is normal refinement, not a contradiction — and the agent
-can only read it that way if the output shows the nesting:
+**Flat navigation.** Sub-items are often where the real decisions live, so
+collapsing them into a parent would hide exactly what the person wants to mark.
+Code, a table or a quote inside an item is its own block for the same reason: it
+can be marked apart from the item.
+
+**Nested output.** Each block records its parent, because navigation is flat
+while the compiled prompt must keep the hierarchy. Accepting a parent and
+rejecting one child is normal refinement, not a contradiction — and the agent can
+only read it that way if the prompt shows the nesting:
 
 ```
 ✓ "Use Redis for the session cache"
     ✓ "per-user key prefix"
-    ✓ "5 minute TTL"
     ✗ "write-through on logout"
 ```
 
-(Format as in D47 and `SPEC.md` §9.)
-
-Cheap to record now, impossible to retrofit once the compile format is fixed.
-
-**Genuinely ambiguous case:** rejecting a parent while accepting a child. Goes
-out as-is; the agent resolves it (D22, P2).
+Rejecting a parent while accepting a child goes out as it is; the agent resolves
+it (P2).
 
 **Revisions**
-- **by 2026-10-14** — the capability matrix is gone. Verbs were restricted by block
-  type — list items got everything, paragraphs discussion only, on the reasoning
-  that "accepting a paragraph of prose is meaningless". That was wrong.
+- **by 2026-10-14** — the capability matrix is gone. Verbs were restricted by
+  block type — list items got everything, paragraphs discussion only, on the
+  reasoning that "accepting a paragraph of prose is meaningless". That was wrong.
+- **2026-11-10** — the block table follows the segmenter: code, tables and quotes
+  are blocks of their own inside list items; rules aren't blocks.
 
 ---
 
 ### D5 — Blocks are derived at render time; no IDs are stored or shown
 **Status:** settled · added by 2026-10-14
 
-Split the message text into blocks at render time and key marks by **position**
-(the block's index, or `block.line` for a line inside a code block). No stored
-IDs, no `session.append` hook, no persistence.
+Split the reply into blocks at render time and key marks by **position**: the
+block's index, or `block.line` (`3.5`) for a line or row stepped into. No stored
+IDs, no persistence.
 
-**Stability is free:** per D24 only the completed last message is markable, so
-its text is fixed, so parsing it repeatedly yields identical blocks.
-Deterministic input, deterministic output. Users never type block references
-(D20), so nothing needs an ID.
+**Stability is free:** only the completed last reply is markable (D24), so its
+text is fixed, so parsing it again yields identical blocks. Deterministic input,
+deterministic output. Nobody types block references, so nothing needs an ID.
+**Marks live as long as the reply:** they don't survive a restart or a new
+reply.
 
-**Rule that falls out: marking is disabled while streaming.** Mid-stream the
-text is still growing, so indices would shift. Gate on `turn.complete`.
-
-**`session.append` is an extension** (E13), where it earns its place:
-marks surviving a restart, or multi-message interactivity (E11) where "it is the
-last message and the text is fixed" no longer holds.
+**Marking is off while streaming.** Mid-stream the text is still growing, so
+positions would shift. Marking starts at `turn.complete`.
 
 #### State model
 
-The mod keeps its own structured state and **generates** the final prompt from
-it at submit time. Nothing is accumulated as text along the way.
+The mod keeps its own structured state, the tray, and **generates** the prompt
+from it after every change. Nothing is accumulated as text along the way.
 
-Per block, at most **one mark** and **one committed thread summary** — two
-separate channels:
+Per block, at most **one mark** and **one thread** — two separate channels:
 
 | Action | Effect |
 |---|---|
 | Change a mark (`a` then `x`) | Overwrites. One slot, last write wins. |
-| Press the same verb twice | Unmarks (toggle off). |
-| `c` on a commented block | Reopens the input pre-filled — edit, don't retype. |
-| `d` on a threaded block | Reopens that thread with its history. |
-| `Backspace` on a block | Clears it: mark gone, thread flipped to excluded. |
-| Clear-all | Empties the tray in one action. |
-| Mark **and** committed thread on one block | Both go out; agent resolves (D22). |
+| Accept or reject twice | Unmarks. |
+| `c` on a commented block | Reopens the comment pre-filled — edit, don't retype. |
+| `d` on a block with a thread | Reopens that thread with its history. |
+| `Backspace` on a block | Clears it in steps. First the block's own mark and included thread; a second Backspace clears everything on its lines or rows. A block with nothing of its own is cleared inside on the first Backspace. Threads cleared this way are excluded, not deleted. |
+| Mark **and** included thread on one block | Both go out; the agent resolves (P2). |
 
-**Invariant: clearing unstages, it never destroys.** A cleared thread keeps its
-conversation and can be flipped back to included — that is D3's toggle reached
-from the block rather than the pane, not a second mechanism. A cleared comment
-keeps its text, so a misfire costs nothing.
+The tray empties when the prompt is sent, and when a new reply arrives.
+
+**Clearing unstages; it never destroys.** A cleared thread keeps its
+conversation and can be switched back on. A cleared comment keeps its text, so a
+misfire costs nothing.
 
 The reply shows the result directly: a cleared block drops its glyph. No state
-the user cannot see.
+the person cannot see.
 
 **Revisions**
 - **by 2026-10-14** — no stored IDs. They were assigned in `session.append` for
-  anchor stability, on the assumption that the user would *type* block references
-  into a prompt; moved to E13.
+  anchor stability, on the assumption that the person would *type* block
+  references into a prompt.
+- **2026-11-10** — rewritten to stand on its own: the prompt is generated after
+  every change, lines and rows have positions, Backspace clears in steps, and
+  there is no clear-all.
 
 ---
 
-### D24 — MVP scope: last message only
+### D24 — Only the last reply is reviewed
 **Status:** settled · added by 2026-10-13
 
-Only the most recent assistant message is interactive, and only once its turn
-has completed (D5). No historic interactivity. Eliminates the stale-mark problem
-entirely, and is what makes render-time segmentation safe.
+**Only the last reply is interactive, and only once its turn has completed.** The
+reply is the whole turn since the last prompt: every assistant piece with text,
+across tool calls. No earlier replies. This removes the stale-mark problem
+entirely, and is what makes render-time segmentation safe (D5).
 
 - **Off during a turn.** From `turn.start` to `turn.complete` the reply and band
   draw as vanilla. A reply on its way will replace the tray; staging against it
   has no use.
 - **On after a resume.** `session.start` adopts the transcript's last reply, so a
   resumed session is markable without a new turn. A resume appends a synthetic
-  `No response requested.` assistant row, skipped by its text — `SessionMessage`
-  has no flag for engine-written rows (§11, item 11).
+  `No response requested.` assistant row, skipped by its text: `SessionMessage`
+  has no flag for engine-written rows.
 
-#### Discard with warning (Q7)
+#### Marks are discarded with a warning
 
-**The mod never adds itself to a prompt the user typed.** Type your own prompt,
-it goes alone — no appended marks, no interception of `prompt.submit`.
+**The mod never adds itself to a prompt the person typed.** Type your own prompt
+and it goes alone: no appended marks, no interception of `prompt.submit`. That
+prompt brings a new reply, so marks staged on the previous one go.
 
-The consequence follows: that prompt produces a new assistant message, only the
-newest message is markable, so marks staged on the previous one are orphaned and
-go.
-
-**The risk is doing it silently** — sending a quick side question intending to
+**The risk is losing them silently**: sending a quick side question intending to
 return to five marks, and finding them gone with no sign they existed.
 
-**Shown in the band, before it happens.** No interception, no double-Enter, no
+**So the band warns before it happens.** No interception, no double-Enter, no
 dialog. When something is staged and the box holds text other than the taken
-suggestion, the band's summary line turns **yellow** (SPEC §7):
+suggestion, the band's summary line turns **yellow**:
 
 ```
 2 accepted · 1 comment staged · ⏎ sends only what you typed and drops them
 ```
 
-Read one line above the cursor while typing. Loud, because this is the one place
-in the mod where work can be lost. Everything else is reversible. The mod reads
-the box with `$.prompt.read()` from the band's render hook, which redraws anyway.
+It sits one line above the cursor while typing. Loud, because this is the one
+place in the mod where work can be lost; everything else is reversible. The mod
+reads the box with `$.prompt.read()` from the band's render hook, which redraws
+anyway.
 
-**If discarding turns out to be annoying in practice, the fix is E13** —
-persisted marks that survive a new message — not a confirm dialog.
+**If discarding proves annoying in use, the fix is marks that survive a new
+reply,** not a confirm dialog.
 
 **Revisions**
 - **2026-10-15** — off during a turn; on after a resume.
+- **2026-10-17** — the whole turn is the reply: adopting only the last message
+  left text before a tool call unmarkable.
+- **2026-11-10** — rewritten to stand on its own; retitled from "MVP scope: last
+  message only".
 
 ---
 
@@ -293,7 +281,8 @@ persisted marks that survive a new message — not a confirm dialog.
 Execute a proposed command from the response directly, with edits.
 **Requires:** `$.process.run`, output capture, and **feeding results back** —
 running without feedback silently desyncs the agent's picture of the world.
-**Weak case now:** D15's delegate loop covers it at the cost of one round trip.
+**Weak case now:** a comment, or a thread's summary (D45), hands the command to
+the main agent, at the cost of one round trip.
 
 ---
 

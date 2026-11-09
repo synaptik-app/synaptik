@@ -15,115 +15,108 @@ fine.
 
 The compiled prompt reads like something the person typed. No markers, no IDs, no
 mod structures, no protocol — not to hide the mod, but because they are noise the
-agent would have to parse. The mod does not ask the model for anything, and does
-not teach it any protocol.
+agent would have to parse. **In the main conversation** the mod does not ask the
+model for anything, and does not teach it any protocol.
 
-**Consequences:**
-- The person sees every word before it is sent, in the prompt box (D30), and sends
-  it themselves: the mod submits nothing.
-- Killed D6 and D8 outright, and reduced D7 to nothing.
-- Allowed: a slash command whose output the model reads (the kill switch, D39);
-  naming the mod where useful.
+**In practice:**
+- **The person sends.** Every word is in the prompt box before it goes, and the
+  person sends it with their own ⏎. The mod never submits.
+- **The mod writes the prompt box only at the person's own gesture.** Taking a
+  shortened suggestion fills in its full text, and the person sees all of it
+  before sending. Nothing is written into the box behind their back.
+- **The main conversation's instructions stay untouched.** No system prompt
+  sections and no tool hooks: the session works the same with or without the
+  mod.
+- **The mod's own model calls are outside the flow.** A thread is a fork, a
+  separate call that never enters the main conversation (D14). There the mod
+  does instruct the model, with a format for the answer, its summary and an
+  include/exclude verdict, which the mod strips. What can reach the main
+  conversation is only the summary: shown under the thread's switch, compiled
+  into the suggestion, and sent by the person. With Synaptik off, threads are
+  gone and the session is unaffected.
+- **Naming the mod is fine**, for example a slash command whose output the model
+  reads.
 
-**The test** for anything new, E9 and E16 included: does it change the flow, or
-only inform it?
-
-**Open edge:** E9 (nudging Claude toward `AskUserQuestion` via `prompt.compose`)
-does not touch user prompts, but does make the agent behave differently because
-the mod is installed. A softer violation of the same family. Current lean: allow
-it, since it changes *behaviour* rather than inventing a protocol. Revisit if
-E12 is ever built.
-
-**E16 is the deliberate exception**, and it is scoped as one: an opt-in
-"extended" mode where the agent is told its response will be marked up. **P1
-stays the default and the documented norm** — extended mode is the deviation, not
-the other way round. The reasoning for keeping it that way is in E16.
+**The test for anything new:** does it put something into the flow that the
+person didn't see and choose, or block, rewrite or hold the flow? If so, it
+breaks P1. An exception has to be a decision of its own that says so.
 
 **Revisions**
 - **2026-10-15** — what P1 protects is the flow, not secrecy. It was "the agent
   never knows the mod exists".
-- **2026-10-24** — the mod submits nothing (D30); before, it sent with
+- **2026-10-24** — the mod submits nothing; before, it sent with
   `$.prompt.submit({ asUser: true })`, since the plain form names the mod as
   sender.
+- **2026-11-10** — rewritten to stand on its own; references to proposals
+  dropped. Scoped to the main conversation: the mod's own forks (threads) are
+  instructed, and only what the person sees and sends reaches the main flow.
 
 ---
 
 ### P2 — The mod relays, it does not analyse
 **Status:** settled · added 2026-10-12
 
-The mod never decides what the user meant, what is worth sending, or how to
+The mod never decides what the person meant, what is worth sending, or how to
 reconcile contradictions. It captures intent and hands it over verbatim; the
 agent does the interpreting.
 
-Visible in D3 (the model summarizes its own thread, the mod does not),
-D22 (conflicts go out unresolved), and the deletion of the capability matrix
-in D4.
+**In practice:**
+- **Every block takes every mark.** The mod doesn't judge that a mark makes no
+  sense on a kind of block.
+- **Contradictions go out as they are.** A block accepted and then discussed to
+  the opposite conclusion sends both; the agent reconciles them. No precedence
+  rules for the person to learn.
+- **Judgement comes from the model, never from mod logic.** A thread's summary,
+  and the include/exclude default, are written by the thread's own fork. The
+  person sees both and decides: they flip the switch, and edit the summary in
+  the prompt box.
+
+**Revisions**
+- **2026-11-10** — rewritten to stand on its own: the rules, not references to
+  where they show. Takes in D22 (conflicting marks).
 
 ---
 
 ### P3 — One mechanism, many sources: review what the transcript already holds
 **Status:** settled · added 2026-10-13
 
-> **Anything Claude produced, opened in a Synaptik pane, marked with the four
-> verbs, compiled into one prompt.**
+**Anything Claude produced can be reviewed the same way:** marked with the four
+verbs, gathered in one tray, compiled into one prompt. The reply is the first
+source, not the only one. A new source reuses the tray, the verbs and the compile
+step unchanged; it brings only how its content is read and drawn.
 
-Response blocks are the first source, not the only one. The source list is
-**configuration, not architecture** — each new one reuses the tray, the verbs and
-the compile step unchanged.
+**Review reads; it never intercepts.** Everything a turn produced is already in
+the transcript, a plain read with `$.session.messages()`: a command and its
+output, a diff, a file path, a plan, a task list. So a source never needs to
+gate, hold or replace anything of Claude Code's to be reviewed.
 
-**The enabler is that `$.session.messages()` is a plain read** — the newest 4,096
-entries, no hook, no interception. Everything a turn produced is already there:
-a denied command and its text, a diff, a file path, a plan, a task list, a failed
-command's output. **Nothing needs gating, because none of it needs intercepting.**
+**No tool hooks.** The mod does not gate, modify or execute the tool calls Claude
+makes. The seam is natural — two different surfaces, never confusable at runtime:
 
-#### The shape every source follows
+| | Surface | Synaptik |
+|---|---|---|
+| A command **in the reply's text** (written, not called) | `AssistantMessage` render site | marked like any block |
+| A command Claude **is calling** | `tool.call` | untouched |
 
-1. The mod **reads** what the turn produced. It replaces nothing and gates
-   nothing.
-2. It offers *"open in Synaptik"* — a small additive affordance.
-3. It draws **its own pane**, where it controls every character. Q10 does not
-   apply: there is no Claude Code rendering to reproduce or match.
-4. The four verbs apply. Marks join the same tray.
-5. One prompt compiles out.
+Synaptik registers no tool hooks at all; the hooks it does register are listed in
+the README.
 
-#### Why this beats gating, every time
-
-The earlier instinct was to **intercept** the moment a decision is made — hold
-the tool call, restyle the approval prompt, replace the diff row. That instinct
-produced the two hardest and least tractable entries in this document (E5's
-hook-ordering dead end, E12's held-call timeout risk).
-
-Reviewing **after** is better on every axis:
+**Why after, not at the moment of decision:**
 
 | | Gating | Reviewing after |
 |---|---|---|
 | Hooks needed | tool hooks, held calls | a read |
-| Risk to the session | can break the agent's flow | none (D23, D28) |
-| Content stability | live | frozen snapshot — line numbers cannot move |
-| The user's state of mind | deciding yes/no under pressure | composing several comments |
+| Risk to the session | can break the agent's flow | none |
+| Content stability | live | fixed — line numbers cannot move |
+| The person's state of mind | deciding yes/no under pressure | composing several comments |
 
-**At a decision point you want to answer quickly; review is a separate
-activity.** Conflating them is what made the gating designs hard.
+At a decision point you want to answer quickly; review is a separate activity.
+Conflating them is what makes gating designs hard.
 
-#### Sources, by promise
-
-| Source | Where it comes from | Note |
-|---|---|---|
-| Response blocks | the message text | **Phase 1.** The spec. |
-| Diffs and generated files | `git diff` via `$.process.run`, or `$.fs.read` | **E15** — likely worth more than phase 2 |
-| A denied command | its text, read from the transcript | **E5**, rebuilt additively — see that entry |
-| `TodoWrite` lists | arrives as structured data | zero parsing; comment, reorder, drop |
-| Failed command output | the tool result | comment on specific stderr lines instead of describing which error |
-| Plans (`ExitPlanMode`) | possibly just text in the transcript | **may come free** — if the plan renders as text, phase 1 marks it up already. Check in the spike. |
-
----
-
-### D22 — Conflicting marks are not resolved by the mod
-**Status:** settled · added by 2026-10-14
-
-If a block is accepted and then threaded to the opposite conclusion, send
-**both** without intervention. The agent resolves it in its next response.
-Avoids inventing precedence rules the user would have to learn. See P2.
+**Revisions**
+- **2026-11-10** — rewritten to stand on its own: the pane and "open in
+  Synaptik" steps are gone (the reply is reviewed in place), and so is the list
+  of candidate sources, which are proposals. Takes in D28 (no tool hooks).
 
 ---
 
@@ -132,53 +125,31 @@ Avoids inventing precedence rules the user would have to learn. See P2.
 
 Enabling and disabling must be a single step, at any point, leaving a vanilla
 Claude Code session behind with the chat and flow unbroken. A hook that throws
-or exceeds its 10-second budget is skipped — so a failed `ui.render` hook must
-degrade to **plain Claude Code rendering, never a half-drawn transcript**.
-`.catch(handler)` returning `next(e)` on each registration is where this lives.
+or exceeds its 10-second budget is skipped — so a failed hook must degrade to
+**plain Claude Code behaviour, never a half-drawn transcript**. `.catch(handler)`
+returning `next(e)` on each registration is where this lives.
 
-**Now nearly free.** With no tool hooks (D28, E12), the mod cannot interfere
-with the agent's operation at all. It draws, and it writes the prompt box.
+**The mod holds no state the conversation depends on.** Blocks are derived at
+render time (D5) and nothing is written into the conversation; the review — the
+tray and its threads — lives in memory. So disabling mid-flow costs only the
+review in progress, and re-enabling re-parses whatever reply is current: nothing
+to migrate, nothing to recover. **Any new feature that stores something must keep
+this true.**
 
-#### The guarantee that makes this true
+With no tool hooks (P3), the mod cannot interfere with the agent's work at all:
+it draws, and it suggests into the prompt box.
 
-**The mod holds no state the conversation depends on.** D5 is what delivers
-this: blocks are derived at render time and nothing is stored in the
-conversation, so disabling mid-flow costs only the tray. The transcript is
-untouched, and re-enabling just re-parses whatever message is current — nothing
-to migrate, nothing to recover.
+**Switches:**
+- `/synaptik off` makes the hooks pass through while the session continues;
+  `/synaptik on` brings them back (D39). It exists because the failure actually
+  hit during development was rendering being *wrong*, not throwing — and
+  restarting a session to escape it is painful mid-task.
+- `/plugin` disables an installed mod; `--safe-mode` disables every mod for a
+  session.
 
-**This is a constraint to check future features against.** E13's persisted
-block identity would be the first thing to test it.
-
-#### An in-mod kill switch
-
-`/synaptik off` makes the hooks pass through while the session continues, and
-`/synaptik on` brings them back (D39). **The failure actually hit during
-development is rendering being *wrong*, not throwing** — and restarting a session
-to escape it is painful mid-task.
-
-**Other switches:** `claude --plugin-dir ./mod` loads for one session only (and
-reloads the hooks module on save); `/plugin` disables an installed one;
-`--safe-mode` disables everything for a session.
-
----
-
-### D28 — Mods do not intervene in Claude Code's own tool runs
-**Status:** settled · added by 2026-10-14
-
-The mod does not gate, modify or execute tool calls Claude makes. The boundary
-falls on a natural seam — two different surfaces, never confusable at runtime:
-
-| | Surface | In MVP scope |
-|---|---|---|
-| Command **in the response text** (written, not called) | `AssistantMessage` render site | Yes — comment and thread apply |
-| Command Claude **is calling** | `tool.call` | No — untouched |
-
-**Consequence:** Synaptik registers **no tool hooks at all**. The hooks it does
-register are listed in the README.
-
-**The excluded case is real and wanted** — responding to an approval prompt with
-"yes, but add `--verbose`" instead of rejecting and retyping. See E5.
+**Revisions**
+- **2026-11-10** — rewritten to stand on its own: the review in progress, threads
+  included, is what disabling costs; the reference to a proposal dropped.
 
 ---
 
@@ -245,3 +216,38 @@ a wishlist is how compliance budget gets spent on things that did not matter.
 **If it ships, it ships off by default**, with the switch as an `E10` option, and
 P1 remains the documented norm rather than a legacy mode.
 
+---
+
+## Superseded
+
+### D28 — Mods do not intervene in Claude Code's own tool runs
+**Status:** superseded → P3 · added by 2026-10-14
+
+The mod does not gate, modify or execute tool calls Claude makes. The boundary
+falls on a natural seam — two different surfaces, never confusable at runtime:
+
+| | Surface | In MVP scope |
+|---|---|---|
+| Command **in the response text** (written, not called) | `AssistantMessage` render site | Yes — comment and thread apply |
+| Command Claude **is calling** | `tool.call` | No — untouched |
+
+**Consequence:** Synaptik registers **no tool hooks at all**. The hooks it does
+register are listed in the README.
+
+**The excluded case is real and wanted** — responding to an approval prompt with
+"yes, but add `--verbose`" instead of rejecting and retyping. See E5.
+
+**Revisions**
+- **2026-11-10** — superseded by P3, which now states the rule and the seam.
+
+---
+
+### D22 — Conflicting marks are not resolved by the mod
+**Status:** superseded → P2 · added by 2026-10-14
+
+If a block is accepted and then threaded to the opposite conclusion, send
+**both** without intervention. The agent resolves it in its next response.
+Avoids inventing precedence rules the user would have to learn.
+
+**Revisions**
+- **2026-11-10** — superseded by P2, which now states the rule.

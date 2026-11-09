@@ -149,10 +149,10 @@ different axis and interleaving them with prose blocks would read as noise.
 - **Many files in one turn.** A refactor touching twenty files makes the
   navigator long. Possibly a count with the files collapsed until opened.
 
-#### Relationship to E8, D28 and issue #5
+#### Relationship to E8, P3 and issue #5
 
 E8's `Edit`/`Write` entry is about **gating** a tool call before it runs. This is
-reviewing **after** — a different moment, and it keeps D28 intact: the mod never
+reviewing **after** — a different moment, and it keeps P3 intact: the mod never
 touches a tool call, it only reads what already happened.
 
 **Field note #5** (code blocks need line-level granularity) wanted this same pane
