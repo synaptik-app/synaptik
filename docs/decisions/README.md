@@ -77,7 +77,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D15 | Escalation ladder | [thread](05-thread.md#d15--escalation-ladder) | settled |
 | D16–D19 | Branched sessions, depth, merge, worktrees | [thread](05-thread.md#d16d19--branched-sessions-depth-merge-worktrees) | superseded → E1–E4 |
 | D20 | Modal navigation with visible controls on the selected block | [navigation](03-navigation.md#d20--modal-navigation-with-visible-controls-on-the-selected-block) | settled |
-| D21 | Selection highlighting is a gutter column | [rendering](02-rendering.md#d21--selection-highlighting-is-a-gutter-column) | settled |
+| D21 | The selected block takes the selection colour | [rendering](02-rendering.md#d21--the-selected-block-takes-the-selection-colour) | settled |
 | D22 | Conflicting marks are not resolved by the mod | [principles](00-principles.md#d22--conflicting-marks-are-not-resolved-by-the-mod) | superseded → P2 |
 | D23 | The mod must be trivially disableable, and must fail to vanilla | [principles](00-principles.md#d23--the-mod-must-be-trivially-disableable-and-must-fail-to-vanilla) | settled |
 | D24 | Only the last reply is reviewed | [review-model](01-review-model.md#d24--only-the-last-reply-is-reviewed) | settled |

@@ -1,6 +1,6 @@
 # Rendering
 
-### D21 — Selection highlighting is a gutter column
+### D21 — The selected block takes the selection colour
 **Status:** settled · added by 2026-10-13
 
 **The selected block takes Claude Code's text-selection colour as its
@@ -10,20 +10,15 @@ a dim `└`; the verb under the cursor is the primary button, the rest dim. A
 comment shows under its block as `→ text`, not a second ✎.
 
 **Why:** the reply carries no accent colour, and the theme key follows light and
-dark themes. A `Box` background wrapped around a block's `Markdown` does paint
-behind the text (Q10), though `Markdown` itself takes no background prop.
-`selectionBg` comes from the binary, not the documented API.
-
-**This could only be settled by drawing it.** Everything else was decided by
-reasoning; how a marked-up transcript actually *looks* in a terminal is only
-learned by trying.
+dark themes. A `Box` background around a block's `Markdown` paints behind the
+text, though `Markdown` itself takes no background. `selectionBg` comes from the
+binary, not the documented API.
 
 **Tried and dropped:**
 - **A gutter column** — bright `▎` on the selected block, dim `▏` on the others.
   The dim bar on every block was noise, and the single `▎` too faint: the
   selection and its menu blended into the reply.
-- **A solid accent bar** down the selected block's full height (a 1-cell `Box`
-  with a background, which stretches to the block's height).
+- **A solid accent bar** down the selected block's full height.
 - **Other backgrounds:** `gray` (too strong), `blackBright` (close, still bright),
   a raw hex (too faint), a background for staged blocks (too much colour in the
   reply).
@@ -33,6 +28,7 @@ learned by trying.
 - **2026-10-15** — an accent bar on the selected block only, in place of the
   gutter on every block.
 - **2026-10-17** — the selection colour in place of the bar.
+- **2026-11-10** — retitled from "Selection highlighting is a gutter column".
 
 ---
 
