@@ -3,62 +3,38 @@
 ### D20 — Modal navigation with visible controls on the selected block
 **Status:** settled · added by 2026-10-13
 
-Review is a mode: entered, moved through block by block, and left. **The selected
-block shows its actions** as a row of real buttons with labels — hotkeys work too
-(`a` `x` `c` `d`), for whoever learns them — so nothing must be memorized. The row
-moves with the selection, so only one block's controls are on screen.
+**Review is a mode:** entered, moved through block by block, and left. **The
+selected block shows its actions** under it, as a row of real buttons with
+labels — hotkeys work too (`a` `x` `c` `d`) — so nothing must be memorized. The
+row moves with the selection, so only one block's controls are on screen.
 
 ```
-▎ Use Redis for the session cache
-    [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
-▏ Add a rate limiter
-▏ Shard by tenant id
+  1. Cache sessions in Redis
+✓    - key each entry by user
+     - expire after 5 minutes          ← selected (selection background)
+     └ [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
+✎ 2. Rate-limit the login endpoint
+    → make it 5 per minute per account
 ```
 
 **A comment is typed in place** under its block — better than a popup, because
 the text being commented on stays visible while typing.
 
-**How keys reach the review depends on the renderer**, because a mod gets keys
-only through a focus ring (the band's, a pane's) or a `Client` that was clicked:
-- **Fullscreen (D41):** the review is in the reply. Once a block is clicked, the
-  reply's `Client`s take the keys: ↑/↓ between blocks, ←/→ along the actions. From
-  the keyboard, `ctrl+x tab` gives the review to the band, with `j` / `k` between
-  blocks.
-- **Classic (D31):** a pane, whose scrolling turns ↑/↓ into block moves; ←/→ or
-  Tab walk the actions on its ring.
+**Prose stays at block level.** Code blocks and tables can be stepped into, line
+by line or row by row (D2, D43, D44); a paragraph is not split into sentences,
+since that breaks how it wraps.
 
-**Entering:** `ctrl+x tab`, Claude Code's `abovePrompt:focus`, or a key the person
-binds to it (D32).
+**Entering:** `ctrl+x tab` (Claude Code's `abovePrompt:focus`, or a key the person
+binds to it, D32), or in fullscreen a click on the band's hint (D41).
 
-**A second level, for code and tables:** a code block or table gets **step in**
-(D43, D44). Inside it, ↑/↓ move between lines or rows and the actions apply to the
-selected one. Prose stays at block level: splitting a paragraph into sentences
-breaks how it wraps.
-
-#### Why it works this way
-
-**No raw keys (Q3).** `ui.press` fires only for `Button`s. Keys reach a mod only
-through a focus ring, which only the band and panes have — the reply never takes
-focus. And a ring is **linear**: ↑, ←, ⇧Tab all mean "previous"; `ui.focus`
-reports where focus goes, never which key sent it.
-
-**A pane turns ↑/↓ into a direction.** In a pane ↑/↓ scroll, and `ui.scroll`
-carries a signed direction. With the pane's tree kept two rows taller than its
-window and the window pinned in the middle, every ↑/↓ is a direction signal; the
-mod moves the selection and cancels the scroll. The band raises no scroll event
-when it has nothing to scroll (tested 2026-10-18), and making it overflow would
-take half the screen.
-
-**The navigation model, A (#19):** the pane — ↑/↓ blocks, ←/→ verbs — over B (no
-pane: every arrow moves blocks on the band's ring, verbs by letter keys). A won on
-what the spike found, not on whether the pane earns its space: only a pane
-separates ↑/↓ from ←/→; the classic renderer needs a pane regardless, since the
-reply above cannot be redrawn once scrolled off (#11, #31); and a pane cannot be
-taken by another mod (D33). Fullscreen later moved the review into the reply
-(D41), where clicked `Client`s get the arrows directly.
-
-`autoFocus` accepts only `true`, so focus is managed per render rather than by
-flipping a prop off.
+**How keys reach the review shapes both renderers.** `ui.press` fires only for
+`Button`s; keys reach a mod only through a focus ring — the band's or a pane's —
+or a `Client` that was clicked. The reply itself never takes focus. And a ring
+is **linear**: ↑, ←, ⇧Tab all mean "previous", and `ui.focus` reports where
+focus goes, never which key sent it. So:
+- **Fullscreen** reviews in the reply, whose clicked `Client`s get every key; from
+  the keyboard, through the band (D41).
+- **Classic** uses a pane, whose scrolling turns ↑/↓ into block moves (D31).
 
 #### Tried and dropped
 
@@ -82,6 +58,7 @@ flipping a prop off.
 - **2026-10-27** — fullscreen reviews in the reply (D41); the pane only in
   classic.
 - **2026-11-01** — step in built for code blocks (D43), then tables (D44).
+- **2026-11-10** — the renderer detail left to D31 and D41; the drawing updated.
 
 ---
 
