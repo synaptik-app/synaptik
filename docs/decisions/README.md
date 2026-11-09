@@ -84,7 +84,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D25 | Nudging Claude toward `AskUserQuestion` | [review-model](01-review-model.md#d25--nudging-claude-toward-askuserquestion) | superseded → E9 |
 | D26 | Config surface | [keys](04-keys.md#d26--config-surface) | superseded → E10 |
 | D27 | A throwaway spike, then two thin phases | [project](09-project.md#d27--a-throwaway-spike-then-two-thin-phases) | settled |
-| D28 | Mods do not intervene in Claude Code's own tool runs | [principles](00-principles.md#d28--mods-do-not-intervene-in-claude-codes-own-tool-runs) | settled |
+| D28 | Mods do not intervene in Claude Code's own tool runs | [principles](00-principles.md#d28--mods-do-not-intervene-in-claude-codes-own-tool-runs) | superseded → P3 |
 | D29 | The band is the source of truth; the prompt box is a scratch copy | [sending](06-sending.md#d29--the-band-is-the-source-of-truth-the-prompt-box-is-a-scratch-copy) | superseded → D30 |
 | D30 | Send by live suggestion in the prompt box | [sending](06-sending.md#d30--send-by-live-suggestion-in-the-prompt-box) | settled |
 | D31 | The navigator: a docked pane that maps the reply | [navigation](03-navigation.md#d31--the-navigator-a-docked-pane-that-maps-the-reply) | settled |

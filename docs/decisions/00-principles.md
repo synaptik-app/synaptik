@@ -80,57 +80,43 @@ agent does the interpreting.
 ### P3 — One mechanism, many sources: review what the transcript already holds
 **Status:** settled · added 2026-10-13
 
-> **Anything Claude produced, opened in a Synaptik pane, marked with the four
-> verbs, compiled into one prompt.**
+**Anything Claude produced can be reviewed the same way:** marked with the four
+verbs, gathered in one tray, compiled into one prompt. The reply is the first
+source, not the only one. A new source reuses the tray, the verbs and the compile
+step unchanged; it brings only how its content is read and drawn.
 
-Response blocks are the first source, not the only one. The source list is
-**configuration, not architecture** — each new one reuses the tray, the verbs and
-the compile step unchanged.
+**Review reads; it never intercepts.** Everything a turn produced is already in
+the transcript, a plain read with `$.session.messages()`: a command and its
+output, a diff, a file path, a plan, a task list. So a source never needs to
+gate, hold or replace anything of Claude Code's to be reviewed.
 
-**The enabler is that `$.session.messages()` is a plain read** — the newest 4,096
-entries, no hook, no interception. Everything a turn produced is already there:
-a denied command and its text, a diff, a file path, a plan, a task list, a failed
-command's output. **Nothing needs gating, because none of it needs intercepting.**
+**No tool hooks.** The mod does not gate, modify or execute the tool calls Claude
+makes. The seam is natural — two different surfaces, never confusable at runtime:
 
-#### The shape every source follows
+| | Surface | Synaptik |
+|---|---|---|
+| A command **in the reply's text** (written, not called) | `AssistantMessage` render site | marked like any block |
+| A command Claude **is calling** | `tool.call` | untouched |
 
-1. The mod **reads** what the turn produced. It replaces nothing and gates
-   nothing.
-2. It offers *"open in Synaptik"* — a small additive affordance.
-3. It draws **its own pane**, where it controls every character. Q10 does not
-   apply: there is no Claude Code rendering to reproduce or match.
-4. The four verbs apply. Marks join the same tray.
-5. One prompt compiles out.
+Synaptik registers no tool hooks at all; the hooks it does register are listed in
+the README.
 
-#### Why this beats gating, every time
-
-The earlier instinct was to **intercept** the moment a decision is made — hold
-the tool call, restyle the approval prompt, replace the diff row. That instinct
-produced the two hardest and least tractable entries in this document (E5's
-hook-ordering dead end, E12's held-call timeout risk).
-
-Reviewing **after** is better on every axis:
+**Why after, not at the moment of decision:**
 
 | | Gating | Reviewing after |
 |---|---|---|
 | Hooks needed | tool hooks, held calls | a read |
-| Risk to the session | can break the agent's flow | none (D23, D28) |
-| Content stability | live | frozen snapshot — line numbers cannot move |
-| The user's state of mind | deciding yes/no under pressure | composing several comments |
+| Risk to the session | can break the agent's flow | none |
+| Content stability | live | fixed — line numbers cannot move |
+| The person's state of mind | deciding yes/no under pressure | composing several comments |
 
-**At a decision point you want to answer quickly; review is a separate
-activity.** Conflating them is what made the gating designs hard.
+At a decision point you want to answer quickly; review is a separate activity.
+Conflating them is what makes gating designs hard.
 
-#### Sources, by promise
-
-| Source | Where it comes from | Note |
-|---|---|---|
-| Response blocks | the message text | **Phase 1.** The spec. |
-| Diffs and generated files | `git diff` via `$.process.run`, or `$.fs.read` | **E15** — likely worth more than phase 2 |
-| A denied command | its text, read from the transcript | **E5**, rebuilt additively — see that entry |
-| `TodoWrite` lists | arrives as structured data | zero parsing; comment, reorder, drop |
-| Failed command output | the tool result | comment on specific stderr lines instead of describing which error |
-| Plans (`ExitPlanMode`) | possibly just text in the transcript | **may come free** — if the plan renders as text, phase 1 marks it up already. Check in the spike. |
+**Revisions**
+- **2026-11-10** — rewritten to stand on its own: the pane and "open in
+  Synaptik" steps are gone (the reply is reviewed in place), and so is the list
+  of candidate sources, which are proposals. Takes in D28 (no tool hooks).
 
 ---
 
@@ -143,7 +129,7 @@ or exceeds its 10-second budget is skipped — so a failed `ui.render` hook must
 degrade to **plain Claude Code rendering, never a half-drawn transcript**.
 `.catch(handler)` returning `next(e)` on each registration is where this lives.
 
-**Now nearly free.** With no tool hooks (D28, E12), the mod cannot interfere
+**Now nearly free.** With no tool hooks (P3), the mod cannot interfere
 with the agent's operation at all. It draws, and it writes the prompt box.
 
 #### The guarantee that makes this true
@@ -167,25 +153,6 @@ to escape it is painful mid-task.
 **Other switches:** `claude --plugin-dir ./mod` loads for one session only (and
 reloads the hooks module on save); `/plugin` disables an installed one;
 `--safe-mode` disables everything for a session.
-
----
-
-### D28 — Mods do not intervene in Claude Code's own tool runs
-**Status:** settled · added by 2026-10-14
-
-The mod does not gate, modify or execute tool calls Claude makes. The boundary
-falls on a natural seam — two different surfaces, never confusable at runtime:
-
-| | Surface | In MVP scope |
-|---|---|---|
-| Command **in the response text** (written, not called) | `AssistantMessage` render site | Yes — comment and thread apply |
-| Command Claude **is calling** | `tool.call` | No — untouched |
-
-**Consequence:** Synaptik registers **no tool hooks at all**. The hooks it does
-register are listed in the README.
-
-**The excluded case is real and wanted** — responding to an approval prompt with
-"yes, but add `--verbose`" instead of rejecting and retyping. See E5.
 
 ---
 
@@ -255,6 +222,28 @@ P1 remains the documented norm rather than a legacy mode.
 ---
 
 ## Superseded
+
+### D28 — Mods do not intervene in Claude Code's own tool runs
+**Status:** superseded → P3 · added by 2026-10-14
+
+The mod does not gate, modify or execute tool calls Claude makes. The boundary
+falls on a natural seam — two different surfaces, never confusable at runtime:
+
+| | Surface | In MVP scope |
+|---|---|---|
+| Command **in the response text** (written, not called) | `AssistantMessage` render site | Yes — comment and thread apply |
+| Command Claude **is calling** | `tool.call` | No — untouched |
+
+**Consequence:** Synaptik registers **no tool hooks at all**. The hooks it does
+register are listed in the README.
+
+**The excluded case is real and wanted** — responding to an approval prompt with
+"yes, but add `--verbose`" instead of rejecting and retyping. See E5.
+
+**Revisions**
+- **2026-11-10** — superseded by P3, which now states the rule and the seam.
+
+---
 
 ### D22 — Conflicting marks are not resolved by the mod
 **Status:** superseded → P2 · added by 2026-10-14
