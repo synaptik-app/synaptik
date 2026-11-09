@@ -126,47 +126,49 @@ frequent rewriting, fix the summarizer prompt — not the mod.
 
 **Every block gets every verb.** No capability matrix: much of Claude's advice
 arrives as prose ("I'd recommend Redis here because…"), and accepting it is
-perfectly meaningful. Restricting verbs by block type would make the verb bar
-useless on half of real responses, and violate P2 — the mod deciding, on the
-user's behalf, that a mark is semantically invalid.
+perfectly meaningful. Restricting verbs by block type would make the menu useless
+on half of real replies, and violate P2 — the mod deciding, on the person's
+behalf, that a mark is semantically invalid.
 
 **What is a block:**
 
 | Element | Block? |
 |---|---|
-| Paragraph | Yes |
-| List item (incl. nested) | Yes — **flat**, each item its own block |
-| Fenced code block | Yes |
-| Table, blockquote | Yes, treated as paragraphs |
-| Heading | **No** — a label; marking it is ambiguous with marking its section |
-| Multi-paragraph list item | One block (kept whole) |
+| Paragraph | yes |
+| List item, including nested | yes — **flat**, each item its own block |
+| List item spanning several paragraphs | yes, as **one** block |
+| Fenced code block, table, blockquote | yes — **always its own block**, also inside a list item |
+| Heading | **no** — a label; marking it is ambiguous with marking its section |
+| Horizontal rule | **no** |
 
-**Flat nesting.** Sub-items are often where the real decisions live, so
-collapsing them into a parent would hide exactly what the user wants to mark.
+The detailed rules — what belongs to a list item, nesting by structure — are
+SPEC §3.
 
-**But segmentation records a parent pointer per block,** because *navigation is
-flat while the compiled prompt must preserve hierarchy.* Accepting a parent and
-rejecting one child is normal refinement, not a contradiction — and the agent
-can only read it that way if the output shows the nesting:
+**Flat navigation.** Sub-items are often where the real decisions live, so
+collapsing them into a parent would hide exactly what the person wants to mark.
+Code, a table or a quote inside an item is its own block for the same reason: it
+can be marked apart from the item.
+
+**Nested output.** Each block records its parent, because navigation is flat
+while the compiled prompt must keep the hierarchy. Accepting a parent and
+rejecting one child is normal refinement, not a contradiction — and the agent can
+only read it that way if the prompt shows the nesting:
 
 ```
 ✓ "Use Redis for the session cache"
     ✓ "per-user key prefix"
-    ✓ "5 minute TTL"
     ✗ "write-through on logout"
 ```
 
-(Format as in D47 and `SPEC.md` §9.)
-
-Cheap to record now, impossible to retrofit once the compile format is fixed.
-
-**Genuinely ambiguous case:** rejecting a parent while accepting a child. Goes
-out as-is; the agent resolves it (P2).
+Rejecting a parent while accepting a child goes out as it is; the agent resolves
+it (P2).
 
 **Revisions**
-- **by 2026-10-14** — the capability matrix is gone. Verbs were restricted by block
-  type — list items got everything, paragraphs discussion only, on the reasoning
-  that "accepting a paragraph of prose is meaningless". That was wrong.
+- **by 2026-10-14** — the capability matrix is gone. Verbs were restricted by
+  block type — list items got everything, paragraphs discussion only, on the
+  reasoning that "accepting a paragraph of prose is meaningless". That was wrong.
+- **2026-11-10** — the block table follows the segmenter: code, tables and quotes
+  are blocks of their own inside list items; rules aren't blocks.
 
 ---
 
