@@ -93,7 +93,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D34 | The spike evolves into phase 1 | [project](09-project.md#d34--the-spike-evolves-into-phase-1) | settled |
 | D35 | In-place marks stay after the review | [rendering](02-rendering.md#d35--in-place-marks-stay-after-the-review) | settled |
 | D36 | Distribution: a release zip now, a marketplace at v0.1, npm held | [project](09-project.md#d36--distribution-a-release-zip-now-a-marketplace-at-v01-npm-held) | settled |
-| D37 | Blocks move by the keys only; the wheel scrolls the reply | [navigation](03-navigation.md#d37--blocks-move-by-the-keys-only-the-wheel-scrolls-the-reply) | settled |
+| D37 | Blocks move by keys or a click; the wheel scrolls the reply | [navigation](03-navigation.md#d37--blocks-move-by-keys-or-a-click-the-wheel-scrolls-the-reply) | settled |
 | D38 | `/synaptik config` writes the key bindings, after the person confirms | [keys](04-keys.md#d38--synaptik-config-writes-the-key-bindings-after-the-person-confirms) | superseded → D42 |
 | D39 | The `/synaptik` command | [keys](04-keys.md#d39--the-synaptik-command) | settled |
 | D40 | Target surfaces: the terminal only | [project](09-project.md#d40--target-surfaces-the-terminal-only) | settled |

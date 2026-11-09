@@ -106,29 +106,35 @@ line for line, and highlighting the blocks the terminal shows.
 
 ---
 
-### D37 — Blocks move by the keys only; the wheel scrolls the reply
+### D37 — Blocks move by keys or a click; the wheel scrolls the reply
 **Status:** settled · added 2026-10-20
 
-Decided on #62, #63 and #64; closes #24. In the navigator the selection moves only by keys — ↑/↓ a block,
-Home/End the first or last block (#63). The mouse wheel or a trackpad never moves
-it: over the navigator it moves nothing (#62), over the transcript it scrolls the
-reply. The selection does **not** follow the terminal's scrolling.
+**The selection moves only by the keys, or by a click on a block in fullscreen.**
+↑/↓ (or `j` / `k` from the band) move a block; Home/End jump to the first or last
+(#63). The mouse wheel or a trackpad never moves it: over classic's pane it moves
+nothing (#62), and over the transcript it scrolls the reply. The selection does
+**not** follow the terminal's scrolling. Decided on #62, #63 and #64; closes #24.
 
-**What made it a choice, not a limit:** a logging-only spike (2.1.287, `run
-long`, ~120 columns) showed `onScreen` updates on every wheel tick, one row at a
-time, and the per-segment row estimate matched the piece's real height exactly
-(spike finding 16 had called it never steady). Following the scrolling is
+**A choice, not a limit:** a logging-only spike (2.1.287, ~120 columns) showed
+`onScreen` updates on every wheel tick, one row at a time, and the per-segment
+row estimate matched the piece's real height exactly. Following the scrolling is
 feasible.
 
-**Why not, then:** navigation driven by the mouse is less predictable than by the
-keys — the selection would jump as the person reads — and the pane already turns
-↑/↓ into blocks. The wheel is what a person reaches for to scroll the reply, so it
-stays that.
+**Why not, then:** navigation driven by the wheel is less predictable than by the
+keys — the selection would jump as the person reads — and the keys already move
+blocks. The wheel is what a person reaches for to scroll the reply, so it stays
+that.
 
 **Left open:** in fullscreen a reply taller than about two screens has a middle
-the mod cannot bring into view (it scrolls only to a whole transcript row, top or
-end). Parked on the API (#64), with what would unblock it; no workaround — a band
-preview, folding far blocks, and following the scrolling were set aside.
+the mod cannot bring into view: it scrolls only to a whole transcript row, top or
+end, and only from `j` / `k` (D41). Parked on the API (#64), with what would
+unblock it; no workaround — a band preview, folding far blocks, and following the
+scrolling were set aside.
+
+**Revisions**
+- **2026-10-27** — fullscreen: a click on a block selects it (D41).
+- **2026-11-10** — covers both renderers; retitled from "Blocks move by the keys
+  only; the wheel scrolls the reply".
 
 ---
 
