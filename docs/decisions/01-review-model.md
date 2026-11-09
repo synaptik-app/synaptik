@@ -48,40 +48,36 @@ pane, and marking is a shortcut for the trivial case. Better if the real pain is
 |---|---|---|
 | ✓ Accept | `a` | staged mark |
 | ✗ Reject | `x` | staged mark |
-| ✎ Comment | `c` | staged mark + input |
-| 💬 Discuss | `d` | a thread (fork conversation) |
+| ✎ Comment | `c` | staged mark + text |
+| 💬 Discuss | `d` | a thread: a fork conversation, private until included |
 
-*Discuss* opens a **thread**, which is anchored and private until included, as a
-GitHub review thread is. Inside a thread, **branch** would turn it into a session
-of its own (E2): Claude Code's `/branch`, which creates a branch of the
-conversation at that point (`/fork` is a background session or agent; checked on
-2.1.308). Design of the thread pane and of branching: #106.
+The verbs act on a block, or, stepped into a code block or table, on a line or
+row. **A code block or table has a fifth action, step in (`s`)**: it moves rather
+than marks. Inside, `s` steps out, the menu's verbs apply to the selected line or
+row, and `q` steps out before it ends the review (D43, D44).
 
-**Verbs are idempotent entry points.** Pressing a verb again resumes or edits
-rather than duplicating: `c` reopens the comment input pre-filled, `d` reopens
-the existing thread with its history. **One comment and one thread per block,
+**Verbs are idempotent entry points.** Pressing one again never duplicates:
+accept or reject again unmarks; `c` reopens the comment pre-filled; `d` reopens
+the block's thread with its history. **One mark and one thread per block,
 maximum.**
 
-**Run was cut.** The mod does not execute anything. If Claude proposes a command
-in prose, the user comments *"run this with --verbose"*; the agent runs it next
-turn through its own Bash tool and permission flow, and the result returns in
-context. Building Run would have meant `$.process.run`, output capture, and
-feeding results back — and skipping the feedback would silently desync the
-agent's picture of the world. The comment loop removes that trap for free.
-*(→ E7.)*
+**The mod executes nothing — no Run verb.** If Claude proposes a command in
+prose, the person comments *"run this with --verbose"*; the agent runs it next
+turn through its own tools and permission flow, and the result returns in
+context. A Run verb would need `$.process.run`, output capture and feeding the
+result back — and skipping that feedback would silently desync the agent's
+picture of the world. **Cost, accepted:** responding to a proposed command takes
+a round trip, since the agent re-emits it before running it.
 
-**Known cost of cutting Run:** responding to a proposed command costs a round
-trip, because the agent must re-emit it before executing. Accepted, to avoid
-maintaining a parallel execution path with its own failure mode.
-
-**Explain is a thread.** Asking for an explanation is what a thread is for; no
-separate verb.
+**No Explain verb.** Asking for an explanation is what a thread is for.
 
 **Revisions**
-- **by 2026-10-14** — Run cut (E7); Explain collapsed into Thread, as `?`, a
-  thread pre-seeded with "explain this".
+- **by 2026-10-14** — Run cut; Explain collapsed into Thread, as `?`, a thread
+  pre-seeded with "explain this".
 - **2026-10-24** — the verbs are named accept · reject · comment · discuss (was
   "Thread"); `?` removed: a pre-seeded thread is not worth a second key.
+- **2026-11-01** — step in, a fifth action on code blocks, then tables (D43, D44).
+- **2026-11-10** — rewritten to stand on its own; the branch proposal dropped.
 
 ---
 
