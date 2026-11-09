@@ -30,31 +30,28 @@ redraws all of it.
   so it follows `/config`'s light or dark theme. It paints behind the text.
 - **Other blocks:** no background. Only their mark glyph, if any, shows.
 - **Under the selected block:** the verb menu after a dim `└`. The verb under the
-  keyboard cursor (§10) draws as the primary button, the others dim. With the
-  navigator unfocused, nothing is highlighted.
+  keyboard cursor (§10) draws as the primary button, the others dim. Outside a
+  review, nothing is highlighted.
 
 The reply carries no accent colour. ⚠️ `selectionBg` was found in the Claude Code
 binary, not the documented API; an unknown key would make the reply fall back to
-Claude Code's own drawing. Making it configurable: issue #8.
-- **Under a commented block:** `→ comment text`, dim. While the comment is being
-  typed it shows here live; the field itself, with its cursor, is in the
-  navigator (§10).
+Claude Code's own drawing.
+- **Under a commented block:** `→ comment text`, dim. In fullscreen the comment is
+  typed here, in place; in classic it shows here live, and the field itself, with
+  its cursor, is in the navigator (§10).
 
-**The selection shows only while the navigator holds the keyboard.** After Esc
-the background and the menu go, and the reply reads as a plain reply with its
-mark glyphs and comments.
+**The selection shows only during a review.** When it ends, the background and
+the menu go, and the reply reads as a plain reply with its mark glyphs and
+comments.
 
-**The reply is redrawn only when needed** (D33): while the navigator holds the
-keyboard, or when a block in that piece of the reply is marked or being
+**The reply is redrawn only when needed** (D33): during a review, or when a block in that piece of the reply is marked or being
 commented. Otherwise the hook passes it through with `next(e)`, so Claude Code
 and other mods draw it as usual. Redrawing takes the reply from every mod beneath
 Synaptik in the chain, and draws the transcript's text — bypassing any mod beneath
 that changes it.
 
-**After review, marks stay by default** (D35): a marked piece keeps its glyphs and
-comment lines after Esc. A configuration option (#8) shows them only while
-reviewing, leaving every reply to Claude Code and other mods outside review — the
-setting to suggest when another mod's drawing on replies conflicts.
+**After a review, marks stay** (D35): a marked piece keeps its glyphs and comment
+lines. There is no option to show them only while reviewing.
 
 ### Example render
 

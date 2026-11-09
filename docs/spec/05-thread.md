@@ -7,8 +7,8 @@ row in it. **It never touches the main conversation.**
 
 - Each message calls `$.model.fork`. `fork` is single-shot, so the mod re-sends
   the block and the thread so far on every call.
-- A thread **never** calls `$.prompt.submit`, the only call that would write into
-  the main conversation.
+- Nothing from a thread reaches the main conversation except its summary, when
+  included: compiled into the suggestion and sent by the person (D3, D14).
 - Threads are flat. A thread cannot spawn a thread.
 - `d` or `💬 discuss` on a block opens its thread; on a threaded block it reopens
   that thread with its history. A block's thread shows `💬` in the margin.
