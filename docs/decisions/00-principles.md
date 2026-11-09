@@ -125,34 +125,31 @@ Conflating them is what makes gating designs hard.
 
 Enabling and disabling must be a single step, at any point, leaving a vanilla
 Claude Code session behind with the chat and flow unbroken. A hook that throws
-or exceeds its 10-second budget is skipped — so a failed `ui.render` hook must
-degrade to **plain Claude Code rendering, never a half-drawn transcript**.
-`.catch(handler)` returning `next(e)` on each registration is where this lives.
+or exceeds its 10-second budget is skipped — so a failed hook must degrade to
+**plain Claude Code behaviour, never a half-drawn transcript**. `.catch(handler)`
+returning `next(e)` on each registration is where this lives.
 
-**Now nearly free.** With no tool hooks (P3), the mod cannot interfere
-with the agent's operation at all. It draws, and it writes the prompt box.
+**The mod holds no state the conversation depends on.** Blocks are derived at
+render time (D5) and nothing is written into the conversation; the review — the
+tray and its threads — lives in memory. So disabling mid-flow costs only the
+review in progress, and re-enabling re-parses whatever reply is current: nothing
+to migrate, nothing to recover. **Any new feature that stores something must keep
+this true.**
 
-#### The guarantee that makes this true
+With no tool hooks (P3), the mod cannot interfere with the agent's work at all:
+it draws, and it suggests into the prompt box.
 
-**The mod holds no state the conversation depends on.** D5 is what delivers
-this: blocks are derived at render time and nothing is stored in the
-conversation, so disabling mid-flow costs only the tray. The transcript is
-untouched, and re-enabling just re-parses whatever message is current — nothing
-to migrate, nothing to recover.
+**Switches:**
+- `/synaptik off` makes the hooks pass through while the session continues;
+  `/synaptik on` brings them back (D39). It exists because the failure actually
+  hit during development was rendering being *wrong*, not throwing — and
+  restarting a session to escape it is painful mid-task.
+- `/plugin` disables an installed mod; `--safe-mode` disables every mod for a
+  session.
 
-**This is a constraint to check future features against.** E13's persisted
-block identity would be the first thing to test it.
-
-#### An in-mod kill switch
-
-`/synaptik off` makes the hooks pass through while the session continues, and
-`/synaptik on` brings them back (D39). **The failure actually hit during
-development is rendering being *wrong*, not throwing** — and restarting a session
-to escape it is painful mid-task.
-
-**Other switches:** `claude --plugin-dir ./mod` loads for one session only (and
-reloads the hooks module on save); `/plugin` disables an installed one;
-`--safe-mode` disables everything for a session.
+**Revisions**
+- **2026-11-10** — rewritten to stand on its own: the review in progress, threads
+  included, is what disabling costs; the reference to a proposal dropped.
 
 ---
 
