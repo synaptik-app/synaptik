@@ -223,50 +223,53 @@ the person cannot see.
 
 ---
 
-### D24 — MVP scope: last message only
+### D24 — Only the last reply is reviewed
 **Status:** settled · added by 2026-10-13
 
-Only the most recent assistant message is interactive, and only once its turn
-has completed (D5). No historic interactivity. Eliminates the stale-mark problem
-entirely, and is what makes render-time segmentation safe.
+**Only the last reply is interactive, and only once its turn has completed.** The
+reply is the whole turn since the last prompt: every assistant piece with text,
+across tool calls. No earlier replies. This removes the stale-mark problem
+entirely, and is what makes render-time segmentation safe (D5).
 
 - **Off during a turn.** From `turn.start` to `turn.complete` the reply and band
   draw as vanilla. A reply on its way will replace the tray; staging against it
   has no use.
 - **On after a resume.** `session.start` adopts the transcript's last reply, so a
   resumed session is markable without a new turn. A resume appends a synthetic
-  `No response requested.` assistant row, skipped by its text — `SessionMessage`
-  has no flag for engine-written rows (§11, item 11).
+  `No response requested.` assistant row, skipped by its text: `SessionMessage`
+  has no flag for engine-written rows.
 
-#### Discard with warning (Q7)
+#### Marks are discarded with a warning
 
-**The mod never adds itself to a prompt the user typed.** Type your own prompt,
-it goes alone — no appended marks, no interception of `prompt.submit`.
+**The mod never adds itself to a prompt the person typed.** Type your own prompt
+and it goes alone: no appended marks, no interception of `prompt.submit`. That
+prompt brings a new reply, so marks staged on the previous one go.
 
-The consequence follows: that prompt produces a new assistant message, only the
-newest message is markable, so marks staged on the previous one are orphaned and
-go.
-
-**The risk is doing it silently** — sending a quick side question intending to
+**The risk is losing them silently**: sending a quick side question intending to
 return to five marks, and finding them gone with no sign they existed.
 
-**Shown in the band, before it happens.** No interception, no double-Enter, no
+**So the band warns before it happens.** No interception, no double-Enter, no
 dialog. When something is staged and the box holds text other than the taken
-suggestion, the band's summary line turns **yellow** (SPEC §7):
+suggestion, the band's summary line turns **yellow**:
 
 ```
 2 accepted · 1 comment staged · ⏎ sends only what you typed and drops them
 ```
 
-Read one line above the cursor while typing. Loud, because this is the one place
-in the mod where work can be lost. Everything else is reversible. The mod reads
-the box with `$.prompt.read()` from the band's render hook, which redraws anyway.
+It sits one line above the cursor while typing. Loud, because this is the one
+place in the mod where work can be lost; everything else is reversible. The mod
+reads the box with `$.prompt.read()` from the band's render hook, which redraws
+anyway.
 
-**If discarding turns out to be annoying in practice, the fix is E13** —
-persisted marks that survive a new message — not a confirm dialog.
+**If discarding proves annoying in use, the fix is marks that survive a new
+reply,** not a confirm dialog.
 
 **Revisions**
 - **2026-10-15** — off during a turn; on after a resume.
+- **2026-10-17** — the whole turn is the reply: adopting only the last message
+  left text before a tool call unmarkable.
+- **2026-11-10** — rewritten to stand on its own; retitled from "MVP scope: last
+  message only".
 
 ---
 

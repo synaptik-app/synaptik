@@ -80,7 +80,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D21 | Selection highlighting is a gutter column | [rendering](02-rendering.md#d21--selection-highlighting-is-a-gutter-column) | settled |
 | D22 | Conflicting marks are not resolved by the mod | [principles](00-principles.md#d22--conflicting-marks-are-not-resolved-by-the-mod) | superseded → P2 |
 | D23 | The mod must be trivially disableable, and must fail to vanilla | [principles](00-principles.md#d23--the-mod-must-be-trivially-disableable-and-must-fail-to-vanilla) | settled |
-| D24 | MVP scope: last message only | [review-model](01-review-model.md#d24--mvp-scope-last-message-only) | settled |
+| D24 | Only the last reply is reviewed | [review-model](01-review-model.md#d24--only-the-last-reply-is-reviewed) | settled |
 | D25 | Nudging Claude toward `AskUserQuestion` | [review-model](01-review-model.md#d25--nudging-claude-toward-askuserquestion) | superseded → E9 |
 | D26 | Config surface | [keys](04-keys.md#d26--config-surface) | superseded → E10 |
 | D27 | A throwaway spike, then two thin phases | [project](09-project.md#d27--a-throwaway-spike-then-two-thin-phases) | settled |
