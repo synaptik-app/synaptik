@@ -15,36 +15,41 @@ fine.
 
 The compiled prompt reads like something the person typed. No markers, no IDs, no
 mod structures, no protocol — not to hide the mod, but because they are noise the
-agent would have to parse. The mod does not ask the model for anything, and does
-not teach it any protocol.
+agent would have to parse. **In the main conversation** the mod does not ask the
+model for anything, and does not teach it any protocol.
 
-**Consequences:**
-- The person sees every word before it is sent, in the prompt box (D30), and sends
-  it themselves: the mod submits nothing.
-- Killed D6 and D8 outright, and reduced D7 to nothing.
-- Allowed: a slash command whose output the model reads (the kill switch, D39);
-  naming the mod where useful.
+**In practice:**
+- **The person sends.** Every word is in the prompt box before it goes, and the
+  person sends it with their own ⏎. The mod never submits.
+- **The mod writes the prompt box only at the person's own gesture.** Taking a
+  shortened suggestion fills in its full text, and the person sees all of it
+  before sending. Nothing is written into the box behind their back.
+- **The main conversation's instructions stay untouched.** No system prompt
+  sections and no tool hooks: the session works the same with or without the
+  mod.
+- **The mod's own model calls are outside the flow.** A thread is a fork, a
+  separate call that never enters the main conversation (D14). There the mod
+  does instruct the model, with a format for the answer, its summary and an
+  include/exclude verdict, which the mod strips. What can reach the main
+  conversation is only the summary: shown under the thread's switch, compiled
+  into the suggestion, and sent by the person. With Synaptik off, threads are
+  gone and the session is unaffected.
+- **Naming the mod is fine**, for example a slash command whose output the model
+  reads.
 
-**The test** for anything new, E9 and E16 included: does it change the flow, or
-only inform it?
-
-**Open edge:** E9 (nudging Claude toward `AskUserQuestion` via `prompt.compose`)
-does not touch user prompts, but does make the agent behave differently because
-the mod is installed. A softer violation of the same family. Current lean: allow
-it, since it changes *behaviour* rather than inventing a protocol. Revisit if
-E12 is ever built.
-
-**E16 is the deliberate exception**, and it is scoped as one: an opt-in
-"extended" mode where the agent is told its response will be marked up. **P1
-stays the default and the documented norm** — extended mode is the deviation, not
-the other way round. The reasoning for keeping it that way is in E16.
+**The test for anything new:** does it put something into the flow that the
+person didn't see and choose, or block, rewrite or hold the flow? If so, it
+breaks P1. An exception has to be a decision of its own that says so.
 
 **Revisions**
 - **2026-10-15** — what P1 protects is the flow, not secrecy. It was "the agent
   never knows the mod exists".
-- **2026-10-24** — the mod submits nothing (D30); before, it sent with
+- **2026-10-24** — the mod submits nothing; before, it sent with
   `$.prompt.submit({ asUser: true })`, since the plain form names the mod as
   sender.
+- **2026-11-10** — rewritten to stand on its own; references to proposals
+  dropped. Scoped to the main conversation: the mod's own forks (threads) are
+  instructed, and only what the person sees and sends reaches the main flow.
 
 ---
 
