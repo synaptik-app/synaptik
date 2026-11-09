@@ -91,7 +91,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D32 | Key bindings belong to the person | [keys](04-keys.md#d32--key-bindings-belong-to-the-person) | settled |
 | D33 | Share Claude Code's surfaces with other mods; redraw only when needed | [rendering](02-rendering.md#d33--share-claude-codes-surfaces-with-other-mods-redraw-only-when-needed) | settled |
 | D34 | The spike evolves into phase 1 | [project](09-project.md#d34--the-spike-evolves-into-phase-1) | settled |
-| D35 | In-place marks after review: a configuration option, on by default | [rendering](02-rendering.md#d35--in-place-marks-after-review-a-configuration-option-on-by-default) | settled |
+| D35 | In-place marks stay after the review | [rendering](02-rendering.md#d35--in-place-marks-stay-after-the-review) | settled |
 | D36 | Distribution: a release zip now, a marketplace at v0.1, npm held | [project](09-project.md#d36--distribution-a-release-zip-now-a-marketplace-at-v01-npm-held) | settled |
 | D37 | Blocks move by the keys only; the wheel scrolls the reply | [navigation](03-navigation.md#d37--blocks-move-by-the-keys-only-the-wheel-scrolls-the-reply) | settled |
 | D38 | `/synaptik config` writes the key bindings, after the person confirms | [keys](04-keys.md#d38--synaptik-config-writes-the-key-bindings-after-the-person-confirms) | superseded → D42 |
@@ -120,3 +120,4 @@ What holds today, and why — rewritten when it changes, never appended to.
 | E14 | Custom structured payload via `$.tool.register` (was half of D7) | [review-model](01-review-model.md#e14--custom-structured-payload-via-toolregister-was-half-of-d7) | proposed |
 | E15 | Review the files a turn touched, in the same review | [file-review](07-file-review.md#e15--review-the-files-a-turn-touched-in-the-same-review) | proposed |
 | E16 | Extended mode: cooperate with the agent (**analysis needed**) | [principles](00-principles.md#e16--extended-mode-cooperate-with-the-agent-analysis-needed) | proposed |
+| E17 | Marks only while reviewing | [rendering](02-rendering.md#e17--marks-only-while-reviewing) | proposed |

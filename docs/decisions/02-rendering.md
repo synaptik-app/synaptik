@@ -82,24 +82,25 @@ appears; the upstream fix is a way to share one reply drawing (#23).
 
 ---
 
-### D35 — In-place marks after review: a configuration option, on by default
+### D35 — In-place marks stay after the review
 **Status:** settled · added 2026-10-18
 
-Decided on #36. During a review the reply always shows the selection,
-menu, glyphs and comments. The question was what stays after Esc.
+During a review the reply shows the selection, menu, glyphs and comments. **After
+the review, glyphs and comment lines stay on marked pieces of the reply** — it
+reads as the form you filled (D1). Decided on #36.
 
-**Decision:** glyphs and comment lines **stay on marked pieces** of the reply by
-default — the reply reads as the form you filled (D1). An option turns that off,
-so the reply shows marks **only while reviewing** and is otherwise left to Claude
-Code and other mods (D33). Tracked on #8.
+**Why:** for someone using Synaptik alone, persistent marks are the better view.
+**The cost:** a marked piece is redrawn by Synaptik, so a mod that draws on
+replies, or changes their text, loses that piece (D33). Unmarked pieces stay
+theirs.
 
-**Why both:** for someone using Synaptik alone, persistent marks are the better
-view. With other mods drawing on replies, or a mod that changes a reply's text,
-Synaptik's redraw of a marked piece takes that piece from them (D33). The option
-is the advice to give then: "switch off in-place marks after review".
+The band summary and the compiled prompt in the prompt box show everything
+staged, whatever the reply shows.
 
-**Unaffected either way:** the band summary and the compiled prompt in the prompt
-box show everything staged.
+**Revisions**
+- **2026-11-10** — the option to show marks only while reviewing was never built;
+  it is a proposal (E17), no longer part of this decision. Retitled from
+  "In-place marks after review: a configuration option, on by default".
 
 ---
 
@@ -294,3 +295,19 @@ of it.
 only built-in tool whose *purpose* is a human decision. Every other tool is
 Claude doing work — so intercepting those adds interruptions rather than
 decisions. Confusing the two produces a mod that interrupts constantly.
+
+---
+
+### E17 — Marks only while reviewing
+**Status:** proposed · added 2026-11-10
+
+A switch that leaves the reply entirely to Claude Code outside a review: no glyphs
+or comment lines on marked pieces, the reply passed through with `next(e)` until
+the next review starts. The band and the suggestion still show what is staged.
+
+**Why:** with other mods drawing on replies, or a mod that changes a reply's text,
+Synaptik's redraw of a marked piece takes that piece from them (D33). Switching
+marks off outside a review hands every reply back.
+
+**Needs:** a configuration surface (E10). Considered on #36 alongside D35, and
+left out until someone needs it.

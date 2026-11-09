@@ -63,8 +63,7 @@ Someone who rebound those keys sees the default named; their keys still work.
 
 The `userConfig` manifest field declares options and gives a `/config` surface
 for free — rows rendered by Claude Code, with `config.set` and `config.describe`
-hooks available if a row needs guarding or relabelling. One option exists today:
-marks after review (D35).
+hooks available if a row needs guarding or relabelling. No option exists yet.
 
 **Its real purpose is hedging the unknowns.** Several decisions in this document
 were made on reasoning rather than use, and the honest position is that some will
@@ -73,6 +72,7 @@ default change:
 
 | Option | Hedges |
 |---|---|
+| Marks only while reviewing | E17 — for coexisting with mods that draw on replies |
 | Which verbs are enabled | D2 — maybe reject is never used, maybe comment is everything |
 | Entry key | D20 — unresolved, and terminal-dependent |
 | Gutter vs background highlight | D21 — depends on Q10's answer |
@@ -114,11 +114,11 @@ default renderer.
 - **The key that opens Synaptik was not Synaptik's to set:** `ctrl+x tab` is
   Claude Code's, and a key the person bound stays theirs, untouched.
 
-**`userConfig` holds behaviour options**, as `/config` rows: changing one reloads
-the mod with the new value (`register(on, options)`), which closes its panes —
-so the key menu, which wrote the file, did not edit them. Only one: **marks
-after review**, keep (default) or only while reviewing (D35). Others wait for a
-real need (E10). This still holds.
+**`userConfig` was to hold behaviour options**, as `/config` rows: changing one
+reloads the mod with the new value (`register(on, options)`), which closes its
+panes — so the key menu, which wrote the file, did not edit them. Only one was
+planned: **marks after review**, keep (default) or only while reviewing. It was
+never built (E17).
 
 **Why it went (D42):** one setting, in one renderer, didn't justify reading the
 person's environment and writing one of their files.
