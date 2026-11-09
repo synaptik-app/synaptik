@@ -89,21 +89,21 @@ The mod's own state. The prompt is generated from it; nothing is accumulated as
 text along the way.
 
 ```ts
-type Mark = 'accept' | 'reject' | 'comment'
-
-type BlockState = {
-  mark?: Mark
-  commentText?: string        // kept even when the mark is cleared
-  thread?: {
-    messages: { role: 'user' | 'assistant'; text: string }[]
-    included: boolean         // false = will not be sent
-    summary?: string          // written by the model on include; editable
-  }
+// src/tray.ts — keyed by part: a block's index, or a line's or row's key
+// ("3.4", the line from 0)
+type Tray = {
+  marks: Record<string, 'accept' | 'reject' | 'comment'>
+  comments: Record<string, string>   // kept when the mark is cleared or overwritten
 }
 
-// keyed by block index within the current message, or for a line inside a code
-// block by `block.line` ("3.4", the line from 0)
-type Tray = Map<number | string, BlockState>
+// src/threads.ts — one per block, line or row, kept apart from the tray
+type Thread = {
+  messages: { role: 'person' | 'agent'; text: string }[]
+  included: boolean                  // false = will not be sent
+  isIncludeSet: boolean              // the person set the switch; no verdict asked
+  summary?: string                   // written by the thread's fork with each answer
+  // …and bookkeeping: pending answers, what the summary was written over
+}
 ```
 
 ### Rules
@@ -111,13 +111,12 @@ type Tray = Map<number | string, BlockState>
 | Action | Effect |
 |---|---|
 | New mark on a marked block | **overwrites.** One slot, last write wins. |
-| Same verb twice | unmarks |
-| `Backspace` on a block | clears it: mark removed, a comment's text kept for `c`, thread set to `included: false`. **In fullscreen after a click only:** the keys are a `Client`'s there. From the band or the pane a hotkey is one letter or digit, so Backspace can't be bound (#23, #100). |
-| Clear-all | empties the tray |
+| Accept or reject twice | unmarks |
+| `Backspace` on a block | clears it in steps: first the block's own mark and included thread, then everything on its lines or rows; a block with nothing of its own is cleared inside at once. A comment's text is kept for `c`; a thread is set to `included: false`. **In fullscreen after a click only:** the keys are a `Client`'s there. From the band or the pane a hotkey is one letter or digit, so Backspace can't be bound (#23, #100). |
 | Mark **and** included thread on one block | both are sent; the agent reconciles |
 
 **Clearing unstages, it never destroys.** A cleared thread keeps its `messages`
-and can be re-included. A cleared comment keeps its `commentText`.
+and can be re-included. A cleared comment keeps its text in `comments`.
 
 **The tray clears after sending.**
 
