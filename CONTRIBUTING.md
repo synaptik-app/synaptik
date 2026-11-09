@@ -129,9 +129,6 @@ importing from `./src/` stays inside it. Keep it that way — imports *above* th
 plugin root may not resolve, which is the reason `src/` lives under the host
 rather than at the top level.
 
-Requires Claude Code **v2.1.301+**, in the terminal (D40): the fullscreen review watches the prompt box with `prompt.change` (2.1.300), and multi-line comments use `Input`'s `rows` (2.1.301, #16). `Raster` and `Image`
-are terminal-only and unused; the mod draws with `Box`, `Text`, `Button`,
-`Input` and `Markdown`.
 
 ## License
 
