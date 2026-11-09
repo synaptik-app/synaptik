@@ -48,8 +48,8 @@ one call, about a tenth more per message (#156). The verdict sets the switch unt
 the person touches it. Once they set it, no verdict is asked for: on, every
 answer's summary is written as one the person chose to send (`INCLUDED_ANYWAY`);
 off, only the answer is asked for, and switching on writes the summary then.
-Closing (Esc) writes a summary only when an answer came without one. This settles
-E6, by a verdict in the same call rather than `$.model.classify`.
+Closing (Esc) writes a summary only when an answer came without one. A verdict in
+the same call, rather than a separate classifier call (`$.model.classify`).
 
 **The summary is written for its use**, as the person's instruction to the agent,
 in sections: `Actions:` (changes and work to carry out — both are what the agent
@@ -117,9 +117,9 @@ threads (tabs come free when docked).
 **Status:** settled · added 2026-11-05
 
 Extends D43, D44 and D45. Stepped into a code block or table, `d` opens a thread
-on that part, keyed as its mark is
-(`3.5`). It is the block's thread's sibling, not part of it: a code block can hold
-a thread on line 4 and another on line 12, each with its own summary and switch.
+on that part, keyed as its mark is (`3.5`). It is the block's thread's sibling,
+not part of it: a code block can hold a thread on line 4 and another on line 12,
+each with its own summary and switch.
 
 **The fork reads the whole block, and which part.** A line alone loses what it is
 in, so the prompt quotes the block and names the part as the review would
