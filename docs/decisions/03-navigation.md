@@ -142,9 +142,8 @@ scrolling were set aside.
 **Status:** settled · added 2026-11-01
 
 In fullscreen a code block's menu gets `step in`, and its lines take marks of their
-own, nested under the block in the prompt with their number and text. This narrows
-D20's step into (#105). Classic is left out: it is legacy. Tables step the same way
-(D44).
+own, nested under the block in the prompt with their number and text. Classic is
+left out: it is legacy. Tables step the same way (D44).
 
 **Drawing.** `Code` has no background for one line and the menu has to sit between
 lines, so the block is drawn in three parts. Cutting the source into three pieces
@@ -172,13 +171,17 @@ its lines' marks, with no timing to learn; comments' texts stay, as always. Outs
 review a line's glyph can't be placed (no width is known there), so a block with only
 marked lines shows `✸`, never sent. Its own mark takes that place, as it says more.
 
+**Revisions**
+- **2026-11-01** — narrows D20's step into, planned for code and tables alike, to
+  code blocks in fullscreen (#105).
+
 ---
 
 ### D44 — Step into a table, placing its rows with Claude Code's own layout
 **Status:** settled · added 2026-11-01
 
-Extends D43 (#105). A table steps like a code block, drawn with the same windows, so its look is Claude
-Code's own rather than a grid of ours. Its data rows take marks; the header doesn't,
+Extends D43 (#105). A table steps like a code block, drawn with the same windows,
+so its look is Claude Code's own rather than a grid of ours. Its data rows take marks; the header doesn't,
 since the table's quote already names the columns.
 
 **Rows are worked out, not measured.** No API reports where a row landed, and a row's
