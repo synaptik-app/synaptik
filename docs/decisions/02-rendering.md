@@ -98,8 +98,8 @@ The band summary and the compiled prompt in the prompt box show everything
 staged, whatever the reply shows.
 
 **Revisions**
-- **2026-11-10** — the option to show marks only while reviewing was never built;
-  it is a proposal (E17), no longer part of this decision. Retitled from
+- **2026-11-10** — the option to show marks only while reviewing was never built,
+  and is not part of this decision. Retitled from
   "In-place marks after review: a configuration option, on by default".
 
 ---

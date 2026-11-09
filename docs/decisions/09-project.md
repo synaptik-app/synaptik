@@ -85,7 +85,7 @@ review, so a command and a tray would be dead weight. The check is
 their own. Tried in the Desktop Code tab on 2026-10-21: a reply on a selected
 passage (several can go as one prompt — Synaptik's comment and batching), a
 side chat that can summarise into the main chat (D3's thread and summary), and
-line comments on the diff that reach Claude anchored to file and line (E15).
+line comments on the diff that reach Claude anchored to file and line.
 Only accept/reject with one key, and nesting, are missing. A Synaptik pane there
 would duplicate native features and leave people unsure which to use. The
 mobile app offers similar features, and draws no `Input` or `Select` besides.
