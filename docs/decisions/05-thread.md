@@ -3,19 +3,28 @@
 ### D14 — Thread isolation via `$.model.fork`
 **Status:** settled · added by 2026-10-14
 
-Threads use `$.model.fork` exclusively. A thread **never** calls
-`$.prompt.submit`.
+**A thread is a `$.model.fork`,** a separate model call whose request and reply
+never enter the main conversation's message list, so crosstalk is impossible by
+construction. Nothing from a thread reaches the main conversation except its
+summary, when included: compiled into the suggestion and sent by the person (P1,
+D3).
 
-**Rationale:** `fork` is a separate model call whose request and reply never
-enter the main conversation's message list, so crosstalk is impossible by
-construction. `$.prompt.submit` is the one call that would write into the main
-conversation.
+**The fork carries the mod's own instructions** (`src/prompts.ts`): answer the
+person's message about the block, briefly; any tool call is refused; then a
+summary and an include/exclude verdict, in tags the pane strips before anything
+is shown or sent. This is the mod instructing its own call, outside the main
+conversation (P1).
 
-**Known limitation:** `fork` is single-shot. For a multi-turn thread the mod
-re-sends the accumulated side Q&A on each message and owns that history itself.
-This is also what makes E2 possible later — the thread is a clean, mod-owned
-transcript that can be handed to another session deliberately. Where threads
-are drawn is D45.
+**`fork` is single-shot.** For a multi-turn thread the mod re-sends the
+accumulated side Q&A on each message and owns that history itself, in memory. It
+reads the main conversation from the cache, so a thread costs about its own text
+(D45). Where threads are drawn is D45.
+
+**Revisions**
+- **2026-11-04** — the fork also writes the summary and a verdict with each answer
+  (D45).
+- **2026-11-10** — states the fork's instructions; "a thread never calls
+  `$.prompt.submit`" dropped, since the mod never submits.
 
 ---
 
