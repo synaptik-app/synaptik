@@ -49,6 +49,9 @@ What holds today, and why — rewritten when it changes, never appended to.
 - **A superseded or dead DR** is written as it stood when it was replaced, and
   says what replaced it or why it died.
 - **A rule between every DR**, so each reads as one unit.
+- **A DR stands on its own.** It states its rule in its own words and cites
+  another DR only where it depends on it. Proposals (E) are not cited from
+  settled DRs: an extension shapes nothing until it becomes a D.
 
 ---
 
