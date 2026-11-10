@@ -106,6 +106,10 @@ https://code.claude.com/docs/en/plugins/mods/reference
 
 ## Working on this
 
+**Issues have a type** — Bug, Feature or Task — set with the issue, never a `bug`
+or `enhancement` label; those labels don't exist. Other labels (`design`,
+`field-note`, `upstream`, …) still apply.
+
 DRs are the rules to build by, not a record of what is built. If the work needs
 something a DR doesn't allow, or would break one, stop and ask to revise it,
 supersede it or mark it dead — never work around it.
