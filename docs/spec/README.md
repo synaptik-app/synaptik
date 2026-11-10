@@ -1,6 +1,35 @@
 # Synaptik — spec
 
-## 1. Problem statement
+**What it is:** review an agent's last reply in place — accept, reject,
+comment, discuss — and turn that review into one prompt.
+
+**This is the contract: what to build**, in the present tense, with examples.
+Why it is built this way is in [`../decisions/`](../decisions/README.md), under
+the same file numbers and names. If the two disagree, the spec is wrong — fix it.
+
+**It covers the Claude Code host**, the only one that exists. The review model
+and the compile format are host-neutral; the rest is Claude Code specifics.
+Anything marked ⚠️ is unverified against the mods API; what is verified, and
+what is still open, is in [`08-claude-code-api.md`](08-claude-code-api.md).
+
+## Files
+
+| File | Holds | Was `SPEC.md` |
+|---|---|---|
+| `README.md` | the problem, the loop, scope, must-hold properties | §1, §2, §12 |
+| [`01-review-model.md`](01-review-model.md) | blocks, verbs, tray state | §3, §4, §5 |
+| [`02-rendering.md`](02-rendering.md) | drawing the reply; the fullscreen review; the classic renderer | §6, part of §10 |
+| [`03-navigation.md`](03-navigation.md) | the navigator, stepping in, keys, the `/synaptik` command | §10 |
+| [`05-thread.md`](05-thread.md) | threads | §8 |
+| [`06-sending.md`](06-sending.md) | the band, the suggestion, the discard warning, the compile format | §7, §9 |
+| [`08-claude-code-api.md`](08-claude-code-api.md) | the API in use, known limits, the spike's answers and open items | part of §14, §15 |
+
+Sections keep their old numbers as headings, so "SPEC §N" in code comments and
+older issues still names a section: the last column finds its file.
+
+---
+
+## Problem statement
 
 Claude Code renders a linear transcript. Responding to part of it means
 scrolling up, re-reading, and hand-writing prose that points back at it
@@ -30,3 +59,81 @@ them.** The response becomes a form to fill in; threads are one verb within
 that, not the central metaphor.
 
 ---
+
+## 1. The loop
+
+```
+Claude replies
+  → ctrl+x tab, then ↑↓ to a block, tab and ⏎ to accept / reject / comment / discuss
+  → marks accumulate in a tray
+  → the prompt box shows the prompt they compile into, as a dim suggestion
+  → tab takes it, ⏎ sends it
+```
+
+Nothing reaches the agent until you send, and what it receives is text you saw
+first. The mod never interferes with the prompt/response flow: it adds no
+markers or IDs, and never writes the box, submits, or holds a turn on its own.
+
+---
+
+## 2. Scope
+
+**Only the last assistant message is interactive, and only after its turn
+completes.** Marking is off from `turn.start` until `turn.complete`: the reply
+and the band draw as vanilla Claude Code while a turn runs, since the reply that
+is coming will replace the tray anyway (§5).
+
+**The reply is the whole last turn**: every assistant message with text since
+the last prompt, joined in order. A reply that runs a tool mid-way is stored as
+several messages; all of them are markable. Tool results (stored as user rows)
+and rows recorded after the turn (a slash command) are skipped.
+
+**A resumed session is markable at once.** On `session.start` the mod reads the
+transcript (`$.session.messages()`) and adopts its last turn. A resume ends the
+transcript with an engine-written `No response requested.` row, which is
+skipped.
+
+`/resume` and `/clear` inside a running session raise no `session.start`: the
+session ends (`session.end`, reason `resume` or `clear`) and the process goes on
+under another id. So after either, once `$.session.id()` has changed, the mod
+adopts the new transcript's last turn, or a cleared one's none (#147).
+
+⚠️ That row is recognised by its text: `SessionMessage` carries no flag for rows
+the engine writes itself.
+
+Older messages are inert. Nothing is persisted across sessions.
+
+**Only Claude Code's terminal renderer** (`e.surface === 'terminal'`): any
+terminal, IDE-integrated terminals, the JetBrains plugin, tmux, SSH. On the
+Desktop app's Code tab and the mobile app — which have review features of their
+own — and on every other surface, every hook passes through with `next(e)`
+(D40). The VS Code panel is the next surface (#76).
+
+---
+
+## 12. Must-hold properties
+
+**Fail to vanilla.** A hook that throws or exceeds its 10-second budget is
+skipped. Give every registration `.catch(handler)` returning `next(e)`, so a
+failure leaves **plain Claude Code rendering** — never a half-drawn transcript.
+
+**Hold no state the conversation depends on.** Blocks are derived at render time;
+nothing is stored in the conversation. Disabling mid-flow costs only the review
+in progress.
+Check every future feature against this.
+
+**Ship a kill switch.** A key or `/command` that makes the render hooks pass
+through while the session continues. The failure you will actually hit while
+developing is rendering being *wrong*, not throwing — and restarting a session to
+escape it is painful mid-task. It is `/synaptik off`, for the session (D39); a
+slash command's output row is read by the model, which P1 (as revised) allows.
+
+**Never interfere with the prompt/response flow.** The mod proposes and draws; it
+never writes the prompt box behind the person's back, never submits on its own,
+and never blocks or rewrites a turn.
+
+**Keep the logic free of `$.` calls.** Segmentation, tray state and the compile
+step are plain functions over text and data, living in `src/` with the hooks as a
+thin shell over them. No `$`, no event objects, no element trees in any `src/`
+signature. See *Repo layout* in `CONTRIBUTING.md` — this is what makes the logic
+testable without a session, and what a second host would build on.

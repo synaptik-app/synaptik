@@ -45,6 +45,11 @@ One command, its subcommands as arguments:
 the mod off is easy to hit by accident, and opening the review is what a person
 typing the mod's name most likely wants. `on`/`off` are explicit.
 
+**Considered: `/synaptik` starting the review in fullscreen.** A command can't hand
+the keyboard to the band or to a `Client` (`$.ui.focus` is denied; only a click
+focuses a `Client`); only a pane opened with focus could take it, and fullscreen
+has no panes besides threads (D41). So there it names the two ways in.
+
 **Revisions**
 - **2026-10-27** — fullscreen has no navigator (D41): there it points to the review.
 - **2026-10-31** — `/synaptik config` (the key setup) removed.

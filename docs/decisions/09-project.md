@@ -123,7 +123,7 @@ needed; emoji width (`💬`) is the one to watch.
 ### D34 — The spike evolves into phase 1
 **Status:** superseded → D27 · added 2026-10-18
 
-Phase 1 evolves the spike's code rather than building fresh from `SPEC.md`, as
+Phase 1 evolves the spike's code rather than building fresh from the spec, as
 D27 first had it. By the end of spike 0 the code had been tested against the
 bench's fixtures, the classic renderer and a second mod, with real fixes in it —
 the whole turn as the reply, multi-paragraph items, the shared band, focus
@@ -132,7 +132,7 @@ handling, the suggestion's re-proposal.
 **Phase 1, deliberately:**
 - **Keep** the hooks file's tested behaviour and the tested `src/` pieces
   (`lastTurnText`, the compile step), renamed out of `spike-*`.
-- **Rewrite the segmenter** properly from SPEC §3 — the most naive part; tables,
+- **Rewrite the segmenter** properly from `spec/01-review-model.md` §3 — the most naive part; tables,
   quotes, code and multi-paragraph items with tests from the bench's fixtures.
 - **Add a tray module** for §5's state rules, with tests.
 - **Split the hooks file** (~700 lines) into a few files by surface.

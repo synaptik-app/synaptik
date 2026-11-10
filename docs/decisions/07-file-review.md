@@ -64,7 +64,7 @@ lands.
 *Written for model A of the navigation model (#19)* — a navigator pane with ↑/↓
 for rows and ←/→ for verbs.
 
-The navigator (`synaptik-map`, SPEC §10) already lists the reply's blocks. Files
+The navigator (`synaptik-map`, `spec/03-navigation.md` §10) already lists the reply's blocks. Files
 the turn touched are listed in it too, below the blocks. `⏎` on a file opens a
 **file review pane**:
 
@@ -75,7 +75,7 @@ the turn touched are listed in it too, below the blocks. `⏎` on a file opens a
 | ⏎ | open the selected file | apply the verb under the cursor |
 | Esc | leave | back to the navigator |
 
-**The mechanics already exist.** SPEC §10's scroll trick — a tree of
+**The mechanics already exist.** `spec/03-navigation.md` §10's scroll trick — a tree of
 `bodyRows + 2` rows with its window pinned at offset 1, so ↑/↓ always have a row
 to scroll to — is what separates ↑/↓ from ←/→ in a pane. A file pane gets its own
 instance of it, with lines in place of blocks. The hidden verb ring works
@@ -105,7 +105,7 @@ version.
 
 **The pane is the mod's own surface.** Content is drawn from source text, so the
 mod controls every character — **Q10 does not apply at all.** No reproducing
-Claude Code's markdown rendering, nothing to match. By contrast SPEC §6 has to
+Claude Code's markdown rendering, nothing to match. By contrast `spec/02-rendering.md` §6 has to
 redraw a reply that Claude Code already renders well.
 
 **The pane shape is proven.** The built-in
@@ -129,7 +129,7 @@ in index.js
   line 42 — behind the feature flag please
 ```
 
-Consistent with SPEC §9: no prose scaffolding, no explanation that a review
+Consistent with `spec/06-sending.md` §9: no prose scaffolding, no explanation that a review
 happened. The reply's marks keep document order; files follow, since they are a
 different axis and interleaving them with prose blocks would read as noise.
 

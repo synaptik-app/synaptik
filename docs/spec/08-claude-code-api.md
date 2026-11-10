@@ -1,67 +1,84 @@
 # The Claude Code mods API
 
-## 6. Open questions
+What Synaptik relies on from the mods API, the limits found, and what is still
+open. **The installed version's types are the authority**
+(`.claude-plugin/types/claude-code/index.d.ts`, written when a session loads the
+mod) — over this file and over the published docs, which lag.
 
-To verify against the build's own TypeScript declarations
-(`.claude-plugin/types/claude-code/index.d.ts`, written per installed version)
-rather than the published docs.
-
-| # | Question | Answer (spike, 2026-10-15) |
-|---|---|---|
-| Q3 | Does `ui.press` see raw arrow keys? | **No.** Keys reach a mod only through a linear focus ring; ↑/↓ apart from ←/→ needs a pane's scroll. See D20's revision. |
-| Q6 | `$.model.fork` signature and context | From the types: one tool-less question over the session's own transcript, same model and system prompt, cached. Concurrency unknown. Not exercised. |
-| Q8 | The hook framework in depth | Learned in use: `on(event, matcher, hook)`, `.catch` for fail-to-vanilla, render hooks may not write state but may `$.ui.invalidate`, `$.state` contracts in `types/`. Chain order among several mods untested (§11, item 15). |
-| Q9 | Is `$.model.classify` cheap enough per thread turn? | Open — E6 only. |
-| Q10 | Can the `AssistantMessage` hook match Claude Code's markdown? | **Yes.** Compared on and off construct by construct (lists, nesting, table, code, blockquote): identical once the mod draws no column of its own and keeps the top margin. A `Box` background around `Markdown` paints behind the text. |
-| Q11 | Is `prompt.suggest` a separate layer beside typed text? | **No** — it shows only in an empty box. Turned out not to matter: D30. |
-| Q12 | Do mouse clicks work in the terminal? | **Yes**, on `Button`s drawn in a reply, in the fullscreen terminal. |
-
-*Q1, Q2, Q4, Q5 retired or moved into §5 with their features. Q7 resolved —
-discard with warning, see D24.*
-
-**`SPEC.md` §15** holds the full spike checklist, with the questions not numbered
-here. New open questions are in §11.
+Requires Claude Code **v2.1.301+**, in the terminal (D40): the fullscreen review watches the prompt box with `prompt.change` (2.1.300), and multi-line comments use `Input`'s `rows` (2.1.301, #16). `Raster` and `Image`
+are terminal-only and unused; the mod draws with `Box`, `Text`, `Button`,
+`Input` and `Markdown`.
 
 ---
 
-## 7. Framework primitives in use
+## Hooks and calls in use
 
-| Primitive | Role | MVP? |
-|---|---|---|
-| `ui.render` on `AssistantMessage` | Redraw the reply with the accent bar, marks, menu and comments | Yes |
-| `ui.render` on `AbovePrompt` | Band: summary, discard warning, action line | Yes |
-| `ui.render` on `Pane` | The navigator (D31), later threads | Yes |
-| `ui.scroll` on the pane | ↑/↓ as block moves (D20 revision) | Yes |
-| `ui.focus` on the pane | Keep the ring on the verbs | Yes |
-| `ui.close` | Know whether the navigator is on screen | Yes |
-| `Button.onPress`, `Input.onInput/onSubmit` | Verbs, comments — closures, no `ui.press`/`ui.input` hooks needed | Yes |
-| `$.prompt.read()` | Tell whether the box has text, for the discard warning (D24) | Yes |
-| `turn.start` / `turn.complete` | Marking off during a turn; adopt the new reply | Yes |
-| `session.start` + `$.session.messages()` | Adopt the last reply on resume | Yes |
-| `$.prompt.suggest` | Send by suggestion (D30) | Yes |
-| `$.prompt.submit({ asUser: true })` | Direct send, `s` in the navigator | Yes |
-| `$.env.get` + `$.fs.read` | Read the person's entry-key binding (D32) | Yes |
-| `$.ui.scroll` | Bring the reply into view (whole reply only) | Yes |
-| `$.model.fork` | Thread conversations and the commit summary | Phase 2 |
-| `$.prompt.fill` | Puts the full text in the box when a shortened suggestion is taken (D30, revision 2026-10-31) | Yes |
-| `$.store` | Thread persistence within the session | Phase 2 |
-| `tool.call` | E5, E12 | No |
-| `session.append` | E13 | No |
-| `$.model.classify` | E6 | No |
-| `$.tool.register` | E14 | No |
-| `$.session.send` / `session.receive` | E4 | No |
-| `prompt.compose` | E9 | No |
+**Hooks:** the README's table, *The hooks it registers*, is the complete list, with
+what each does. `ui.render` draws on `AssistantMessage` (the reply), `AbovePrompt`
+(the band), `Pane` (the navigator and thread panes) and `TurnDuration` (to reveal
+the end of a tall reply). No tool hooks (P3).
 
-**Known limits:** `Markdown` and `Code` elements cap at 10,000 characters — long
-responses need chunking regardless, which suits per-block rendering. Hook
-execution: 10s. `$.model.complete`: 1024 max tokens by default, raisable to
-64,000. `$.session.messages()`: newest 4,096 entries.
+**Calls:**
+
+| Call | For |
+|---|---|
+| `$.prompt.suggest` | the compiled prompt, as a suggestion in the empty box (D30) |
+| `$.prompt.fill` | the full text, when a shortened suggestion is taken (D30) |
+| `$.prompt.read` | whether the box holds text, for the discard warning (D24) |
+| `$.session.messages`, `$.session.id` | the last reply, on start, resume and clear |
+| `$.model.fork` | a thread's answers, summary and verdict (D14) |
+| `$.ui.open`, `$.ui.close`, `$.ui.focus` | the navigator and thread panes |
+| `$.ui.scroll` | bringing the reply into view, from the person's own keys |
+| `$.ui.invalidate` | redrawing the reply, band and panes after a change |
+| `$.ui.resolve` | the engine's own drawing, wrapped whole |
+| `$.ui.toast` | short notices |
+| `$.command.register` | `/synaptik` (D39) |
+| `$.state` | the tray and review state, typed in `types/index.d.ts` |
+| `$.clock.sleep` | the band hint's timer |
 
 **Security note (relevant to corporate use):** mods are not sandboxed and run
 with the user's full permissions. Administrators can set `allowManagedModsOnly`
 to block user-installed mods.
 
-## 11. Spike findings — open items
+---
+
+## Known limits
+
+| | |
+|---|---|
+| Hook execution | 10 s (time inside a mods API call does not count) |
+| `Markdown` / `Text` text | 10,000 characters per element before Claude Code 2.1.304 (a longer one fails the whole render) — so a block is drawn in pieces (`chunk()`, each code piece fenced again). From 2.1.304, any length. One drawing holds 100,000 characters in all: a reply piece over 90,000 is left to Claude Code and reviewed from the navigator (`MAX_DRAWN`). The test kit doesn't enforce that bound, so the terminal's behaviour past it is unverified ⚠️ |
+| `$.store` | 4 MiB of JSON, shared machine-wide |
+| `ui.render` redraws | throttled to ~10–30/s, coalesced |
+| Render hooks | may not write `$.state`; may call `$.ui.invalidate` |
+| Docked pane | ~23 columns in practice; a request for 4 was not honoured |
+| Unasked `$.ui.open` | waits undrawn below 144 columns (110 once opened by the person) |
+| Module reload | closes the mod's panes (`ui.close`, origin `unload`) |
+| `onScreen` | fullscreen only; per reply piece, not per element |
+| `$.session.messages()` | the newest 4,096 entries |
+| `autoFocus` | accepts only `true`, so focus is managed per render rather than by flipping a prop off |
+
+---
+
+## Answered questions
+
+Answered by the spike on 2026-10-15, against the installed types, unless dated.
+
+| # | Question | Answer |
+|---|---|---|
+| Q3 | Does `ui.press` see raw arrow keys? | **No.** Keys reach a mod only through a linear focus ring, or a `Client` that was clicked; ↑/↓ apart from ←/→ needs a pane's scroll (D20, D31). |
+| Q6 | `$.model.fork` signature and context | One tool-less question over the session's own transcript, same model and system prompt, cached. Forks run in parallel; a thread costs about its own text (2.1.309, D45). |
+| Q8 | The hook framework in depth | `on(event, matcher, hook)`, `.catch` for fail-to-vanilla, render hooks may not write state but may `$.ui.invalidate`, `$.state` contracts in `types/`. Chain order among mods follows load order (tested, D33). |
+| Q10 | Can the `AssistantMessage` hook match Claude Code's markdown? | **Yes.** Compared on and off construct by construct (lists, nesting, table, code, blockquote): identical once the mod draws no column of its own and keeps the top margin. A `Box` background around `Markdown` paints behind the text. |
+| Q11 | Is `prompt.suggest` a separate layer beside typed text? | **No** — it shows only in an empty box. Turned out not to matter (D30). |
+| Q12 | Do mouse clicks work in the terminal? | **Yes**, on `Button`s and `Client`s drawn in a reply, in the fullscreen terminal. |
+
+The full list, with the questions not numbered here, is the spike checklist
+below.
+
+---
+
+## Spike findings — open items
 
 Recorded 2026-10-15 from the spike (`spike/rendering`). Numbered for reference;
 the numbers are not decision numbers.
@@ -159,3 +176,45 @@ the numbers are not decision numbers.
 - `onScreen`, or a row measurement, per element rather than per message.
 - A narrower floor for a docked pane, or a reason it is ~23 columns.
 - A flag on `SessionMessage` for engine-written rows.
+
+---
+
+## 15. Spike checklist
+
+Answered by the spike on Claude Code 2.1.287 (macOS, fullscreen terminal).
+
+- [x] **Markdown fidelity.** Compared on and off on a reply with a numbered
+      list, nested items, a table, a code block and a blockquote (2026-10-17):
+      identical, numbering kept (`1. 2. 3.`). The only differences were the
+      mod's own column and a lost top margin, both fixed.
+- [x] **Background behind block text.** `Box` takes `backgroundColor`;
+      `Markdown` does not. A 1-cell `Box` with a background beside the block
+      stretches to its height — the accent bar.
+- [x] **Raw arrow keys.** No. `ui.press` fires only for `Button`s; keys reach a
+      mod only through a focus ring (band, panes), which is linear. ↑/↓ apart
+      from ←/→ needs a pane's scroll (§10).
+- [x] **Mouse.** Buttons drawn in a reply are clickable in the fullscreen
+      terminal.
+- [x] **`$.prompt.read()`** returns the box's text and cursor.
+- [x] **`$.model.fork`** — from the types: one tool-less question over the
+      session's transcript, cached; concurrency unknown. Not exercised. ⚠️
+- [x] **Entry key.** `abovePrompt:focus` (`ctrl+x tab` by default); a person can
+      bind a single chord. Tested on macOS only; Linux unchecked. ⚠️
+- [x] **Sibling `src/` imports** resolve from a hooks module inside the plugin
+      root.
+- [x] **`claude plugin test`** runs `src/*.test.ts` with no session and no mock
+      `$`.
+
+Found along the way, not on the original list:
+
+- `AssistantMessage` fires per text block of a reply, not per reply.
+- Esc raises no `ui.focus`; a pane's `isFocused` prop is the reliable signal.
+- An `Input` keeps typed text across redraws under the same key and value.
+- `$.prompt.suggest` shows multi-line text; its first cell sits under the
+  cursor; it cannot be withdrawn.
+- `$.ui.scroll` cannot target a transcript element by key.
+- Resuming appends a synthetic `No response requested.` assistant row.
+
+Read the types Claude Code writes for your build —
+`.claude-plugin/types/claude-code/index.d.ts` after loading any mod with
+`--plugin-dir`. **Trust those over the published docs.**
