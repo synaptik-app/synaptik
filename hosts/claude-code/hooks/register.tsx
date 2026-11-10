@@ -123,6 +123,10 @@ let holder: 'reply' | 'band' | 'hint' | undefined
 // Each adopted reply gets fresh Client instances, so nothing a block kept carries
 // over to the next reply's block in the same place.
 let replyGeneration = 0
+// A Client that failed (ui.fault): the band's hint, or a block. Left out until
+// the next reply, so the band and the reply fall back to plain drawing (#189).
+let isHintFaulted = false
+let isBlockFaulted = false
 // The band's request id (for focus moves into it) and its comment field's key.
 let bandRequestId = ''
 // The most rows classic's comment field grows to (#16); past it, it scrolls.
@@ -228,6 +232,8 @@ async function adoptLastReply($: EngineInterface) {
     held = { review: { ...START, selected: Math.max(0, count - 1), epoch: held.review.epoch + 1 }, acked: held.acked }
     holder = undefined
     replyGeneration += 1
+    isHintFaulted = false
+    isBlockFaulted = false
   }
   if (text) await openPane($)
 }
@@ -758,6 +764,20 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
 
+  // A Client failed: leave it out from now on, so the band draws its hint as
+  // plain text (ctrl+x tab still starts a review) and the reply is drawn without
+  // block Clients. Tried again on the next reply.
+  on('ui.fault', async ($, e, next) => {
+    observe(`fault: ${e.module} ${e.element} (${e.phase}): ${e.reason}`)
+    if (e.module.endsWith('hint.tsx')) isHintFaulted = true
+    if (e.module.endsWith('block.tsx')) {
+      isBlockFaulted = true
+      releaseReview($)
+    }
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+
   // --- The reply: the selected block's marker and in-place menu -------------
 
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
@@ -800,7 +820,7 @@ export const register: Register = on => {
       isFullscreen = true
       if (await read($, isPaneShown)) closePaneForFullscreen($)
     }
-    if (e.viewport?.isFullscreen && holder) {
+    if (e.viewport?.isFullscreen && holder && !isBlockFaulted) {
       const review = await shownReview($)
       const staged = commented as Record<string, string>
       // A move crosses the reply's pieces: the bounds are the whole reply's.
@@ -1356,7 +1376,7 @@ export const register: Register = on => {
     const what = staged ? 'continue reviewing' : 'review the reply'
     const messages = holder ? [fullscreenAction] : [`${key} to ${what}`, `click here to ${what}`]
     const hint =
-      isFullscreen
+      isFullscreen && !isHintFaulted
         ? h('Client', {
             key: generational('band-hint', bandGeneration),
             module: './client/hint.tsx',
