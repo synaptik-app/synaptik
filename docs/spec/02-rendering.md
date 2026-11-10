@@ -151,6 +151,11 @@ the keyboard with it), `Block N of M · ↑↓ blocks · ←→ actions · ⏎ a
   reply falls back to Claude Code's own drawing, so a closed comment is left out,
   never `undefined`.
 - Each adopted reply gets fresh `Client` instances (`block-<reply>-<index>`).
+- **A `Client` that fails** (`ui.fault`: it didn't load, threw, or overran its
+  second) is left out until the next reply, and the fault goes to
+  `/synaptik log`. A failed hint is drawn as plain text, and `ctrl+x tab` still
+  starts a review. A failed block ends the review, and the reply is drawn as
+  outside one.
 
 **Ending a review: `q`**, from the reply, the band or its hint (in a comment, `q`
 types a `q`); the legend says `q done`. **Esc does not end it:** a mod never sees
