@@ -171,6 +171,10 @@ it has no clicks. Its pane takes Tab/⇧Tab for the actions (D32).
   confirmed, and the hooks apply each action once, by id.
 - **A `Client`'s props are plain data:** a missing value is refused, and the
   whole reply falls back to Claude Code's own drawing.
+- **A failed `Client` is left out,** as a fault on any hook is (fail to vanilla).
+  Claude Code draws a dim error line in its place, and the hint or the block
+  was the way into the review. So on `ui.fault` the hint is drawn as plain text
+  and a failed block ends the review; both are tried again on the next reply.
 
 **Known limits, asked of Claude Code (#23, #64):**
 - **Esc is invisible**, from a `Client` and from the band alike. Hence `q`.
@@ -196,6 +200,7 @@ it has no clicks. Its pane takes Tab/⇧Tab for the actions (D32).
   empties a comment, after a click.
 - **2026-11-10** — condensed to the decisions and their reasons; the keymap and
   the band's wording are the spec's.
+- **2026-11-10** — a failed `Client` is left out until the next reply (#189).
 
 ---
 
