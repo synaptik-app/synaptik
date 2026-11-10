@@ -465,6 +465,26 @@ test('a click on an action applies it and keeps the keyboard in the reply', asyn
   expect(suggested()).toBe(['✗ "1. Cache sessions in Redis"', '    ✓ "key each entry by user"'].join('\n'))
 })
 
+test('on a narrow terminal the menu is its glyphs alone, one row, and a click still maps to its item', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  const into = await clickAndPress(ui, CACHE)
+  // The full menu is 2 + 51 cells after the margin: 50 columns can't hold it.
+  await ui.resize({ columns: 50, rows: 2, in: into })
+  expect(await ui.find({ type: 'Text', text: /accept/, in: into })).toBeUndefined()
+  expect((await ui.findAll({ type: 'Text', in: into })).map((t: FoundElement) => t.text).filter((t: unknown) => /^\[/.test(String(t)))).toEqual([
+    '[ ✓ ]',
+    '[ ✗ ]',
+    '[ ✎ ]',
+    '[ 💬 ]',
+  ])
+  // "└ " at 2 cells in, then "[ ✓ ]" (5 cells): 10 is inside "[ ✗ ]".
+  await ui.pointer({ type: 'down', x: 10, y: 1, button: 'left', in: into })
+  expect(suggested()).toBe('✗ "1. Cache sessions in Redis"')
+})
+
 test('the menu item under the mouse is drawn inverse, as a button under the mouse is', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
@@ -586,6 +606,26 @@ test('s or step in enters the block', async ($, on) => {
   expect(await draws(ui, TS, /step in/)).toBe(true)
   // Still in the review: q went up one level only.
   expect((await hintLines(await band($)))[0]).toMatch(/^Block \d+ of \d+/)
+})
+
+test('stepped in, the menu turns to glyphs where its items stop fitting, and a click on step out still lands', async ($, on) => {
+  await start($, on, C)
+  await fullscreen($, C)
+  await review($)
+  const ui = await fullscreen($, C)
+  const into = await clickAndPress(ui, TS, ['s'])
+  // Stepped in, the menu starts where the whole block's does: after the margin
+  // and "└ ", 4 cells in. Its items are 65 cells: 69 columns hold them, 68 don't.
+  await ui.resize({ columns: 69, rows: 20, in: into })
+  expect(await draws(ui, TS, /↰ step out/)).toBe(true)
+  await ui.resize({ columns: 68, rows: 20, in: into })
+  expect(await draws(ui, TS, /↰ step out/)).toBe(false)
+  expect(await ui.find({ type: 'Text', text: /^\[ ↰ \]$/, in: into })).toBeDefined()
+  // Line 1 is one row, the menu the row under it: 4 + 5 × 3 + 6 = 25 is "[ ↰ ]".
+  await ui.pointer({ type: 'down', x: 26, y: 1, button: 'left', in: into })
+  expect((await hintLines(await band($)))[0]).toMatch(/^Block \d+ of \d+/)
+  // Stepped out, the items are 64 cells (step in, not step out): they fit again.
+  expect(await draws(ui, TS, /↳ step in/)).toBe(true)
 })
 
 test('After ctrl+x tab: s steps in', async ($, on) => {

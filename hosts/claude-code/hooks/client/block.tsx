@@ -46,10 +46,14 @@ const LABELS: Record<(typeof MENU)[number], string> = {
   discuss: '💬 discuss',
 }
 // The menu's items as drawn, in order: what a click is matched against. A code block or table
-// adds step in, a part inside one step out.
+// adds step in, a part inside one step out. Where they don't fit on one row, the
+// glyphs alone (#169), so the menu stays one row and a click maps by column.
 const ITEMS = MENU.map(verb => `[ ${LABELS[verb]} ]`)
 const STEP_IN = '[ ↳ step in ]'
 const STEP_OUT = '[ ↰ step out ]'
+const SHORT: Record<string, string> = Object.fromEntries(
+  [...ITEMS, STEP_IN, STEP_OUT].map(item => [item, item.replace(/^\[ (\S+) .*\]$/u, '[ $1 ]')]),
+)
 
 // What a block keeps: the review steps not yet echoed (src/review.ts), and the
 // menu item the pointer is over, drawn as a button under the mouse is.
@@ -93,7 +97,10 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
   const steppedKey = stepped ? lineKey(props.index, stepped.at) : undefined
   const lineEditing = steppedKey !== undefined && review.editing?.index === steppedKey ? review.editing : undefined
   const lineStaged = steppedKey !== undefined && !lineEditing && props.lineMarks[String(stepped?.at)] === 'comment' ? props.comments[steppedKey] : undefined
-  const items = stepped ? [...ITEMS, STEP_OUT] : parts ? [...ITEMS, STEP_IN] : ITEMS
+  const full = stepped ? [...ITEMS, STEP_OUT] : parts ? [...ITEMS, STEP_IN] : ITEMS
+  // The room after the margin, indent and "└ "; 0 before the first layout.
+  const room = surface.columns - MARGIN - props.indent - 2
+  const items = surface.columns > 0 && full.reduce((n, item) => n + cells(item), 0) > room ? full.map(item => SHORT[item]!) : full
   const staged = !editing && props.glyph === '✎' ? props.comments[String(props.index)] : undefined
   // Where the menu sits in the region: its last row, or the one above a staged
   // comment's (a single row: its first line, truncated), after the margin,

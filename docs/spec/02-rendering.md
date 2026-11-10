@@ -31,7 +31,9 @@ redraws all of it.
 - **Other blocks:** no background. Only their mark glyph, if any, shows.
 - **Under the selected block:** the verb menu after a dim `└`. The verb under the
   keyboard cursor (§10) draws as the primary button, the others dim. Outside a
-  review, nothing is highlighted.
+  review, nothing is highlighted. Where the items don't fit on one row (a narrow
+  terminal, a deep indent), they are drawn as their glyphs alone —
+  `[ ✓ ][ ✗ ][ ✎ ][ 💬 ]`, and `[ ↳ ]` / `[ ↰ ]` — so the menu stays one row.
 
 The reply carries no accent colour. ⚠️ `selectionBg` was found in the Claude Code
 binary, not the documented API; an unknown key would make the reply fall back to
