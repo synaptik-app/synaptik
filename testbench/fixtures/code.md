@@ -77,7 +77,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: ‚
 **Marks on lines**
 
 8. **Do:** in the TypeScript block, `x` on line 2, `a` on line 6, `c` on line 5, type `why GET?`, press `‚èé`
-   - **Expect:** each glyph sits in the margin on its own line (one row too high while stepped in is #168)
+   - **Expect:** each glyph sits in the margin on its own line, stepped in and out
    - **Expect:** the comment shows under line 5 while it is selected
 9. **Do:** `x` on the blank line between `]` and `const message`
    - **Expect:** the suggestion names it `line 8 (blank)`

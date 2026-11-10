@@ -616,6 +616,19 @@ test('a / x / c on a line stage it', async ($, on) => {
   expect(suggested()).not.toContain('line 2')
 })
 
+test("stepped in, a marked line's glyph is on its own row, though the block has no glyph", async ($, on) => {
+  await start($, on, C)
+  await fullscreen($, C)
+  await review($)
+  const ui = await fullscreen($, C)
+  await clickAndPress(ui, TS, ['s', 'down', 'x'])
+  // The margin comes first in the block's drawing, one Text per row: an empty
+  // first row would take no height, and line 2's ✗ would sit on line 1 (#168).
+  const drawn = await fullscreen($, C)
+  const rows = (await drawn.findAll({ type: 'Text', in: await block(drawn, TS) })).map((t: FoundElement) => t.text)
+  expect(rows.slice(0, 2)).toEqual([' ', '✗'])
+})
+
 test('c opens a comment under the line', async ($, on) => {
   await start($, on, C)
   await fullscreen($, C)

@@ -31,7 +31,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 3. **Do:** press `↓` three times
    - **Expect:** the selection moves a row at a time, never onto a border line, and stops on the last row
 4. **Do:** press `↑` to "Memcached", `x`; then `↓`, `c`, type `too slow`, press `⏎`
-   - **Expect:** ✗ and ✎ sit in the margin by their rows (one row too high while stepped in is #168)
+   - **Expect:** ✗ and ✎ sit in the margin by their rows, stepped in and out
    - **Expect:** the comment shows under the Postgres row while it is selected
 5. **Do:** press `q`, then `q` again
    - **Expect:** the table shows ✸ in its margin
