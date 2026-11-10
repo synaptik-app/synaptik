@@ -465,6 +465,26 @@ test('a click on an action applies it and keeps the keyboard in the reply', asyn
   expect(suggested()).toBe(['✗ "1. Cache sessions in Redis"', '    ✓ "key each entry by user"'].join('\n'))
 })
 
+test('on a narrow terminal the menu is its glyphs alone, one row, and a click still maps to its item', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  const into = await clickAndPress(ui, CACHE)
+  // The full menu is 2 + 51 cells after the margin: 50 columns can't hold it.
+  await ui.resize({ columns: 50, rows: 2, in: into })
+  expect(await ui.find({ type: 'Text', text: /accept/, in: into })).toBeUndefined()
+  expect((await ui.findAll({ type: 'Text', in: into })).map((t: FoundElement) => t.text).filter((t: unknown) => /^\[/.test(String(t)))).toEqual([
+    '[ ✓ ]',
+    '[ ✗ ]',
+    '[ ✎ ]',
+    '[ 💬 ]',
+  ])
+  // "└ " at 2 cells in, then "[ ✓ ]" (5 cells): 10 is inside "[ ✗ ]".
+  await ui.pointer({ type: 'down', x: 10, y: 1, button: 'left', in: into })
+  expect(suggested()).toBe('✗ "1. Cache sessions in Redis"')
+})
+
 test('the menu item under the mouse is drawn inverse, as a button under the mouse is', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
