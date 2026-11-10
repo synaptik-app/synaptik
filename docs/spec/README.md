@@ -65,7 +65,6 @@ that, not the central metaphor.
 ```
 Claude replies
   → ctrl+x tab, then ↑↓ to a block, tab and ⏎ to accept / reject / comment / discuss
-    (←→ in classic with the recommended binding, §10)
   → marks accumulate in a tray
   → the prompt box shows the prompt they compile into, as a dim suggestion
   → tab takes it, ⏎ sends it

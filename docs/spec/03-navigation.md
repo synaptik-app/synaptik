@@ -65,7 +65,7 @@ dropped. `⏎` or backspace on an empty line cancels it.
 
 ### Keys
 
-**Fullscreen** needs no setup:
+**Fullscreen:**
 
 | | With the mouse | With the keyboard |
 |---|---|---|
@@ -84,17 +84,15 @@ then ends the review.
 
 **The default renderer** (the pane):
 
-| Key | Default (no setup) | With the recommended bindings |
-|---|---|---|
-| Enter the navigator | `ctrl+x tab` (`abovePrompt:focus`) | same |
-| Move between blocks | ↑ / ↓ | same |
-| First / last block | Home / End (`Fn+←` / `Fn+→` on a MacBook) | same |
-| Walk the verbs | Tab / ⇧Tab | ← / → |
-| Apply the verb under the cursor | ⏎ | same |
-| Apply a verb directly | `a` `x` `c` `d` | same |
-| Leave | Esc | same |
-
-**A mod cannot ship key bindings,** and Synaptik doesn't touch the person's: the band names Claude Code's defaults (D32).
+| | Key |
+|---|---|
+| Enter the navigator | `ctrl+x tab` (`abovePrompt:focus`) |
+| Move between blocks | ↑ / ↓ |
+| First / last block | Home / End (`Fn+←` / `Fn+→` on a MacBook) |
+| Walk the verbs | Tab / ⇧Tab |
+| Apply the verb under the cursor | ⏎ |
+| Apply a verb directly | `a` `x` `c` `d` |
+| Leave | Esc |
 
 Esc raises no `ui.focus` event, so whether the navigator holds the keyboard is
 read from its own drawing (`e.props.isFocused`) and passed to the band and reply

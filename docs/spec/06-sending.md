@@ -50,9 +50,6 @@ The same words as fullscreen; how to send is the staged line's (above). `q` is
 done too, as in fullscreen, though only Esc is shown: the pane sees Esc, and `q`
 draws its actions under new keys so the one holding the keyboard disappears.
 
-The keys shown are Claude Code's defaults. With the recommended bindings (§10)
-the classic legend reads `↑↓ blocks · ←→ actions`.
-
 **The band is shared with every mod.** A hook that answers without `next(e)`
 hides every mod beneath it. Synaptik draws what `next(e)` returns and adds its
 lines below it, during a review too: `ctrl+x tab` is the band's ring, every mod's,
