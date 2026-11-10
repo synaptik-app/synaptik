@@ -195,7 +195,8 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
         children: [
           row === 0 && (!stepped || !glyphs.has(0)) && props.glyph
             ? props.glyph
-            : (glyphs.get(row) ?? (row > 0 ? ' ' : stepped ? first : PARTLY)),
+            : // Never an empty row: a Text of '' takes no height, and the glyphs under it would move up (#168).
+              (glyphs.get(row) ?? (row > 0 ? ' ' : stepped ? first || ' ' : PARTLY)),
         ],
       }),
     )
