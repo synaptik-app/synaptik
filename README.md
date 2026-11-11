@@ -165,8 +165,9 @@ it.
 A Claude Code mod runs with your own permissions and is not sandboxed. Synaptik
 reads the session's transcript and the prompt box, and proposes your review in
 the prompt box — it never submits. When you discuss a block, it asks the same
-model and account as your session, using its tokens. It reads and writes no
-files, runs no commands and registers no tool hooks.
+model and account as your session, using its tokens. Apart from those questions,
+it sends nothing anywhere. It reads and writes no files, runs no commands and
+registers no tool hooks.
 
 More in [SECURITY.md](SECURITY.md), [PRIVACY.md](PRIVACY.md), and the
 [hooks it registers](docs/spec/08-claude-code-api.md#hooks-and-calls-in-use).
