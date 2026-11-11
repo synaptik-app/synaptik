@@ -10,7 +10,7 @@ says what navigation does, `decisions/03-navigation.md` why. A topic with no
 spec file of its own (principles, keys, project) has a gap there.
 
 The history — what was tried, and why it changed — is in the issues and pull
-requests, and in each DR's *Revisions*.
+requests, and in each DR's *Revisions* (D48).
 
 ## Reading order
 
