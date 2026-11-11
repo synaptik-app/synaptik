@@ -18,8 +18,11 @@ It writes `.github/assets/demo.gif` directly.
 
 - **Log in** to Claude Code. VHS runs `claude` in its own headless terminal, as
   you, so it uses your login.
-- **Fullscreen renderer** (`/tui fullscreen`): the hero shows the review in the
-  reply.
+- **Fullscreen** is forced by the tape (`CLAUDE_CODE_NO_FLICKER=1`): in VHS's
+  headless terminal Claude Code can fall back to the classic renderer, whatever
+  `/tui` says.
+- **Nothing of your own setup shows:** the tape starts Claude Code with
+  `settings.json` (a blank status line), the default permission mode, and Haiku.
 - **Trust the folder:** run `cd demo && claude --plugin-dir ../hosts/claude-code`
   once and accept, so no prompt appears during the take.
 
@@ -33,7 +36,7 @@ prompt, gets Reply 1, and marks two blocks from the band (`ctrl+x tab`). Then:
 | 1 | — | Reply 1 under review: ✓ on *1. Cache sessions in Redis*, ✗ on *Expire entries after 5 minutes* |
 | 2 | `j` `j` | the selection moves down to *2. Rate-limit `/login`…* |
 | 3 | `c`, `per account, not per IP`, `⏎` | ✎ on it, the comment under it |
-| 4 | `q` | the review ends; the prompt box shows it as a dim suggestion |
+| 4 | `q`, `Esc` | the review ends; the prompt box shows it as a dim suggestion. `Esc` gives the keyboard back to the prompt — on the band path `q` alone doesn't yet (#203) |
 | 5 | `Tab`, `⏎` | the prompt is sent, as your own message — held about 2 s |
 
 Ending on the sent prompt is the point: one prompt, in your own words. The
