@@ -35,16 +35,17 @@ prompt, gets Reply 1, and marks two blocks from the band (`ctrl+x tab`). Then:
 |---|---|---|
 | 1 | — | Reply 1 under review: ✓ on *1. Cache sessions in Redis*, ✗ on *Expire entries after 5 minutes* |
 | 2 | `j` `j` | the selection moves down to *2. Rate-limit `/login`…* |
-| 3 | `c`, `per account, not per IP`, `⏎` | ✎ on it, the comment under it |
-| 4 | `q`, `Esc` | the review ends; the prompt box shows it as a dim suggestion. `Esc` gives the keyboard back to the prompt — on the band path `q` alone doesn't yet (#203) |
-| 5 | `Tab`, `⏎` | the prompt is sent, as your own message, and Reply 2 answers it — held a few seconds |
+| 3 | `c`, `make it 5 requests per account, not per IP`, `⏎` | ✎ on it, the comment under it |
+| 4 | `j` `j`, `a` | ✓ on *4. Ship it behind a flag* |
+| 5 | `q`, `Esc` | the review ends; the prompt box shows it as a dim suggestion. `Esc` gives the keyboard back to the prompt — on the band path `q` alone doesn't yet (#203) |
+| 6 | `Tab`, `⏎` | the prompt is sent, as your own message, and Reply 2 answers it — held a few seconds |
 
 Ending on the sent prompt is the point: one prompt, in your own words. The
 README's caption under the GIF names the keys:
-*`j` move · `c` comment · `q` done · `Tab` take · `⏎` send*.
+*`j` move · `c` comment · `a` accept · `q` done · `Tab` take · `⏎` send*.
 
 Reply 1 has nine blocks (0–8), and a review starts on the last. The tape counts
-on that: `k` × 7 to block 1, `j` × 2 to block 3, `j` × 2 to block 5. If Reply 1
+on that: `k` × 7 to block 1, `j` × 2 to block 3, `j` × 2 to block 5, `j` × 2 to block 7. If Reply 1
 changes, recount (`src/blocks.ts`'s `segment` gives the blocks).
 
 ## Targets

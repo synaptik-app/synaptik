@@ -23,9 +23,8 @@ Env CLAUDE_CODE_NO_FLICKER "1"
 
 # --- Off camera: start the session, get Reply 1, mark two blocks ---------------
 # demo/settings.json blanks the status line; the default permission mode drops
-# the mode line; Haiku is quickest, and the replies are fixed anyway.
 Hide
-Type "cd demo && claude --plugin-dir ../hosts/claude-code --settings settings.json --permission-mode default --model haiku" Enter
+Type "cd demo && claude --plugin-dir ../hosts/claude-code --settings settings.json --permission-mode default --model opus" Enter
 Sleep 6s
 Type "sessions are slow and bots hammer /login, ideas?" Enter
 Sleep 10s
@@ -59,11 +58,19 @@ Sleep 800ms
 # Comment on it, typed as a person would: unhurried, a beat between the words.
 Type "c"
 Sleep 500ms
-Type@110ms "per account,"
+Type@110ms "make it 5 requests per account,"
 Sleep 300ms
 Type@90ms " not per IP"
 Sleep 600ms
 Enter
+Sleep 1s
+
+# Down to "4. Ship it behind a flag" (7), and accept it.
+Type "j"
+Sleep 500ms
+Type "j"
+Sleep 600ms
+Type "a"
 Sleep 1s
 
 # Done: the review becomes a dim suggestion in the prompt box. On the band path
