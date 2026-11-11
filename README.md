@@ -2,12 +2,12 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme-banner-dark.png">
-  <img alt="Synaptik — review the agent's reply in place. Synaptik turns your review into one prompt." src=".github/assets/readme-banner-light.png">
+  <img alt="Synaptik — a terminal mod for Claude Code" src=".github/assets/readme-banner-light.png">
 </picture>
 
 # Synaptik
 
-**Review Claude's reply where it is, and send your review as one prompt.**
+**Review Claude's reply in place, and send your review as one prompt.**
 
 [Install](#install) · [Keys](#keys) · [Roadmap](https://github.com/orgs/synaptik-app/projects/2) · [Contributing](CONTRIBUTING.md)
 
