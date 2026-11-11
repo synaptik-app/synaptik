@@ -1,3 +1,5 @@
+<div align="center">
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme-banner-dark.png">
   <img alt="Synaptik — review the agent's reply in place. Synaptik turns your review into one prompt." src=".github/assets/readme-banner-light.png">
@@ -9,19 +11,23 @@
 
 [Install](#install) · [Keys](#keys) · [Roadmap](https://github.com/orgs/synaptik-app/projects/2) · [Contributing](CONTRIBUTING.md)
 
-Synaptik (with a **k**) is an open-source terminal mod for Claude Code: go
-through the agent's last reply block by block — a paragraph, a step in its plan,
-an item in a list — accept, reject or comment on each, discuss any block in a
-thread, and send the whole review as one prompt. An independent project, not
-affiliated with Anthropic.
-
 [![Claude Code v2.1.301+](https://img.shields.io/badge/Claude%20Code-v2.1.301%2B-d97757?logo=claude&logoColor=white)](https://code.claude.com/docs)
 [![Runs in the terminal](https://img.shields.io/badge/runs%20in-the%20terminal-2B2E3A)](#known-limits)
 [![Release](https://img.shields.io/github/v/release/synaptik-app/synaptik?label=release&color=1084fe)](https://github.com/synaptik-app/synaptik/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Feedback welcome](https://img.shields.io/badge/feedback-welcome-38d591)](https://github.com/synaptik-app/synaptik/issues/new/choose)
 
-![Synaptik: reviewing a reply in place, then sending the review as one prompt](.github/assets/demo.gif)
+</div>
+
+Synaptik (with a **k**) is an open-source terminal mod for Claude Code: go
+through the agent's last reply block by block — a paragraph, a step in its plan,
+an item in a list — accept, reject or comment on each, discuss any block in a
+thread, and send the whole review as one prompt. An independent project, not
+affiliated with Anthropic.
+
+<p align="center">
+  <img src=".github/assets/demo.gif" alt="Synaptik: reviewing a reply in place, then sending the review as one prompt">
+</p>
 
 Your review appears in the prompt box as a dim suggestion: `Tab` takes it, `⏎`
 sends it. Nothing reaches the agent until you send, and what it receives is an
