@@ -22,14 +22,15 @@ It writes `.github/assets/demo.gif` directly.
   headless terminal Claude Code can fall back to the classic renderer, whatever
   `/tui` says.
 - **Nothing of your own setup shows:** the tape starts Claude Code with
-  `settings.json` (a blank status line), the default permission mode, and Haiku.
+  `settings.json` (a blank status line), and the default permission mode.
 - **Trust the folder:** run `cd demo && claude --plugin-dir ../hosts/claude-code`
   once and accept, so no prompt appears during the take.
 
 ## What it shows
 
-About 15 seconds, looping. It opens on Claude Code's welcome header. Off camera the tape starts the session, sends the
-prompt, gets Reply 1, and marks two blocks from the band (`ctrl+x tab`). Then:
+About 20 seconds, looping. It opens on Claude Code's welcome header. Off camera
+the tape starts the session, sends the prompt, gets Reply 1, and marks two
+blocks from the band (`ctrl+x tab`). Then:
 
 | | Keys | On screen |
 |---|---|---|
@@ -50,7 +51,7 @@ changes, recount (`src/blocks.ts`'s `segment` gives the blocks).
 
 ## Targets
 
-10–15 s, under 2 MB, about 900 px wide (GitHub's README column), 16 px font, a
+Under 20 s and 2 MB, about 900 px wide (GitHub's README column), 16 px font, a
 high-contrast theme. Check that ✓ ✗ ✎ draw in the GIF's font.
 
 If a take misfires, the usual cause is a `Sleep` too short for the reply to

@@ -22,7 +22,8 @@ Set TypingSpeed 20ms
 Env CLAUDE_CODE_NO_FLICKER "1"
 
 # --- Off camera: start the session, get Reply 1, mark two blocks ---------------
-# demo/settings.json blanks the status line; the default permission mode drops
+# demo/settings.json blanks the status line, and the default permission mode
+# keeps your own off camera.
 Hide
 Type "cd demo && claude --plugin-dir ../hosts/claude-code --settings settings.json --permission-mode default --model opus" Enter
 Sleep 6s
