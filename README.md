@@ -12,7 +12,7 @@
 [Install](#install) · [Keys](#keys) · [Roadmap](https://github.com/orgs/synaptik-app/projects/2) · [Contributing](CONTRIBUTING.md)
 
 [![Claude Code v2.1.301+](https://img.shields.io/badge/Claude%20Code-v2.1.301%2B-d97757?logo=claude&logoColor=white)](https://code.claude.com/docs)
-[![Runs in the terminal](https://img.shields.io/badge/runs%20in-terminal-2B2E3A)](#known-limits)
+[![Platform: terminal](https://img.shields.io/badge/platform-terminal-2B2E3A)](#known-limits)
 [![Release](https://img.shields.io/github/v/release/synaptik-app/synaptik?label=release&color=1084fe)](https://github.com/synaptik-app/synaptik/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Feedback welcome](https://img.shields.io/badge/feedback-welcome-38d591)](https://github.com/synaptik-app/synaptik/issues/new/choose)
