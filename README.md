@@ -88,13 +88,15 @@ claude plugin uninstall synaptik@synaptik-app
 | You quote "in step 3 you said…" to point at a part of the reply | You mark the block itself, in place |
 | Each correction becomes its own follow-up prompt | Your whole review goes out as one prompt |
 | You retype what you accept and what you don't | Accept, reject or comment per block. Synaptik writes it up as plain text you see before sending |
-| To discuss one part, you ask in the main chat, and the back-and-forth fills its context. `/btw` answers one side question, with no follow-ups | Open a thread on that block and follow up on the side. Only the summary you choose to send reaches the main chat |
+| To discuss one part, you ask in the main chat, and the back-and-forth fills its context. `/btw` answers one side question, with no follow-ups | Open a thread on that block and follow up on the side. Only its outcome reaches the main chat, and only if you include it |
 
 ## What it does
 
 - **Mark blocks:** accept, reject or comment on each block, and send them as one
   prompt.
-- **Threads:** discuss a block on the side, follow up, and send only its summary.
+- **Threads:** discuss a block on the side and follow up. Only its outcome — the
+  actions, decisions and open questions you reached — goes out with your review,
+  if you include it.
 - **Code lines and table rows:** step into a code block or table, and mark it
   line by line or row by row (fullscreen).
 
