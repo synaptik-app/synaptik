@@ -23,8 +23,6 @@ affiliated with Anthropic.
 
 ![Synaptik: reviewing a reply in place, then sending the review as one prompt](.github/assets/demo.gif)
 
-*Marking a reply block by block, then sending the review as one prompt.*
-
 Your review appears in the prompt box as a dim suggestion: `Tab` takes it, `⏎`
 sends it. Nothing reaches the agent until you send, and what it receives is an
 ordinary prompt you saw first.
