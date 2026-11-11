@@ -26,7 +26,8 @@ thread, and send the whole review as one prompt. An independent project, not
 affiliated with Anthropic.
 
 <p align="center">
-  <img src=".github/assets/demo.gif" alt="Synaptik: reviewing a reply in place, then sending the review as one prompt">
+  <img src=".github/assets/demo.gif" alt="Synaptik: reviewing a reply in place, then sending the review as one prompt"><br>
+  <sub><i><code>j</code> move · <code>c</code> comment · <code>a</code> accept · <code>q</code> done · <code>Tab</code> take · <code>⏎</code> send</i></sub>
 </p>
 
 Your review appears in the prompt box as a dim suggestion: `Tab` takes it, `⏎`
