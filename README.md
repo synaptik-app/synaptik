@@ -115,7 +115,7 @@ the reply"), or press `ctrl+x tab`; then click a block, or stay on the keyboard.
 | Apply it | ⏎, or click it | ⏎ |
 | Apply directly | `a` accept · `x` reject · `c` comment · `d` discuss | same |
 | Step into a code block or table, or out | `s` | `s` |
-| Take a mark off | Backspace | its key again; a ✎: `a` twice |
+| Take a mark off | Backspace | `a` / `x` again |
 | Done | `q` | `q` |
 
 A comment is typed right under its block; `\` then ⏎ starts a new line, a paste
