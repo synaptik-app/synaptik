@@ -29,25 +29,34 @@ It writes `.github/assets/demo.gif` directly.
 ## What it shows
 
 About 20 seconds, looping. It opens on Claude Code's welcome header. Off camera
-the tape starts the session, sends the prompt, gets Reply 1, and marks two
-blocks from the band (`ctrl+x tab`). Then:
+the tape starts the session, sends the prompt, gets Reply 1, starts the review
+with a click on the band's hint, and marks two blocks. Then:
 
 | | Keys | On screen |
 |---|---|---|
 | 1 | — | Reply 1 under review: ✓ on *1. Cache sessions in Redis*, ✗ on *Expire entries after 5 minutes* |
-| 2 | `j` `j` | the selection moves down to *2. Rate-limit `/login`…* |
-| 3 | `c`, `make it 5 requests per account, not per IP`, `⏎` | ✎ on it, the comment under it |
-| 4 | `j` `j`, `a` | ✓ on *4. Ship it behind a flag* |
-| 5 | `q`, `Esc` | the review ends; the prompt box shows it as a dim suggestion. `Esc` gives the keyboard back to the prompt — on the band path `q` alone doesn't yet (#203) |
+| 2 | `↓` `↓` | the selection moves down to *2. Rate-limit `/login`…* |
+| 3 | `c`, `make it 5 requests per account, not per IP`, `⏎` | ✎ on it, the comment typed in place under it |
+| 4 | `↓` `↓`, `a` | ✓ on *4. Ship it behind a flag* |
+| 5 | `q` | the review ends; the prompt box shows it as a dim suggestion |
 | 6 | `Tab`, `⏎` | the prompt is sent, as your own message, and Reply 2 answers it — held a few seconds |
 
 Ending on the sent prompt is the point: one prompt, in your own words. The
 README's caption under the GIF names the keys:
-*`j` move · `c` comment · `a` accept · `q` done · `Tab` take · `⏎` send*.
+*`↓` move · `c` comment · `a` accept · `q` done · `Tab` take · `⏎` send*.
+
+**Why a click, and how without a mouse.** A review started with a click takes
+the keys in the reply itself: the comment is typed in place, once. Started with
+`ctrl+x tab`, it is typed in the band's field and shown under the block as well.
+VHS has no mouse, so the tape types the terminal's own mouse report for a press
+and release on the band's hint (row 26, column 12 at this size). If the band's
+legend says `j/k blocks`, the click landed on the band but not on the hint:
+adjust the row.
 
 Reply 1 has nine blocks (0–8), and a review starts on the last. The tape counts
-on that: `k` × 7 to block 1, `j` × 2 to block 3, `j` × 2 to block 5, `j` × 2 to block 7. If Reply 1
-changes, recount (`src/blocks.ts`'s `segment` gives the blocks).
+on that: `↑` × 7 to block 1, `↓` × 2 to block 3, `↓` × 2 to block 5, `↓` × 2 to
+block 7. If Reply 1 changes, recount (`src/blocks.ts`'s `segment` gives the
+blocks).
 
 ## Targets
 

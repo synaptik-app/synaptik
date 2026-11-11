@@ -30,33 +30,43 @@ Sleep 6s
 Type "sessions are slow and bots hammer /login, ideas?" Enter
 Sleep 10s
 
-# The review starts on the last block (8). Up to "1. Cache sessions" (1): accept.
-# The moves go at 120 ms a key: typed faster, Claude Code drops one, and every
-# mark lands a block off.
-Ctrl+X
-Tab
+# Start the review with a click on the band's hint, so the keys go to the reply
+# itself: a comment is typed in place, once (on the keyboard path the band's
+# field shows it a second time). VHS has no mouse, so the click is typed as the
+# terminal's own mouse report: ESC [<0;COL;ROWM to press, ...m to release.
+# The hint is the band's last line before a review: row 26, from column 4, at
+# this size. A click one row up lands on the band's header, which starts the
+# keyboard path instead (the legend says "j/k blocks").
+Escape
+Type@0ms "[<0;12;26M"
+Escape
+Type@0ms "[<0;12;26m"
 Sleep 800ms
-Type@120ms "kkkkkkk"
+
+# The review starts on the last block (8). Up to "1. Cache sessions" (1): accept.
+# The moves go one at a time: sent faster, Claude Code drops one, and every mark
+# lands a block off.
+Up@150ms 7
 Sleep 300ms
 Type "a"
 Sleep 300ms
 # Down to "Expire entries after 5 minutes" (3): reject.
-Type@120ms "jj"
+Down@150ms 2
 Sleep 300ms
 Type "x"
 Sleep 1s
 Show
 
-# --- On camera, about 12 s ---------------------------------------------------
+# --- On camera ---------------------------------------------------------------
 Sleep 1.5s
 
 # Down to "2. Rate-limit /login" (5), one block at a time so the move shows.
-Type "j"
+Down
 Sleep 600ms
-Type "j"
+Down
 Sleep 800ms
 
-# Comment on it, typed as a person would: unhurried, a beat between the words.
+# Comment on it, typed in place as a person would: a beat between the words.
 Type "c"
 Sleep 500ms
 Type@110ms "make it 5 requests per account,"
@@ -67,19 +77,17 @@ Enter
 Sleep 1s
 
 # Down to "4. Ship it behind a flag" (7), and accept it.
-Type "j"
+Down
 Sleep 500ms
-Type "j"
+Down
 Sleep 600ms
 Type "a"
 Sleep 1s
 
-# Done: the review becomes a dim suggestion in the prompt box. On the band path
-# q leaves the keyboard in the band (#203), so Esc hands it back to the prompt.
+# Done: the review becomes a dim suggestion in the prompt box, and the keyboard
+# goes back to the prompt.
 Type "q"
-Sleep 1.2s
-Escape
-Sleep 600ms
+Sleep 1.5s
 
 # Take it, send it; Reply 2 arrives, and stays on screen a few seconds before
 # the loop.
