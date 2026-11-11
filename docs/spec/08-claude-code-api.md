@@ -13,10 +13,25 @@ are terminal-only and unused; the mod draws with `Box`, `Text`, `Button`,
 
 ## Hooks and calls in use
 
-**Hooks:** the README's table, *The hooks it registers*, is the complete list, with
-what each does. `ui.render` draws on `AssistantMessage` (the reply), `AbovePrompt`
-(the band), `Pane` (the navigator and thread panes) and `TurnDuration` (to reveal
-the end of a tall reply). No tool hooks (P3).
+**Hooks:** the complete list. Synaptik changes nothing beyond what each line says,
+and every hook falls back to Claude Code's own behaviour on an error. No tool
+hooks (P3).
+
+| Hook | What it does |
+|---|---|
+| `session.start` | registers `/synaptik`, and picks up the last reply |
+| `session.end` | after `/resume` or `/clear`, picks up the reply of the session that follows |
+| `command.run` | answers `/synaptik` only; other commands aren't touched |
+| `turn.start`, `turn.complete` | stops marking during a turn, and picks up the new reply after it |
+| `ui.render` | draws the reply while it's under review or carries marks, the band above the prompt, and its own panes: the navigator and discuss threads. It also notes which turn row is the newest, without changing it. |
+| `ui.message` | receives clicks and keys from its own elements |
+| `ui.focus`, `ui.scroll`, `ui.close` | tracks focus in the band and its own panes, moves between blocks and within a thread, and notices its panes closing: closing a thread asks for its summary. It refuses focus only on its own hidden keys. |
+| `prompt.edit` | colours the ✓ ✗ ✎ glyphs in the box, proposes the suggestion again when you empty it, and moves a paste into a comment you have open. Typing there ends a review. |
+| `prompt.change` | proposes the suggestion again after a clear, an undo or a recalled entry, and puts the whole review in the box when you take the shortened one |
+
+`ui.render` draws on `AssistantMessage` (the reply), `AbovePrompt` (the band),
+`Pane` (the navigator and thread panes) and `TurnDuration` (to reveal the end of a
+tall reply).
 
 **Calls:**
 
