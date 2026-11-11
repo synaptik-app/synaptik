@@ -28,7 +28,7 @@ It writes `.github/assets/demo.gif` directly.
 
 ## What it shows
 
-About 12 seconds, looping. Off camera the tape starts the session, sends the
+About 15 seconds, looping. It opens on Claude Code's welcome header. Off camera the tape starts the session, sends the
 prompt, gets Reply 1, and marks two blocks from the band (`ctrl+x tab`). Then:
 
 | | Keys | On screen |
@@ -37,7 +37,7 @@ prompt, gets Reply 1, and marks two blocks from the band (`ctrl+x tab`). Then:
 | 2 | `j` `j` | the selection moves down to *2. Rate-limit `/login`…* |
 | 3 | `c`, `per account, not per IP`, `⏎` | ✎ on it, the comment under it |
 | 4 | `q`, `Esc` | the review ends; the prompt box shows it as a dim suggestion. `Esc` gives the keyboard back to the prompt — on the band path `q` alone doesn't yet (#203) |
-| 5 | `Tab`, `⏎` | the prompt is sent, as your own message — held about 2 s |
+| 5 | `Tab`, `⏎` | the prompt is sent, as your own message, and Reply 2 answers it — held a few seconds |
 
 Ending on the sent prompt is the point: one prompt, in your own words. The
 README's caption under the GIF names the keys:

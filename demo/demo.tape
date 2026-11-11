@@ -10,9 +10,9 @@ Output .github/assets/demo.gif
 Set Shell "zsh"
 Set FontSize 16
 Set Width 900
-# Low enough that Claude Code's welcome header scrolls off: the take starts at
-# the prompt. Tune it if the header shows, or the prompt line is cut.
-Set Height 520
+# Tall enough for Claude Code's welcome header, mascot included, above the
+# prompt. Tune it if the header is cut at the top.
+Set Height 660
 Set Padding 16
 Set Theme "Dracula"
 Set TypingSpeed 20ms
@@ -31,13 +31,18 @@ Type "sessions are slow and bots hammer /login, ideas?" Enter
 Sleep 10s
 
 # The review starts on the last block (8). Up to "1. Cache sessions" (1): accept.
+# The moves go at 120 ms a key: typed faster, Claude Code drops one, and every
+# mark lands a block off.
 Ctrl+X
 Tab
-Sleep 500ms
-Type "kkkkkkk"
+Sleep 800ms
+Type@120ms "kkkkkkk"
+Sleep 300ms
 Type "a"
+Sleep 300ms
 # Down to "Expire entries after 5 minutes" (3): reject.
-Type "jj"
+Type@120ms "jj"
+Sleep 300ms
 Type "x"
 Sleep 1s
 Show
@@ -68,8 +73,9 @@ Sleep 1.2s
 Escape
 Sleep 600ms
 
-# Take it, send it, and hold on the sent prompt.
+# Take it, send it; Reply 2 arrives, and stays on screen a few seconds before
+# the loop.
 Tab
 Sleep 1.2s
 Enter
-Sleep 2.5s
+Sleep 5.5s
