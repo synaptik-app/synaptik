@@ -107,7 +107,7 @@ After a reply, the band above the prompt says how to start.
 **Fullscreen (`/tui fullscreen`):** click the band's hint ("click here to review
 the reply"), or press `ctrl+x tab`; then click a block, or stay on the keyboard.
 
-| | Mouse | Keyboard |
+| | Started with a click | Started with `ctrl+x tab` |
 |---|---|---|
 | Start reviewing | click the band's hint, then ↑/↓ or a block | `ctrl+x tab` |
 | Move between blocks | ↑ / ↓, Home / End | `j` / `k` |
@@ -115,7 +115,7 @@ the reply"), or press `ctrl+x tab`; then click a block, or stay on the keyboard.
 | Apply it | ⏎, or click it | ⏎ |
 | Apply directly | `a` accept · `x` reject · `c` comment · `d` discuss | same |
 | Step into a code block or table, or out | `s` | `s` |
-| Take a mark off | Backspace | the same action again |
+| Take a mark off | Backspace | its key again; a ✎: `a` twice |
 | Done | `q` | `q` |
 
 A comment is typed right under its block; `\` then ⏎ starts a new line, a paste
