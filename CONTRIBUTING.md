@@ -64,8 +64,7 @@ synaptik/
 ├── docs/
 │   ├── README.md                  start here: reading order, glossary
 │   ├── spec/                      what to build, one file per topic
-│   ├── decisions/                 why: the decision records (DRs)
-│   └── log/                       history
+│   └── decisions/                 why: the decision records (DRs)
 ├── hosts/
 │   └── claude-code/
 │       ├── .claude-plugin/

@@ -44,8 +44,8 @@ What holds today, and why — rewritten when it changes, never appended to.
 - **The status line** holds the status and the date the DR was added, nothing
   else. A DR from before the repository's first commit says `added by 2026-10-14`.
 - **The body is always current.** A revision rewrites it; what it replaced goes
-  to *Revisions*, one dated line each. The full story of an attempt goes to
-  `docs/log/`.
+  to *Revisions*, one dated line each. The full story of an attempt stays in
+  its issue and pull request.
 - **A superseded or dead DR** is written as it stood when it was replaced, and
   says what replaced it or why it died.
 - **A rule between every DR**, so each reads as one unit.
@@ -104,6 +104,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D45 | Threads in a pane of their own, one per block | [thread](05-thread.md#d45--threads-in-a-pane-of-their-own-one-per-block) | settled |
 | D46 | A thread on a code line or table row | [thread](05-thread.md#d46--a-thread-on-a-code-line-or-table-row) | settled |
 | D47 | Compile format: a marked-up outline of the reply | [sending](06-sending.md#d47--compile-format-a-marked-up-outline-of-the-reply) | settled |
+| D48 | The history stays in the issues and pull requests | [project](09-project.md#d48--the-history-stays-in-the-issues-and-pull-requests) | settled |
 | E1 | Branched sub-sessions (was D16, D17) | [thread](05-thread.md#e1--branched-sub-sessions-was-d16-d17) | proposed |
 | E2 | Promote a thread to a branched session | [thread](05-thread.md#e2--promote-a-thread-to-a-branched-session) | proposed |
 | E3 | Worktree isolation (was D19) | [thread](05-thread.md#e3--worktree-isolation-was-d19) | proposed |

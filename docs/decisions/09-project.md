@@ -118,6 +118,34 @@ needed; emoji width (`💬`) is the one to watch.
 
 ---
 
+### D48 — The history stays in the issues and pull requests
+**Status:** settled · added 2026-11-11
+
+**What was tried while working an issue, and why it was dropped, is written on
+the issue or its pull request, not in the repository.** An attempt that is
+abandoned gets a comment there, saying what was tried and why it didn't work. A DR's
+*Revisions* line says what changed, and the issue or pull request holds the
+rest.
+
+**Why:** the issues and pull requests already hold it: the discussion, the
+reviews, the attempts, each linked to its commits. A second copy in the
+repository would repeat them and go stale, and nothing is built from it. An
+agent reads them with `gh` when it needs them. An agent's own memory is local to
+one machine and isn't the project's record either.
+
+**Rejected:**
+- **Per-issue logs in `docs/log/`** (#167): one Markdown file per issue, appended
+  before an approach was abandoned, with rules in `CLAUDE.md` and a `PreCompact`
+  hook to remind the agent. No log was ever written, and the folder held only
+  the early design notes, which stay in git history.
+- **Backfilling logs from past session transcripts:** costly, partly inferred,
+  and duplicating what the issues already say.
+
+**Cost, accepted:** an attempt dropped in a session and never mentioned on its
+issue is lost. The rule above is the guard.
+
+---
+
 ## Superseded
 
 ### D34 — The spike evolves into phase 1
