@@ -91,6 +91,9 @@ export function BandView(
 export type BandKeysModel = {
   // The controls' generation (ui.ts, generational).
   generation: number
+  // Whether the hidden controls are drawn: not just after a review ends from the
+  // band, so its ring lets go (#203).
+  hasControls: boolean
   // Whether Synaptik's review holds the band: only then do its controls carry
   // their hotkeys. Otherwise a key another mod's band button also uses (its own
   // `a`, with the ring on it) would reach Synaptik's instead, whatever the load
@@ -134,22 +137,24 @@ export function BandKeysView(
           />
         </Box>
       )}
-      <Box display="none">
-        {VERBS.map((v, n) => (
-          <Button
-            key={generational(v.key, m.generation)}
-            plain
-            {...(m.hasHotkeys ? { hotkey: v.hotkey } : {})}
-            autoFocus={n === 0 ? true : undefined}
-            label={v.glyph}
-            onPress={() => actions.verb(n)}
-          />
-        ))}
-        <Button key={generational(NEXT_BLOCK, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 'j' } : {})} label="next block" onPress={() => actions.move(1)} />
-        <Button key={generational(PREVIOUS_BLOCK, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 'k' } : {})} label="previous block" onPress={() => actions.move(-1)} />
-        <Button key={generational(STEP_INTO, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 's' } : {})} label="step in or out" onPress={() => actions.step()} />
-        <Button key={generational(END_REVIEW, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 'q' } : {})} label="end review" onPress={() => actions.end()} />
-      </Box>
+      {m.hasControls && (
+        <Box display="none">
+          {VERBS.map((v, n) => (
+            <Button
+              key={generational(v.key, m.generation)}
+              plain
+              {...(m.hasHotkeys ? { hotkey: v.hotkey } : {})}
+              autoFocus={n === 0 ? true : undefined}
+              label={v.glyph}
+              onPress={() => actions.verb(n)}
+            />
+          ))}
+          <Button key={generational(NEXT_BLOCK, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 'j' } : {})} label="next block" onPress={() => actions.move(1)} />
+          <Button key={generational(PREVIOUS_BLOCK, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 'k' } : {})} label="previous block" onPress={() => actions.move(-1)} />
+          <Button key={generational(STEP_INTO, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 's' } : {})} label="step in or out" onPress={() => actions.step()} />
+          <Button key={generational(END_REVIEW, m.generation)} plain {...(m.hasHotkeys ? { hotkey: 'q' } : {})} label="end review" onPress={() => actions.end()} />
+        </Box>
+      )}
     </Box>
   )
 }

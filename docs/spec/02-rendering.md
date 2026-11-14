@@ -158,7 +158,9 @@ the keyboard with it), `Block N of M · ↑↓ blocks · ←→ actions · ⏎ a
   outside one.
 
 **Ending a review: `q`**, from the reply, the band or its hint (in a comment, `q`
-types a `q`); the legend says `q done`. **Esc does not end it:** a mod never sees
+types a `q`); the legend says `q done`. From the band, `q` hands the keyboard
+back to the prompt: the band draws none of Synaptik's controls for 300 ms, so
+its ring has nothing to stay on, then draws them again. **Esc does not end it:** a mod never sees
 Esc — a `Client` is never told it lost the keyboard, and the band raises nothing
 when its focus goes back to the prompt (#23). If Claude Code ever reports it, Esc
 joins `q` and `q` stays, unadvertised. Typing in the prompt (any edit but a paste

@@ -145,6 +145,12 @@ let isPaneClosedForFullscreen = false
 // unless a block took the keyboard meanwhile; each leave is counted, so a later
 // one supersedes an earlier wait.
 const REVIEW_GRACE_MS = 300
+// A review ended from the band leaves its ring on Synaptik's controls, whatever
+// their keys: Claude Code keeps a ring in its place (#203). So the band draws
+// none of them for this long, and the ring, with nothing of ours to stay on,
+// goes back to the prompt.
+const LET_GO_MS = 300
+let isBandLettingGo = false
 // How long the band's hint shows each of its lines.
 const HINT_EVERY_MS = 3000
 // Claude Code's key for the band and panes, named in the band.
@@ -443,6 +449,14 @@ async function applyAction($: EngineInterface, a: Action) {
 // The person typed in the prompt: the reply lets go of its selection and menu.
 function releaseReview($: EngineInterface) {
   if (!holder) return
+  if (holder === 'band') {
+    isBandLettingGo = true
+    // A sleep that fails ends the pause at once: the controls are back, as before #203.
+    void $.clock.sleep(LET_GO_MS).catch(() => undefined).then(() => {
+      isBandLettingGo = false
+      $.ui.invalidate('ui.render')
+    })
+  }
   holder = undefined
   bandGeneration += 1
   held = { ...held, review: letGo(held.review) }
@@ -1419,6 +1433,7 @@ export const register: Register = on => {
       band,
       {
         generation: bandGeneration,
+        hasControls: !isBandLettingGo,
         hasHotkeys: holder === 'band',
         ...(open ? { comment: { key: `${BAND_COMMENT_PREFIX}${bandCommentSeq}`, text: open.text } } : {}),
       },
