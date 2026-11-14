@@ -335,6 +335,31 @@ test('the band\'s focus leaving its controls ends the review', async ($, on) => 
   expect(await (await fullscreen($, F)).findAll({ type: 'Client' })).toEqual([])
 })
 
+test('q from the band draws none of its controls for a moment, so the ring lets go of the band', async ($, on) => {
+  const clock = mock.clock(on)
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const b = await band($)
+  await b.press({ key: await bandKey(b, 'review-end') })
+  // Claude Code keeps a ring in its place, whatever the keys (#203): with no
+  // control of Synaptik's drawn, it has nothing to stay on.
+  expect(await (await band($)).findAll({ type: 'Button' })).toEqual([])
+  await clock.advance(400)
+  // Back for the next ctrl+x tab, without hotkeys outside a review.
+  const after = await band($)
+  expect(await bandKey(after, 'verb-accept')).toMatch(/^verb-accept@/)
+  expect((await after.find({ type: 'Button', key: await bandKey(after, 'review-end') }))?.props.hotkey).toBeUndefined()
+})
+
+test('q after a click keeps the band\'s controls: its ring never had the keyboard', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  await clickAndPress(await fullscreen($, F), CACHE, ['q'])
+  expect((await (await band($)).findAll({ type: 'Button' })).length).toBeGreaterThan(0)
+})
+
 test('the band losing the keyboard to a click in the reply keeps the review', async ($, on) => {
   const clock = mock.clock(on)
   await start($, on, F)
@@ -398,6 +423,7 @@ test('the staged line says nothing about the prompt during a review: ⏎ applies
 })
 
 test('ending a review draws the band\'s controls anew, so the keyboard goes back to the prompt', async ($, on) => {
+  const clock = mock.clock(on)
   await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -405,6 +431,7 @@ test('ending a review draws the band\'s controls anew, so the keyboard goes back
   const end = await bandKey(before, 'review-end')
   const hint = await bandKey(before, 'band-hint', 'Client')
   await before.press({ key: end })
+  await clock.advance(400)
   const after = await band($)
   // The controls that held the keyboard are gone: their keys are new.
   expect(await bandKey(after, 'review-end')).not.toBe(end)

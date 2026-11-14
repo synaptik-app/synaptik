@@ -141,9 +141,11 @@ as its legend, because removing the element that holds the keyboard gives the
 keyboard back to the prompt.
 
 **`q` ends a review**, from the reply, the band or the hint (in a comment, `q`
-types a `q`). Ending a review draws the band's controls under new keys: the one
-holding the keyboard disappears, and Claude Code hands the keyboard back to the
-prompt, which a mod cannot do directly. **Esc is the natural key, but no mod sees
+types a `q`). A mod cannot hand the keyboard back to the prompt directly, and
+Claude Code keeps the band's ring in its place even when the controls under it
+get new keys. So a review ended from the band draws none of Synaptik's controls
+for a moment (300 ms): with nothing of ours to stay on, the ring goes back to the
+prompt, and the controls return for the next `ctrl+x tab` (#203). **Esc is the natural key, but no mod sees
 it.** If Claude Code ever reports Esc, Esc ends the review and is what the legend
 names; `q` keeps working, unadvertised.
 
@@ -201,6 +203,8 @@ it has no clicks. Its pane takes Tab/⇧Tab for the actions (D32).
 - **2026-11-10** — condensed to the decisions and their reasons; the keymap and
   the band's wording are the spec's.
 - **2026-11-10** — a failed `Client` is left out until the next reply (#189).
+- **2026-11-14** — `q` from the band: new keys alone left the ring on the band;
+  the band now draws no controls for a moment (#203).
 
 ---
 
