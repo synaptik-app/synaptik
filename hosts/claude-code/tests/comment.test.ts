@@ -4,7 +4,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-import { focus, focusMoves, log, pane, reply, start, suggested } from './engine'
+import { focus, focusMoves, log, pane, reply, start, suggested, suggestions } from './engine'
 
 const F = 'classic'
 // The plugin's type config has no timers; the test runtime does.
@@ -130,3 +130,21 @@ test('classic: the comment field takes several lines: two rows, growing to three
   await ui.input({ key: FIELD, text: 'one\ntwo\nthree\nfour\nfive', kind: 'change' })
   expect((await ui.find({ type: 'Input', key: FIELD }))?.props.rows).toBe(3)
 })
+
+// A background agent's completion while the field is open (#213): the turn
+// stages what was typed but proposes nothing, since its start forgets the
+// suggestion showing; the adoption after it proposes the review.
+test('a turn starting stages an open comment, and proposes it only once the reply has grown', async ($, on) => {
+  const rows = await start($, on, F)
+  const ui = await pane($, 'dock', true, 20)
+  await ui.press({ key: 'verb-comment' })
+  await ui.input({ key: FIELD, text: 'too vague', kind: 'change' })
+  const before = suggestions.length
+  await $.turn.start({ text: '<agent-message from="a1">[Subagent hand-back] done</agent-message>', turnId: 'turn-bg' })
+  expect(suggestions.length).toBe(before)
+  rows.push({ role: 'assistant', text: 'Agent 1 is done.', toolUses: [] }, { role: 'user', text: '<task-notification>\n<task-id>a1</task-id>', toolUses: [] })
+  await $.turn.complete({ turnId: 'turn-bg', answer: 'Agent 1 is done.', durationMs: 1, isAborted: false, reason: 'answer' })
+  expect(suggestions.slice(before)).toHaveLength(1)
+  expect(suggested()).toMatch(/→ too vague$/)
+})
+

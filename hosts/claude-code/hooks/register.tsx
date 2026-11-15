@@ -413,10 +413,16 @@ async function finishComment($: EngineInterface) {
 // when the turn starts, as typing in the prompt ends it. An open comment is
 // staged as typed, not dropped: the turn may be a background agent's, not the
 // person's doing (#213).
+// Staged without proposing it: the turn's start forgets the suggestion that is
+// showing, and the adoption after the turn proposes the review again.
 async function letGoForTurn($: EngineInterface) {
   const open = held.review.editing
   if (open) await writeTray($, tray => finishTrayComment(draftComment(tray, open.index, open.text), open.index))
-  await finishComment($)
+  if (await read($, isCommenting)) {
+    const i = await read($, selected)
+    await writeTray($, tray => finishTrayComment(tray, i))
+    await update($, isCommenting, () => false)
+  }
   releaseReview($)
 }
 
