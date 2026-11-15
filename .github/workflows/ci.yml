@@ -32,12 +32,14 @@ jobs:
           BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         # Docs: docs/, demo/, the PR template and Markdown at the root. The test
         # bench's fixtures are Markdown the tests read, so they count as code.
+        # Anything that can't be diffed counts as code; --no-renames lists a
+        # moved file's old path too, so code moved into docs/ still counts.
         run: |
-          if [ -z "$BASE" ] || [ "$BASE" = 0000000000000000000000000000000000000000 ]; then
-            code=true
-          elif git diff --name-only "$BASE" HEAD | grep -qvE '^(docs/|demo/|\.github/pull_request_template\.md$|[^/]+\.md$)'; then
-            code=true
-          else
+          code=true
+          if [ -n "$BASE" ] && [ "$BASE" != 0000000000000000000000000000000000000000 ] &&
+            files=$(git diff --name-only --no-renames "$BASE" HEAD) &&
+            [ -n "$files" ] &&
+            ! printf '%s\n' "$files" | grep -qvE '^(docs/|demo/|\.github/pull_request_template\.md$|[^/]+\.md$)'; then
             code=false
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
