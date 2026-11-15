@@ -220,8 +220,56 @@ it has no clicks. Its pane takes Tab/⇧Tab for the actions (D32).
 
 ## Extensions
 
+### E8 — Other built-in tools
+**Status:** proposed · added by 2026-10-14
+
+**Largely superseded by P3.** Most of what this entry wanted is reached by
+*reading* the transcript rather than hooking the tool:
+
+| Tool | Reached by | Entry |
+|---|---|---|
+| `Edit` / `Write` | reading the diff after the fact | **E15** |
+| `Bash` (denied) | Claude Code's own prompt, which takes a note | E5 (dead) |
+| `TodoWrite` | reading the list | P3 source table |
+| `ExitPlanMode` | reading the plan file, on request (`/synaptik plan`) | **D49** |
+
+**What is left that genuinely needs a hook:**
+
+| Tool | Why | Gate or enrich |
+|---|---|---|
+| `Task` (subagents) | a *live* status pane needs to follow the run, not read it afterwards | Enrich |
+| `WebSearch` / `WebFetch` | results as a pickable list, if picking should feed back into the same turn | Enrich |
+
+**The principle worth keeping from the original entry:** `AskUserQuestion` is the
+only built-in tool whose *purpose* is a human decision. Every other tool is
+Claude doing work — so intercepting those adds interruptions rather than
+decisions. Confusing the two produces a mod that interrupts constantly.
+
+**Revisions**
+- **2026-11-15** — the plan: not free, it is never a reply; reviewed on request (D49, #155).
+
+---
+
+### E17 — Marks only while reviewing
+**Status:** proposed · added 2026-11-10
+
+A switch that leaves the reply entirely to Claude Code outside a review: no glyphs
+or comment lines on marked pieces, the reply passed through with `next(e)` until
+the next review starts. The band and the suggestion still show what is staged.
+
+**Why:** with other mods drawing on replies, or a mod that changes a reply's text,
+Synaptik's redraw of a marked piece takes that piece from them (D33). Switching
+marks off outside a review hands every reply back.
+
+**Needs:** a configuration surface (E10). Considered on #36 alongside D35, and
+left out until someone needs it.
+
+---
+
+## Superseded
+
 ### E5 — Edit and resend a denied command
-**Status:** proposed · added by 2026-10-13
+**Status:** dead · added by 2026-10-13
 
 The case: Claude proposes a Bash command, you deny it — but you did not want to
 refuse the *command*, only to change a flag. Today that means denying, then
@@ -265,51 +313,11 @@ wrong, with no clean fix visible from the docs.
 **Kept as a record of why not to try it again.** The additive version needs none
 of it.
 
+**Why it died:** Claude Code's permission prompt takes a note on Yes and on No
+(2.1.325): approving with a condition, or denying with what to do instead, is in
+the prompt itself (#154). The gating section stays as the reason not to hook
+the prompt.
+
 **Revisions**
 - **2026-10-13** — rebuilt additively under P3; the gating design is abandoned.
-
----
-
-### E8 — Other built-in tools
-**Status:** proposed · added by 2026-10-14
-
-**Largely superseded by P3.** Most of what this entry wanted is reached by
-*reading* the transcript rather than hooking the tool:
-
-| Tool | Reached by | Entry |
-|---|---|---|
-| `Edit` / `Write` | reading the diff after the fact | **E15** |
-| `Bash` (denied) | reading the denied call | **E5** |
-| `TodoWrite` | reading the list | P3 source table |
-| `ExitPlanMode` | reading the plan file, on request (`/synaptik plan`) | **D49** |
-
-**What is left that genuinely needs a hook:**
-
-| Tool | Why | Gate or enrich |
-|---|---|---|
-| `Task` (subagents) | a *live* status pane needs to follow the run, not read it afterwards | Enrich |
-| `WebSearch` / `WebFetch` | results as a pickable list, if picking should feed back into the same turn | Enrich |
-
-**The principle worth keeping from the original entry:** `AskUserQuestion` is the
-only built-in tool whose *purpose* is a human decision. Every other tool is
-Claude doing work — so intercepting those adds interruptions rather than
-decisions. Confusing the two produces a mod that interrupts constantly.
-
-**Revisions**
-- **2026-11-15** — the plan: not free, it is never a reply; reviewed on request (D49, #155).
-
----
-
-### E17 — Marks only while reviewing
-**Status:** proposed · added 2026-11-10
-
-A switch that leaves the reply entirely to Claude Code outside a review: no glyphs
-or comment lines on marked pieces, the reply passed through with `next(e)` until
-the next review starts. The band and the suggestion still show what is staged.
-
-**Why:** with other mods drawing on replies, or a mod that changes a reply's text,
-Synaptik's redraw of a marked piece takes that piece from them (D33). Switching
-marks off outside a review hands every reply back.
-
-**Needs:** a configuration surface (E10). Considered on #36 alongside D35, and
-left out until someone needs it.
+- **2026-11-15** — dead: Claude Code's prompt does it.
