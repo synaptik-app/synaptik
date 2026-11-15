@@ -271,6 +271,7 @@ reply,** not a confirm dialog.
 - **2026-11-10** — rewritten to stand on its own; retitled from "MVP scope: last
   message only".
 - **2026-11-15** — the session's plan is reviewed too, on request (D49).
+- **2026-11-15** — declined questions join the reply's review (D50).
 
 ---
 
@@ -316,6 +317,41 @@ full and each `ExitPlanMode`'s plan.
 
 ---
 
+### D50 — Declined questions are reviewed with the reply
+**Status:** settled · added 2026-11-15
+
+**Claude's questions stay Claude Code's to ask:** the `AskUserQuestion` panel is
+untouched, and answering there is Claude Code as usual. A mod can't redraw the
+panel or answer it, and while it is open the turn is running (D24). **When the
+person leaves it with Esc**, the turn ends and Claude waits for the next
+message; Synaptik then reviews the reply and its questions together, and the
+marks and the answers go as one prompt.
+
+- **Found by a read, no hooks** (P3). The turn's last tool call is an
+  `AskUserQuestion` whose row is errored: declined, not answered. Its input holds
+  every question in full: text, `header`, options with their descriptions,
+  `multiSelect`.
+- **Drawn in the call's own row,** one block per question, numbered on from the
+  reply's blocks. Claude Code's "User declined to answer questions" row stays as
+  it is, so its one-line summary shows under them.
+- **A question's menu is its own options:** each a button, its digit the hotkey,
+  several picked where `multiSelect` allows; a free answer is a comment, and a
+  thread on the question is discuss.
+- **One suggestion:** the marks, then `Header? → answer` for each answered
+  question; an unanswered one is left out. In fullscreen only.
+
+**Why not hold the call and answer inside the turn:** it takes tool hooks (P3)
+and holds a turn, and the panel's answers can carry nothing else. Esc is Claude
+Code's own way out, and the person's choice.
+
+**Later:** drawing the questions once, in the declined row itself, if that row
+can be redrawn (#153).
+
+**Revisions**
+- **2026-11-15** — from the spike on 2.1.325 (#153); replaces E12's design.
+
+---
+
 ## Extensions
 
 ### E7 — Mod-driven Run verb (cut from D2)
@@ -336,7 +372,11 @@ A `prompt.compose` section could raise the tool-usage rate. **Three cautions:**
 it changes behaviour session-wide; the tool's shape (a few short options) does
 not fit open-ended questions, so pushing hard would produce *worse questions in
 tool form* rather than better ones in prose; and it sits in tension with P1.
-Only relevant if E12 is built.
+Relevant now that D50 reviews declined questions with the reply: more of them in
+the tool means more answered in a review, and the cautions stand.
+
+**Revisions**
+- **2026-11-15** — its condition was E12 being built; E12 is superseded by D50.
 
 ---
 
@@ -345,27 +385,6 @@ Only relevant if E12 is built.
 
 Marking older messages, not just the last (relaxing D24). Reintroduces the
 stale-mark problem D24 exists to avoid, and requires E13.
-
----
-
-### E12 — `AskUserQuestion` interception (was D9, D11, D12, D13)
-**Status:** proposed · added by 2026-10-14
-
-Hold the tool call, render questions inline with their options, gate the resume
-on all questions being answered, and fix Discuss so it does not destroy its
-siblings.
-**Why it was cut:** implementation cost, not value. It is the single most
-valuable extension — it fixes a real bug in the current UX.
-**Carries the riskiest unknowns:** Q1 (how long Claude Code tolerates a held
-tool call — **test an intentionally long hold on day one**) and Q2 (the exact
-semantics of `$.ui.ask`, which appears purpose-built for holding a call pending
-a human answer).
-**Reference implementation:** the `blast-radius` sample mod already holds a
-risky shell command and shows proceed/cancel buttons. Read it first.
-**Design notes preserved:** questions render at the end of the message in order
-(D8); the answer-and-forward escape hatch returns partial answers and sends
-typed text as a separate turn, without classifying answers as complete or
-partial (D13).
 
 ---
 
@@ -387,6 +406,30 @@ sits in tension with P1.
 ---
 
 ## Superseded
+
+### E12 — `AskUserQuestion` interception (was D9, D11, D12, D13)
+**Status:** superseded → D50 · added by 2026-10-14
+
+Hold the tool call, render questions inline with their options, gate the resume
+on all questions being answered, and fix Discuss so it does not destroy its
+siblings.
+**Why it was cut:** implementation cost, not value. It is the single most
+valuable extension — it fixes a real bug in the current UX.
+**Carries the riskiest unknowns:** Q1 (how long Claude Code tolerates a held
+tool call — **test an intentionally long hold on day one**) and Q2 (the exact
+semantics of `$.ui.ask`, which appears purpose-built for holding a call pending
+a human answer).
+**Reference implementation:** the `blast-radius` sample mod already holds a
+risky shell command and shows proceed/cancel buttons. Read it first.
+**Design notes preserved:** questions render at the end of the message in order
+(D8); the answer-and-forward escape hatch returns partial answers and sends
+typed text as a separate turn, without classifying answers as complete or
+partial (D13).
+
+**Replaced by D50:** the questions are read from the transcript after the person
+leaves the panel with Esc, and reviewed with the reply; nothing is held.
+
+---
 
 ### D7 — Structure comes from tool payloads, not prose markup
 **Status:** superseded → E12, E14 · added by 2026-10-14

@@ -106,18 +106,19 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D47 | Compile format: a marked-up outline of the reply | [sending](06-sending.md#d47--compile-format-a-marked-up-outline-of-the-reply) | settled |
 | D48 | The history stays in the issues and pull requests | [project](09-project.md#d48--the-history-stays-in-the-issues-and-pull-requests) | settled |
 | D49 | The plan is reviewed on request, in Synaptik's own row | [review-model](01-review-model.md#d49--the-plan-is-reviewed-on-request-in-synaptiks-own-row) | settled |
+| D50 | Declined questions are reviewed with the reply | [review-model](01-review-model.md#d50--declined-questions-are-reviewed-with-the-reply) | settled |
 | E1 | Branched sub-sessions (was D16, D17) | [thread](05-thread.md#e1--branched-sub-sessions-was-d16-d17) | proposed |
 | E2 | Promote a thread to a branched session | [thread](05-thread.md#e2--promote-a-thread-to-a-branched-session) | proposed |
 | E3 | Worktree isolation (was D19) | [thread](05-thread.md#e3--worktree-isolation-was-d19) | proposed |
 | E4 | Summary-based merge between sessions (was D18) | [thread](05-thread.md#e4--summary-based-merge-between-sessions-was-d18) | proposed |
-| E5 | Edit and resend a denied command | [rendering](02-rendering.md#e5--edit-and-resend-a-denied-command) | proposed |
+| E5 | Edit and resend a denied command | [rendering](02-rendering.md#e5--edit-and-resend-a-denied-command) | dead |
 | E6 | Auto-classify thread outcomes | [thread](05-thread.md#e6--auto-classify-thread-outcomes) | superseded → D45 |
 | E7 | Mod-driven Run verb (cut from D2) | [review-model](01-review-model.md#e7--mod-driven-run-verb-cut-from-d2) | proposed |
 | E8 | Other built-in tools | [rendering](02-rendering.md#e8--other-built-in-tools) | proposed |
 | E9 | Nudge Claude toward `AskUserQuestion` (was D25) | [review-model](01-review-model.md#e9--nudge-claude-toward-askuserquestion-was-d25) | proposed |
 | E10 | Config surface (was D26) | [keys](04-keys.md#e10--config-surface-was-d26) | proposed |
 | E11 | Multi-message interactivity | [review-model](01-review-model.md#e11--multi-message-interactivity) | proposed |
-| E12 | `AskUserQuestion` interception (was D9, D11, D12, D13) | [review-model](01-review-model.md#e12--askuserquestion-interception-was-d9-d11-d12-d13) | proposed |
+| E12 | `AskUserQuestion` interception (was D9, D11, D12, D13) | [review-model](01-review-model.md#e12--askuserquestion-interception-was-d9-d11-d12-d13) | superseded → D50 |
 | E13 | Persisted block identity (was D5's `session.append`) | [review-model](01-review-model.md#e13--persisted-block-identity-was-d5s-sessionappend) | proposed |
 | E14 | Custom structured payload via `$.tool.register` (was half of D7) | [review-model](01-review-model.md#e14--custom-structured-payload-via-toolregister-was-half-of-d7) | proposed |
 | E15 | Review the files a turn touched, in the same review | [file-review](07-file-review.md#e15--review-the-files-a-turn-touched-in-the-same-review) | proposed |
