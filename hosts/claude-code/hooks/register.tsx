@@ -410,19 +410,16 @@ async function finishComment($: EngineInterface) {
 
 // A main-loop turn draws the reply and the band as Claude Code's own while it
 // runs: the review's elements go, and the keyboard with them. So the review ends
-// when the turn starts, as typing in the prompt ends it. An open comment is
-// staged as typed, not dropped: the turn may be a background agent's, not the
-// person's doing (#213).
-// Staged without proposing it: the turn's start forgets the suggestion that is
-// showing, and the adoption after the turn proposes the review again.
+// when the turn starts, as typing in the prompt ends it. An open comment is kept
+// as a draft, neither staged nor dropped: the turn may be a background agent's,
+// not the person's doing, and they never pressed ⏎. `c` on its block reopens
+// the text (#213). Nothing is proposed: the turn's start forgets the suggestion
+// that is showing, and the adoption after the turn proposes the review again.
 async function letGoForTurn($: EngineInterface) {
   const open = held.review.editing
-  if (open) await writeTray($, tray => finishTrayComment(draftComment(tray, open.index, open.text), open.index))
-  if (await read($, isCommenting)) {
-    const i = await read($, selected)
-    await writeTray($, tray => finishTrayComment(tray, i))
-    await update($, isCommenting, () => false)
-  }
+  if (open) await writeTray($, tray => draftComment(tray, open.index, open.text))
+  // A field in the band or the pane drafts its text as it is typed.
+  await update($, isCommenting, () => false)
   releaseReview($)
 }
 

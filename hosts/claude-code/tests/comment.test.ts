@@ -131,10 +131,10 @@ test('classic: the comment field takes several lines: two rows, growing to three
   expect((await ui.find({ type: 'Input', key: FIELD }))?.props.rows).toBe(3)
 })
 
-// A background agent's completion while the field is open (#213): the turn
-// stages what was typed but proposes nothing, since its start forgets the
-// suggestion showing; the adoption after it proposes the review.
-test('a turn starting stages an open comment, and proposes it only once the reply has grown', async ($, on) => {
+// A background agent's completion while the field is open (#213): what was
+// typed is kept as a draft, not staged (⏎ was never pressed), and nothing is
+// proposed as the turn starts, since its start forgets the suggestion showing.
+test('a turn starting keeps an open comment as a draft: not staged, not proposed', async ($, on) => {
   const rows = await start($, on, F)
   const ui = await pane($, 'dock', true, 20)
   await ui.press({ key: 'verb-comment' })
@@ -144,7 +144,10 @@ test('a turn starting stages an open comment, and proposes it only once the repl
   expect(suggestions.length).toBe(before)
   rows.push({ role: 'assistant', text: 'Agent 1 is done.', toolUses: [] }, { role: 'user', text: '<task-notification>\n<task-id>a1</task-id>', toolUses: [] })
   await $.turn.complete({ turnId: 'turn-bg', answer: 'Agent 1 is done.', durationMs: 1, isAborted: false, reason: 'answer' })
-  expect(suggestions.slice(before)).toHaveLength(1)
-  expect(suggested()).toMatch(/→ too vague$/)
+  expect(suggested()).not.toMatch(/too vague/)
+  // Opened again, the field starts from the draft.
+  await ui.unmount()
+  const again = await pane($, 'dock', true, 20)
+  await again.press({ key: 'verb-comment' })
+  expect((await again.find({ type: 'Input' }))?.props.value).toBe('too vague')
 })
-

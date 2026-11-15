@@ -411,17 +411,7 @@ test('a turn starting ends the review, and the marks stay for the next one (#213
   expect(suggested()).toMatch(/^✓ /)
 })
 
-test('a comment open in the reply when a turn starts is staged as typed, not dropped (#213)', async ($, on) => {
-  const rows = await start($, on, F)
-  await fullscreen($, F)
-  await review($)
-  const ui = await fullscreen($, F)
-  await clickAndPress(ui, CACHE, ['c', 'k', 'e', 'e', 'p'])
-  await completion($, rows, 'Agent 1 is done.')
-  expect(suggested()).toBe('✎ "1. Cache sessions in Redis" → keep')
-})
-
-test('a turn starting proposes nothing: the staged comment is proposed once the reply has grown (#213)', async ($, on) => {
+test('a comment open in the reply when a turn starts is kept as a draft: not staged, and c reopens it (#213)', async ($, on) => {
   const rows = await start($, on, F)
   await fullscreen($, F)
   await review($)
@@ -433,7 +423,12 @@ test('a turn starting proposes nothing: the staged comment is proposed once the 
   expect(suggestions.length).toBe(before)
   rows.push({ role: 'assistant', text: 'Agent 1 is done.', toolUses: [] }, { role: 'user', text: '<task-notification>\n<task-id>a1</task-id>', toolUses: [] })
   await $.turn.complete({ turnId: 'turn-bg', answer: 'Agent 1 is done.', durationMs: 1, isAborted: false, reason: 'answer' })
-  expect(suggestions.slice(before)).toEqual(['✎ "1. Cache sessions in Redis" → keep'])
+  // Never ⏎'d: not staged, so nothing in the suggestion.
+  expect(suggested()).not.toMatch(/keep/)
+  // Back in, c on the block reopens it with the text, and ⏎ stages it.
+  await review($)
+  await clickAndPress(await fullscreen($, F), CACHE, ['c', 'return'])
+  expect(suggested()).toBe('✎ "1. Cache sessions in Redis" → keep')
 })
 
 test('q ends the review', async ($, on) => {

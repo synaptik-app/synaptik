@@ -171,8 +171,9 @@ joins `q` and `q` stays, unadvertised. Typing in the prompt (any edit but a past
 into an open comment) also ends the review, and so does a turn starting: the
 reply and the band are Claude Code's while it runs, so the keyboard leaves the
 review. That turn may be Claude answering a background agent's completion,
-which the person didn't cause, so an open comment is staged as typed and the
-marks stay; `ctrl+x tab` or a click goes back to them (#213). The band's focus
+which the person didn't cause, so the marks stay, and an open comment is kept as
+a draft: not staged, since ⏎ was never pressed, and `c` on its block reopens
+it. `ctrl+x tab` or a click goes back to them (#213). The band's focus
 moving off Synaptik's controls ends it too, after a short grace (300 ms) in
 which a click into a block — which also takes the focus from the band — keeps
 it going.
