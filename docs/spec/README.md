@@ -46,7 +46,7 @@ scrolling up, re-reading, and hand-writing prose that points back at it
   others in your head and scrolling back to rephrase.
 - **Question collapse.** When Claude asks a group of questions and the user
   picks "Discuss", the agent returns to the main chat and the remaining
-  questions are lost — including ones already answered. *(Now E12 — out of MVP.)*
+  questions are lost — including ones already answered. *(D50: after Esc on the panel, the questions are reviewed with the reply.)*
 
 ### Core insight
 

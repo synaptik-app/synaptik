@@ -372,7 +372,11 @@ A `prompt.compose` section could raise the tool-usage rate. **Three cautions:**
 it changes behaviour session-wide; the tool's shape (a few short options) does
 not fit open-ended questions, so pushing hard would produce *worse questions in
 tool form* rather than better ones in prose; and it sits in tension with P1.
-Only relevant if E12 is built.
+Relevant now that D50 reviews declined questions with the reply: more of them in
+the tool means more answered in a review, and the cautions stand.
+
+**Revisions**
+- **2026-11-15** — its condition was E12 being built; E12 is superseded by D50.
 
 ---
 
