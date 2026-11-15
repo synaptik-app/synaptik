@@ -82,7 +82,9 @@ test('outside review the band adds its lines under what lies beneath', async ($,
   await start($, on, 'classic')
   const drawn = await band($)
   const texts = (await drawn.findAll({ type: 'Text' })).map((t: { text: unknown }) => String(t.text))
-  expect(texts[0]).toBe(ENGINE_DRAWING)
+  // Each mod draws its own row, and Claude Code stacks them (2.1.325): which
+  // comes first is the chain's order, not Synaptik's.
+  expect(texts).toContain(ENGINE_DRAWING)
   expect(texts.some((t: string) => t.startsWith('Synaptik'))).toBe(true)
 })
 

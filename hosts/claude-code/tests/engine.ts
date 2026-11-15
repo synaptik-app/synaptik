@@ -141,11 +141,11 @@ export function engine(on: On, rows: Row[]) {
   // A move of the focus ring, raised by a test (`focus`): passed on by
   // Synaptik's ui.focus hook, recorded here. Synaptik's own $.ui.focus calls
   // cannot be answered by a test; it guards them, and logs where it sent focus
-  // (`log`).
-  event('ui.focus', (e: { element?: string }) => {
+  // (`log`). Every plugin's moves: one onto another mod's button names it.
+  on('ui.focus' as never, { plugin: '*' } as never, ((_$: unknown, e: { element?: string }) => {
     focusMoves.push({ element: e.element })
     return {}
-  })
+  }) as never)
   event('prompt.submit', (e: { text: string }) => {
     submitted.push(e.text)
     return { text: e.text }

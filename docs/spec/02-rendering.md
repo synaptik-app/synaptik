@@ -132,7 +132,8 @@ opened from the band is typed in a field in the band and shows under its block.
 
 The band's ring is shared. Another mod's button there is a stop like Synaptik's,
 so ←/→ past the actions land on it, and the review ends. Synaptik does not refuse
-those stops (D41, revision 2026-10-30).
+those stops (D41, revision 2026-10-30). A hotkey two mods share presses neither
+(Claude Code 2.1.325): the key is typed in the prompt, which ends the review.
 
 **Status in the band:** the hint line above, or, while reviewing (the hint stays
 drawn, showing the legend — removing the `Client` the person clicked would take
@@ -160,7 +161,10 @@ the keyboard with it), `Block N of M · ↑↓ blocks · ←→ actions · ⏎ a
 **Ending a review: `q`**, from the reply, the band or its hint (in a comment, `q`
 types a `q`); the legend says `q done`. From the band, `q` hands the keyboard
 back to the prompt: the band draws none of Synaptik's controls for 300 ms, so
-its ring has nothing to stay on, then draws them again. **Esc does not end it:** a mod never sees
+its ring has nothing to stay on, then draws them again. **Only when no other
+mod has a button in the band:** otherwise the band keeps the keyboard, the ring
+lands back on Synaptik's actions when they return, and the review starts again.
+Accepted until Claude Code reports Esc (#203). **Esc does not end it:** a mod never sees
 Esc — a `Client` is never told it lost the keyboard, and the band raises nothing
 when its focus goes back to the prompt (#23). If Claude Code ever reports it, Esc
 joins `q` and `q` stays, unadvertised. Typing in the prompt (any edit but a paste

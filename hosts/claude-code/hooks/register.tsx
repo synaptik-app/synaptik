@@ -967,10 +967,13 @@ export const register: Register = on => {
   // hotkeys, not stops). Landing on one starts the review (ctrl+x tab); leaving
   // them ends it — unless a block takes the keyboard (a click into the reply),
   // which its own post reports right after.
-  on('ui.focus', { component: 'AbovePrompt' }, async ($, e, next) => {
+  // Every plugin's elements: a hook naming no plugin hears only its own, and the
+  // ring moving onto another mod's button is the review's to end (2.1.325).
+  on('ui.focus', { component: 'AbovePrompt', plugin: '*' }, async ($, e, next) => {
     if (!isFullscreen) return next(e)
-    const element = baseKey(e.element ?? '')
-    observe(`band focus → ${element || '(off)'} by ${e.origin.kind}`)
+    const isOurs = e.plugin === undefined || e.plugin === 'synaptik'
+    const element = isOurs ? baseKey(e.element ?? '') : ''
+    observe(`band focus → ${isOurs ? element || '(off)' : `${e.plugin} ${e.element ?? ''}`} by ${e.origin.kind}`)
     if (element === NEXT_BLOCK || element === PREVIOUS_BLOCK || element === STEP_INTO || element === END_REVIEW) return { deny: 'synaptik: not a stop' }
     const verb = VERBS.findIndex(v => v.key === element)
     if (verb >= 0 || element.startsWith(BAND_COMMENT_PREFIX)) {

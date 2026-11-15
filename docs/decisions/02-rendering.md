@@ -145,7 +145,10 @@ types a `q`). A mod cannot hand the keyboard back to the prompt directly, and
 Claude Code keeps the band's ring in its place even when the controls under it
 get new keys. So a review ended from the band draws none of Synaptik's controls
 for a moment (300 ms): with nothing of ours to stay on, the ring goes back to the
-prompt, and the controls return for the next `ctrl+x tab` (#203). **Esc is the natural key, but no mod sees
+prompt, and the controls return for the next `ctrl+x tab` (#203). With another
+mod's button in the band, the band keeps the keyboard and the ring lands back on
+Synaptik's actions, so the review starts again. **Accepted:** refusing that
+landing can't be told apart from `ctrl+x tab`, and Esc would end it properly. **Esc is the natural key, but no mod sees
 it.** If Claude Code ever reports Esc, Esc ends the review and is what the legend
 names; `q` keeps working, unadvertised.
 
@@ -179,7 +182,8 @@ it has no clicks. Its pane takes Tab/⇧Tab for the actions (D32).
   and a failed block ends the review; both are tried again on the next reply.
 
 **Known limits, asked of Claude Code (#23, #64):**
-- **Esc is invisible**, from a `Client` and from the band alike. Hence `q`.
+- **Esc is invisible**, from a `Client` and from the band alike. Hence `q`, which
+  from the band works only while no other mod has a button there.
 - **The keyboard cannot focus a `Client`.** Hence the band path.
 - **Revealing the reply works only from `j` / `k`.** `$.ui.scroll` moves a
   transcript row only in answer to the person's own input; a key in a `Client`
@@ -205,6 +209,12 @@ it has no clicks. Its pane takes Tab/⇧Tab for the actions (D32).
 - **2026-11-10** — a failed `Client` is left out until the next reply (#189).
 - **2026-11-14** — `q` from the band: new keys alone left the ring on the band;
   the band now draws no controls for a moment (#203).
+- **2026-11-14** — Claude Code 2.1.325 draws each mod's band row on its own and
+  tells a `ui.focus` hook only of its own plugin's elements unless it names
+  `plugin: '*'`; Synaptik's band hook does, so the ring leaving onto another
+  mod's button still ends the review. A hotkey two mods share now presses
+  neither. `q` from the band doesn't end a review while another mod has a
+  button there; accepted until Esc is reported.
 
 ---
 
