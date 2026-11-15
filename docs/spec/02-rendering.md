@@ -140,6 +140,11 @@ drawn, showing the legend — removing the `Client` the person clicked would tak
 the keyboard with it), `Block N of M · ↑↓ blocks · ←→ actions · ⏎ apply ·
 ⌫ unmark · q done` (from the band, `j/k blocks` and no `⌫`). The staged counts sit above it.
 
+**In an agent's view** (a subagent's transcript, opened from the tasks list), the
+band steps aside and draws only what lies beneath it: the reply under review
+isn't on screen, and the prompt box talks to that agent. A review running ends.
+Back in the main conversation's view, the band is Synaptik's again.
+
 **How the blocks hold together** (`src/review.ts`):
 - The block clicked keeps the keyboard and steers every block: its keys become
   steps, posted to the hooks (`ui.message`), which hold the review and hand it

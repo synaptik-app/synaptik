@@ -1378,6 +1378,13 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (!(await read($, isOn)) || e.props.hasSurvey || e.props.isWorking) return next(e)
     if (e.surface !== 'terminal') return next(e)
+    // An agent's transcript in view (opened from the tasks list): the reply
+    // Synaptik holds isn't on screen, and the prompt box talks to that agent.
+    // So the band steps aside, and a review running ends.
+    if (e.props.view.agentId) {
+      if (holder) releaseReview($)
+      return next(e)
+    }
     const target = await read($, lastText)
     if (!target) return next(e)
 

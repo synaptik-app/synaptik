@@ -212,13 +212,14 @@ export function focus($: Dollar, element: string | undefined, kind: 'person' | '
   return $.ui.focus({ component: 'Pane', requestId: PANE, element, origin })
 }
 
-// The band as Claude Code draws it above the prompt.
-export function band($: Dollar) {
+// The band as Claude Code draws it above the prompt: under the main
+// conversation's view, or an agent's (`{ agentId }`, opened from the tasks list).
+export function band($: Dollar, view: { agentId?: string } = {}) {
   return $.ui.mount({
     plugin: PLUGIN,
     surface: 'terminal',
     component: 'AbovePrompt',
-    props: { hasSurvey: false, isWorking: false, maxRows: 8, bodyColumns: 100, scroll: { offset: 0, bodyRows: 8 }, view: {} },
+    props: { hasSurvey: false, isWorking: false, maxRows: 8, bodyColumns: 100, scroll: { offset: 0, bodyRows: 8 }, view },
   })
 }
 
