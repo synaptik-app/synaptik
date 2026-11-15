@@ -121,6 +121,9 @@ and can be re-included. A cleared comment keeps its text in `comments`.
 **The tray clears after sending.**
 
 **The tray is discarded when a new assistant message arrives** (see §7 for the
-warning).
+warning). **Except when the reply grows** (#213): if the new reply is the old one
+with blocks added after it, every earlier block unchanged, the tray, comments,
+threads and selection stay, and the new blocks join the review. A background
+agent's follow-up grows the reply this way, so a completion never loses a mark.
 
 ---

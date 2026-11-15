@@ -12,7 +12,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Mark } from '../types'
 import { lineKey, partCounts, partsOf, quote, segment } from '../src/blocks'
-import { lastTurnText } from '../src/turn'
+import { grows, lastTurnText } from '../src/turn'
 import { compile as compileTray, GLYPH, PARTLY, preview, THREAD_GLYPH } from '../src/compile'
 import { clear as clearMark, clearBlock, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, lineMarks, toggle as toggleMark } from '../src/tray'
 import type { Part, Tray } from '../src/tray'
@@ -252,7 +252,16 @@ async function adoptLastReply($: EngineInterface) {
   const messages = await $.session.messages()
   const text = lastTurnText(messages)
   observe(`adopt ${messages.length} messages, picked ${text.length} chars`)
-  if (text !== (await read($, lastText))) {
+  const before = await read($, lastText)
+  // Blocks added at the end, as a background agent's follow-up adds them: the
+  // review stays, marks and all, and the new blocks join it (#213).
+  if (text !== before && grows(before, text)) {
+    observe(`adopt: the reply grew, the review is kept`)
+    await update($, lastText, () => text)
+    // Proposed again: the turn may have staged an open comment, and its start
+    // forgot the suggestion that was showing.
+    await suggestTray($)
+  } else if (text !== before) {
     await update($, lastText, () => text)
     // Start on the last block: a long reply leaves the terminal at its end, so
     // that is the block already on screen. Review runs upwards from there.
@@ -397,6 +406,18 @@ async function finishComment($: EngineInterface) {
   await writeTray($, tray => finishTrayComment(tray, i))
   await update($, isCommenting, () => false)
   await suggestTray($)
+}
+
+// A main-loop turn draws the reply and the band as Claude Code's own while it
+// runs: the review's elements go, and the keyboard with them. So the review ends
+// when the turn starts, as typing in the prompt ends it. An open comment is
+// staged as typed, not dropped: the turn may be a background agent's, not the
+// person's doing (#213).
+async function letGoForTurn($: EngineInterface) {
+  const open = held.review.editing
+  if (open) await writeTray($, tray => finishTrayComment(draftComment(tray, open.index, open.text), open.index))
+  await finishComment($)
+  releaseReview($)
 }
 
 // The compiled prompt: src/compile.ts, over the adopted reply's blocks.
@@ -766,6 +787,7 @@ export const register: Register = on => {
   // only it switches marking off and on.
   on('turn.start', async ($, e, next) => {
     if (e.agentId) return next(e)
+    await letGoForTurn($)
     isSuggested = false
     shortProposed = undefined
     await update($, isWorking, () => true)

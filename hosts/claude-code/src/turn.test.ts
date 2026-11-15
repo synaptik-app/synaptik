@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { lastTurnText } from './turn'
+import { grows, lastTurnText } from './turn'
 import type { Row } from './turn'
 
 const prompt = (text: string): Row => ({ role: 'user', text })
@@ -38,3 +38,47 @@ test('nothing to adopt before the first reply', async () => {
   expect(lastTurnText([prompt('q')])).toBe('')
   expect(lastTurnText([])).toBe('')
 })
+
+// A background run, as Claude Code 2.1.325 stores it (#213): each agent's
+// completion is a user row with text, after Claude's answer to it.
+const notification = (id: string): Row => ({ role: 'user', text: `<task-notification>\n<task-id>${id}</task-id>\n<status>completed</status>` })
+
+test('a background agent’s completion is not a prompt: the whole run is one reply', async () => {
+  const rows = [
+    prompt('go'),
+    toolCall,
+    toolResult,
+    reply('Started three agents.'),
+    reply('Agent 1 is done.'),
+    notification('a1'),
+    reply('Agent 2 is done.'),
+    notification('a2'),
+    toolCall,
+    toolResult,
+    reply('Agent 3 is done, and SUMMARY.md is written.'),
+  ]
+
+  expect(lastTurnText(rows)).toBe('Started three agents.\n\nAgent 1 is done.\n\nAgent 2 is done.\n\nAgent 3 is done, and SUMMARY.md is written.')
+})
+
+test('a prompt typed during the run is still where the reply starts', async () => {
+  const rows = [prompt('go'), reply('Started two agents.'), prompt('what happens now?'), reply('They keep running.'), notification('a1'), reply('Agent 1 is done.')]
+
+  expect(lastTurnText(rows)).toBe('They keep running.\n\nAgent 1 is done.')
+})
+
+test('a reply grows when blocks are only added after it', async () => {
+  expect(grows('First.\n\nSecond.', 'First.\n\nSecond.\n\nThird.')).toBe(true)
+})
+
+test('a reply does not grow when an earlier block changed, or nothing was added', async () => {
+  expect(grows('First.\n\nSecond.', 'First.\n\nSecond, reworded.\n\nThird.')).toBe(false)
+  expect(grows('First.\n\nSecond.', 'First.\n\nSecond.')).toBe(false)
+  expect(grows('First.', 'Another reply.\n\nWith two blocks.')).toBe(false)
+  expect(grows('', 'First.')).toBe(false)
+})
+
+test('a list that runs on across the join changes its last item, so it does not grow', async () => {
+  expect(grows('- one\n- two', '- one\n- two\n  more of two\n\nAfter.')).toBe(false)
+})
+
