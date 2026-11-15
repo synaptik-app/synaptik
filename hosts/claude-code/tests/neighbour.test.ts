@@ -4,7 +4,7 @@
 // and anything that depends on which mod loads first (the reply's footer,
 // greedy mode) — the test kit decides that order, not the test.
 
-import { expect, test } from 'claude-code/testing'
+import { expect, mock, test } from 'claude-code/testing'
 
 // A generated copy of testbench/neighbour-mod (scripts/fixtures.mjs): a test may
 // import only files inside the plugin's folder.
@@ -59,6 +59,17 @@ test("fullscreen: during a review from the band, the neighbour's button is still
   expect(JSON.stringify(await ui.drawn())).toMatch(/Block \d+ of \d+ · j\/k blocks/)
   expect(await ui.find({ type: 'Text', text: /neighbour · band/ })).toBeDefined()
   expect(await ui.find({ type: 'Button', key: 'ping' })).toBeDefined()
+})
+
+test("fullscreen: the ring moving onto the neighbour's button ends the review", WITH_NEIGHBOUR, async ($, on) => {
+  const clock = mock.clock(on)
+  await start($, on, F)
+  await fullscreen($, F)
+  await $.ui.focus({ component: 'AbovePrompt', requestId: 'band', element: 'verb-accept', origin: { kind: 'person' } })
+  expect(JSON.stringify(await (await band($)).drawn())).toMatch(/Block \d+ of \d+ · j\/k blocks/)
+  await $.ui.focus({ component: 'AbovePrompt', requestId: 'band', plugin: 'neighbour', element: 'ping', origin: { kind: 'person' } })
+  await clock.advance(400)
+  expect(JSON.stringify(await (await band($)).drawn())).not.toMatch(/Block \d+ of \d+/)
 })
 
 test('Pressing n in the band pings the neighbour', WITH_NEIGHBOUR, async ($, on) => {

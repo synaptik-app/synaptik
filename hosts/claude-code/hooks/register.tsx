@@ -171,6 +171,34 @@ const HELP = [
   '  /synaptik help     this list',
 ].join('\n')
 
+// The band's ring moving onto `element` of `plugin`'s (absent: off the band's
+// elements). Another mod's element counts as leaving Synaptik's controls.
+// Returns why the move is refused, if it is.
+function bandFocus($: EngineInterface, plugin: string | undefined, element: string | undefined, by: string): string | undefined {
+  const isOurs = plugin === undefined || plugin === 'synaptik'
+  const key = isOurs ? baseKey(element ?? '') : ''
+  observe(`band focus → ${isOurs ? key || '(off)' : `${plugin} ${element ?? ''}`} by ${by}`)
+  if (key === NEXT_BLOCK || key === PREVIOUS_BLOCK || key === STEP_INTO || key === END_REVIEW) return 'synaptik: not a stop'
+  const verb = VERBS.findIndex(v => v.key === key)
+  if (verb >= 0 || key.startsWith(BAND_COMMENT_PREFIX)) {
+    const isEntering = !holder
+    holder = 'band'
+    const r = held.review
+    held = { ...held, review: { ...r, isActive: true, ...(verb >= 0 ? { verb } : {}), seq: r.seq + 1 } }
+    if (isEntering) void suggestTray($)
+  } else if (holder === 'reply') {
+    // The ring moved within the band while the reply had the keys.
+    releaseReview($)
+  } else if (holder === 'band') {
+    const asOf = bandLeaves += 1
+    void $.clock.sleep(REVIEW_GRACE_MS).then(() => {
+      if (holder === 'band' && bandLeaves === asOf) releaseReview($)
+    })
+  }
+  $.ui.invalidate('ui.render')
+  return undefined
+}
+
 // The compiled prompt is proposed in the empty prompt box after every change,
 // as Claude Code proposes its own: → or Tab takes it, the box is where it is
 // edited and sent, ctrl+c clears it (SPEC §7, *Sending*).
@@ -962,33 +990,20 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   // The band's ring: in fullscreen it stops on Synaptik's actions only (j / k are
-  // hotkeys, not stops), and landing on one hands the review to the band.
-  // The band's ring: in fullscreen it stops on Synaptik's actions only (j / k are
   // hotkeys, not stops). Landing on one starts the review (ctrl+x tab); leaving
   // them ends it — unless a block takes the keyboard (a click into the reply),
   // which its own post reports right after.
   on('ui.focus', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (!isFullscreen) return next(e)
-    const element = baseKey(e.element ?? '')
-    observe(`band focus → ${element || '(off)'} by ${e.origin.kind}`)
-    if (element === NEXT_BLOCK || element === PREVIOUS_BLOCK || element === STEP_INTO || element === END_REVIEW) return { deny: 'synaptik: not a stop' }
-    const verb = VERBS.findIndex(v => v.key === element)
-    if (verb >= 0 || element.startsWith(BAND_COMMENT_PREFIX)) {
-      const isEntering = !holder
-      holder = 'band'
-      const r = held.review
-      held = { ...held, review: { ...r, isActive: true, ...(verb >= 0 ? { verb } : {}), seq: r.seq + 1 } }
-      if (isEntering) void suggestTray($)
-    } else if (holder === 'reply') {
-      // The ring moved within the band while the reply had the keys.
-      releaseReview($)
-    } else if (holder === 'band') {
-      const asOf = bandLeaves += 1
-      void $.clock.sleep(REVIEW_GRACE_MS).then(() => {
-        if (holder === 'band' && bandLeaves === asOf) releaseReview($)
-      })
-    }
-    $.ui.invalidate('ui.render')
+    const deny = bandFocus($, e.plugin, e.element, e.origin.kind)
+    return deny ? { deny } : next(e)
+  }).catch(($, e, next) => next(e))
+
+  // From 2.1.325 a hook naming no plugin hears only its own plugin's elements, so
+  // the ring moving onto another mod's button comes here. Before, `'*'` matched
+  // nothing, and the hook above heard every move.
+  on('ui.focus', { component: 'AbovePrompt', plugin: '*' }, async ($, e, next) => {
+    if (isFullscreen && e.plugin !== undefined && e.plugin !== 'synaptik') bandFocus($, e.plugin, e.element, e.origin.kind)
     return next(e)
   }).catch(($, e, next) => next(e))
 
