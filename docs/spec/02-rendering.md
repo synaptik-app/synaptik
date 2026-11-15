@@ -168,9 +168,15 @@ Accepted until Claude Code reports Esc (#203). **Esc does not end it:** a mod ne
 Esc — a `Client` is never told it lost the keyboard, and the band raises nothing
 when its focus goes back to the prompt (#23). If Claude Code ever reports it, Esc
 joins `q` and `q` stays, unadvertised. Typing in the prompt (any edit but a paste
-into an open comment) also ends the review, and the band's focus moving off
-Synaptik's controls does, after a short grace (300 ms) in which a click into a
-block — which also takes the focus from the band — keeps it going.
+into an open comment) also ends the review, and so does a turn starting: the
+reply and the band are Claude Code's while it runs, so the keyboard leaves the
+review. That turn may be Claude answering a background agent's completion,
+which the person didn't cause, so the marks stay, and an open comment is kept as
+a draft: not staged, since ⏎ was never pressed, and `c` on its block reopens
+it. `ctrl+x tab` or a click goes back to them (#213). The band's focus
+moving off Synaptik's controls ends it too, after a short grace (300 ms) in
+which a click into a block — which also takes the focus from the band — keeps
+it going.
 
 **The suggestion** is proposed after every action, and again whenever the prompt
 box becomes empty (`prompt.edit`, `prompt.change`): it cannot show while the box

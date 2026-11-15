@@ -238,6 +238,11 @@ entirely, and is what makes render-time segmentation safe (D5).
   resumed session is markable without a new turn. A resume appends a synthetic
   `No response requested.` assistant row, skipped by its text: `SessionMessage`
   has no flag for engine-written rows.
+- **A background run is one reply, and its review survives it.** A subagent's
+  completion is stored as a user row (`<task-notification>…`), skipped by its
+  text, so the reply runs from the person's last prompt across every follow-up.
+  A reply that only grows, blocks added after the unchanged ones, keeps its
+  review: an event the person didn't cause never loses their marks.
 
 #### Marks are discarded with a warning
 
@@ -272,6 +277,8 @@ reply,** not a confirm dialog.
   message only".
 - **2026-11-15** — the session's plan is reviewed too, on request (D49).
 - **2026-11-15** — declined questions join the reply's review (D50).
+- **2026-11-15** — a background run is one reply, and a reply that grows keeps
+  its review (#213, from #162's spike).
 
 ---
 

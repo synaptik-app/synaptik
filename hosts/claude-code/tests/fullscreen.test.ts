@@ -387,6 +387,50 @@ test('A click on the band\'s hint starts the review', async ($, on) => {
   expect((await hintLines(await band($)))[0]).toMatch(/↑↓ blocks/)
 })
 
+// A background agent's completion: Claude answers it in a turn of the main
+// loop, with no prompt of the person's (#213).
+async function completion($: Parameters<typeof start>[0], rows: Awaited<ReturnType<typeof start>>, text: string) {
+  await $.turn.start({ text: '<agent-message from="a1">[Subagent hand-back] done</agent-message>', turnId: 'turn-bg' })
+  rows.push({ role: 'assistant', text, toolUses: [] }, { role: 'user', text: '<task-notification>\n<task-id>a1</task-id>', toolUses: [] })
+  await $.turn.complete({ turnId: 'turn-bg', answer: text, durationMs: 1, isAborted: false, reason: 'answer' })
+}
+
+test('a turn starting ends the review, and the marks stay for the next one (#213)', async ($, on) => {
+  const rows = await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const b = await band($)
+  await b.press({ key: await bandKey(b, 'verb-accept') })
+  await completion($, rows, 'Agent 1 is done.')
+  // The keyboard went with the review's drawing while the turn ran: no review now.
+  expect(await (await fullscreen($, F)).findAll({ type: 'Client' })).toEqual([])
+  expect(await hintLines(await band($))).toEqual(['ctrl+x tab to continue reviewing', 'click here to continue reviewing'])
+  // Back in, the mark is where it was.
+  await review($)
+  expect((await (await fullscreen($, F)).findAll({ type: 'Client' })).length).toBeGreaterThan(0)
+  expect(suggested()).toMatch(/^✓ /)
+})
+
+test('a comment open in the reply when a turn starts is kept as a draft: not staged, and c reopens it (#213)', async ($, on) => {
+  const rows = await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  const ui = await fullscreen($, F)
+  await clickAndPress(ui, CACHE, ['c', 'k', 'e', 'e', 'p'])
+  const before = suggestions.length
+  await $.turn.start({ text: '<agent-message from="a1">[Subagent hand-back] done</agent-message>', turnId: 'turn-bg' })
+  // Proposed now, it would be forgotten as the turn starts, and outlive the review.
+  expect(suggestions.length).toBe(before)
+  rows.push({ role: 'assistant', text: 'Agent 1 is done.', toolUses: [] }, { role: 'user', text: '<task-notification>\n<task-id>a1</task-id>', toolUses: [] })
+  await $.turn.complete({ turnId: 'turn-bg', answer: 'Agent 1 is done.', durationMs: 1, isAborted: false, reason: 'answer' })
+  // Never ⏎'d: not staged, so nothing in the suggestion.
+  expect(suggested()).not.toMatch(/keep/)
+  // Back in, c on the block reopens it with the text, and ⏎ stages it.
+  await review($)
+  await clickAndPress(await fullscreen($, F), CACHE, ['c', 'return'])
+  expect(suggested()).toBe('✎ "1. Cache sessions in Redis" → keep')
+})
+
 test('q ends the review', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)

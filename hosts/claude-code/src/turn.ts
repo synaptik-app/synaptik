@@ -1,6 +1,8 @@
 // Which transcript rows make up the last reply (SPEC §2): the whole last turn,
 // tool calls and engine-written rows skipped.
 
+import { segment } from './blocks'
+
 export type Row = {
   role: 'user' | 'assistant'
   text: string
@@ -11,10 +13,15 @@ export type Row = {
 // ends with one. Rows carry no flag for them, so they are matched by text.
 const SYNTHETIC = new Set(['No response requested.'])
 
-// A user row the person wrote, as opposed to a tool's result, which is stored
-// as a user row too.
+// A background agent's completion, which Claude Code stores as a user row
+// with text, after Claude's answer to it (#213). Rows carry no origin, so it is
+// matched by its opening tag.
+const NOTIFICATION = '<task-notification>'
+
+// A user row the person wrote, as opposed to a tool's result or a background
+// agent's completion, which are stored as user rows too.
 const isPrompt = (row: Row) =>
-  row.role === 'user' && row.text.trim() !== '' && !row.toolResults?.length
+  row.role === 'user' && row.text.trim() !== '' && !row.toolResults?.length && !row.text.trimStart().startsWith(NOTIFICATION)
 
 const isReplyText = (row: Row) =>
   row.role === 'assistant' && row.text.trim() !== '' && !SYNTHETIC.has(row.text.trim())
@@ -36,4 +43,19 @@ export function lastTurnText(rows: readonly Row[]): string {
     if (isReplyText(row)) pieces.unshift(row.text.trim())
   }
   return pieces.join('\n\n')
+}
+
+// Whether `after` is `before` with blocks added at its end: every segment of
+// `before` unchanged, in place, and more after them. A background agent's
+// follow-up grows the reply this way, and keeps its review (#213). Compared by
+// segment, not text, so a list running on across the join counts as a change.
+export function grows(before: string, after: string): boolean {
+  if (!before) return false
+  const old = segment(before)
+  const now = segment(after)
+  if (now.length <= old.length) return false
+  return old.every((s, i) => {
+    const n = now[i]!
+    return n.text === s.text && n.isBlock === s.isBlock && n.depth === s.depth && n.parent === s.parent && n.indent === s.indent
+  })
 }

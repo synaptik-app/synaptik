@@ -88,6 +88,14 @@ the last prompt, joined in order. A reply that runs a tool mid-way is stored as
 several messages; all of them are markable. Tool results (stored as user rows)
 and rows recorded after the turn (a slash command) are skipped.
 
+**A background run is one reply** (#213). When Claude starts background
+subagents, each one's completion makes Claude answer again, and it may carry on
+with its task after the last. Claude Code stores each completion as a user row
+with text (`<task-notification>…`), after Claude's answer to it; it isn't a
+prompt, so it is skipped. The reply is everything since the person's last
+prompt: the first reply, each follow-up, the carry-on. A prompt the person types
+during the run is still where the reply starts.
+
 **A resumed session is markable at once.** On `session.start` the mod reads the
 transcript (`$.session.messages()`) and adopts its last turn. A resume ends the
 transcript with an engine-written `No response requested.` row, which is

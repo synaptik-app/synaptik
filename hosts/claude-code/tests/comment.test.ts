@@ -4,7 +4,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-import { focus, focusMoves, log, pane, reply, start, suggested } from './engine'
+import { focus, focusMoves, log, pane, reply, start, suggested, suggestions } from './engine'
 
 const F = 'classic'
 // The plugin's type config has no timers; the test runtime does.
@@ -129,4 +129,25 @@ test('classic: the comment field takes several lines: two rows, growing to three
   expect((await ui.find({ type: 'Input', key: FIELD }))?.props.rows).toBe(2)
   await ui.input({ key: FIELD, text: 'one\ntwo\nthree\nfour\nfive', kind: 'change' })
   expect((await ui.find({ type: 'Input', key: FIELD }))?.props.rows).toBe(3)
+})
+
+// A background agent's completion while the field is open (#213): what was
+// typed is kept as a draft, not staged (⏎ was never pressed), and nothing is
+// proposed as the turn starts, since its start forgets the suggestion showing.
+test('a turn starting keeps an open comment as a draft: not staged, not proposed', async ($, on) => {
+  const rows = await start($, on, F)
+  const ui = await pane($, 'dock', true, 20)
+  await ui.press({ key: 'verb-comment' })
+  await ui.input({ key: FIELD, text: 'too vague', kind: 'change' })
+  const before = suggestions.length
+  await $.turn.start({ text: '<agent-message from="a1">[Subagent hand-back] done</agent-message>', turnId: 'turn-bg' })
+  expect(suggestions.length).toBe(before)
+  rows.push({ role: 'assistant', text: 'Agent 1 is done.', toolUses: [] }, { role: 'user', text: '<task-notification>\n<task-id>a1</task-id>', toolUses: [] })
+  await $.turn.complete({ turnId: 'turn-bg', answer: 'Agent 1 is done.', durationMs: 1, isAborted: false, reason: 'answer' })
+  expect(suggested()).not.toMatch(/too vague/)
+  // Opened again, the field starts from the draft.
+  await ui.unmount()
+  const again = await pane($, 'dock', true, 20)
+  await again.press({ key: 'verb-comment' })
+  expect((await again.find({ type: 'Input' }))?.props.value).toBe('too vague')
 })

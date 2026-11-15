@@ -49,6 +49,22 @@ test('a completed turn starts the tray fresh', async ($, on) => {
   expect(await after.find({ type: 'Text', text: /Nothing marked yet/ })).toBeDefined()
 })
 
+test('a reply that grows keeps its marks: a background agent’s follow-up (#213)', async ($, on) => {
+  const rows = await start($, on, F)
+  const before = await pane($, 'inline')
+  await before.press({ key: 'verb-accept' })
+  await before.unmount()
+  // Claude answers a completion: a turn with no prompt of the person's, whose
+  // notification row lands after the answer.
+  await $.turn.start({ text: '<agent-message from="a1">[Subagent hand-back] done</agent-message>', turnId: 'turn-bg' })
+  rows.push(answer('Agent 1 is done.'), { role: 'user', text: '<task-notification>\n<task-id>a1</task-id>', toolUses: [] })
+  await $.turn.complete({ turnId: 'turn-bg', answer: 'Agent 1 is done.', durationMs: 1, isAborted: false, reason: 'answer' })
+  const after = await pane($, 'inline')
+  expect(await after.find({ type: 'Text', text: /Your notes · ✓1/ })).toBeDefined()
+  const blocks = segment([...FIXTURES[F]!.pieces, 'Agent 1 is done.'].join('\n\n')).filter(b => b.isBlock)
+  expect((await position(after)).of).toBe(blocks.length)
+})
+
 test('an interrupted turn’s partial reply is adopted', async ($, on) => {
   const rows = await start($, on, F)
   await turn($, rows, [ask('and then?'), answer('Only this got written.')], 'aborted')
