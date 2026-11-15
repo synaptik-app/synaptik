@@ -270,6 +270,43 @@ reply,** not a confirm dialog.
   left text before a tool call unmarkable.
 - **2026-11-10** — rewritten to stand on its own; retitled from "MVP scope: last
   message only".
+- **2026-11-15** — the session's plan is reviewed too, on request (D49).
+
+---
+
+### D49 — The plan is reviewed on request, in Synaptik's own row
+**Status:** settled · added 2026-11-15
+
+**`/synaptik plan` makes the session's plan reviewable in place.** Claude Code's
+plan flow stays its own: the approval panel, its options, `shift+tab` and
+`/plan` are untouched, and Synaptik hooks none of them. The plan is reviewed
+only when the person asks for it.
+
+- **Found by a read, no hooks** (P3). The path is the session's last `Write` or
+  `Edit` to `~/.claude/plans/`, in `$.session.messages()`. That file is read,
+  so edits made in the editor (`ctrl+g`, `/plan open`) count; if it is gone, the
+  last `ExitPlanMode`'s `input.plan` is used. A session has one plan file: a
+  revision overwrites it. With none, the command says so.
+- **Drawn in the command's own output row,** as blocks, with the reply's actions:
+  accept, reject, comment, discuss, step in. It is reviewed between turns, as a
+  reply is (D24), and in fullscreen only.
+- **The suggestion starts with `On the plan`,** the marks on the lines after it.
+  It names what was reviewed and asks nothing: Claude updates the plan or not,
+  and Claude Code's panel takes it from there.
+
+**Why not where Claude Code shows the plan** (spike on 2.1.325, #155):
+- **The approval panel** is a dialog no mod can draw into, open inside a running
+  turn. Its feedback field is not the prompt box.
+- **`/plan`'s output** is drawn by its own component: `command.run` fires, but no
+  `CommandOutput` row follows, so there is nothing to hook.
+- **The plan is never a reply.** After Esc on the panel the turn ends with no
+  text; the plan shows only in the `ExitPlanMode` tool row. Reviewing that row
+  would make Synaptik adopt something new on its own, which this keeps to the
+  person's request.
+
+**Built in #208. Later:** the same row reviews any file read from disk (#108), and a plan can be
+set beside its previous version (#110): the transcript holds each `Write` in
+full and each `ExitPlanMode`'s plan.
 
 ---
 

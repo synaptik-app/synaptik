@@ -281,7 +281,7 @@ of it.
 | `Edit` / `Write` | reading the diff after the fact | **E15** |
 | `Bash` (denied) | reading the denied call | **E5** |
 | `TodoWrite` | reading the list | P3 source table |
-| `ExitPlanMode` | possibly already text in the transcript | P3 source table — may come free in phase 1 |
+| `ExitPlanMode` | reading the plan file, on request (`/synaptik plan`) | **D49** |
 
 **What is left that genuinely needs a hook:**
 
@@ -294,6 +294,9 @@ of it.
 only built-in tool whose *purpose* is a human decision. Every other tool is
 Claude doing work — so intercepting those adds interruptions rather than
 decisions. Confusing the two produces a mod that interrupts constantly.
+
+**Revisions**
+- **2026-11-15** — the plan: not free, it is never a reply; reviewed on request (D49, #155).
 
 ---
 
