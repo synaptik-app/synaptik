@@ -30,6 +30,10 @@ oldest supported) and 2.1.325 (the newest tested):
 - `claude plugin test` — the unit tests in `src/` and the UI tests in `tests/`
 - the fixtures check (`scripts/fixtures.mjs --check`)
 
+A change to docs alone (`docs/`, `demo/`, the PR template, Markdown at the root)
+skips the checks: they pass without running. The test bench's fixtures count as
+code.
+
 Types are checked against the newest version alone, so an API call or prop
 that only the newest version has is still worth a look (item 3 below).
 

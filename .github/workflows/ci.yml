@@ -15,8 +15,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Whether anything but docs changed. A docs-only change still runs every check
+  # below, with its steps skipped: the ruleset requires each check by name, and a
+  # matrix job skipped whole reports one unexpanded name instead.
+  changes:
+    name: what changed
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        # Docs: docs/, demo/, the PR template and Markdown at the root. The test
+        # bench's fixtures are Markdown the tests read, so they count as code.
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = 0000000000000000000000000000000000000000 ]; then
+            code=true
+          elif git diff --name-only "$BASE" HEAD | grep -qvE '^(docs/|demo/|\.github/pull_request_template\.md$|[^/]+\.md$)'; then
+            code=true
+          else
+            code=false
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "code changed: $code"
+
   check:
     name: validate and test (${{ matrix.claude-code }})
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -29,39 +58,52 @@ jobs:
     env:
       CLAUDE_CODE_VERSION: ${{ matrix.claude-code }}
       DISABLE_AUTOUPDATER: '1'
+      IS_CODE: ${{ needs.changes.outputs.code }}
     steps:
+      - name: Docs only, nothing to check
+        if: env.IS_CODE != 'true'
+        run: echo "Only docs changed; the checks are skipped."
+
       - uses: actions/checkout@v7
+        if: env.IS_CODE == 'true'
 
       - uses: actions/setup-node@v7
+        if: env.IS_CODE == 'true'
         with:
           node-version: 22
 
       - name: Install Claude Code
+        if: env.IS_CODE == 'true'
         run: |
           npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
           claude --version
 
       # The UI tests read the test bench's fixtures through a generated module.
       - name: Fixtures in sync with the test bench
+        if: env.IS_CODE == 'true'
         run: node scripts/fixtures.mjs --check
 
       - name: Validate the mod
+        if: env.IS_CODE == 'true'
         run: claude plugin validate ./hosts/claude-code
       # From 2.1.323 validate also type-checks the hooks module, src/ and the
       # tests, with no session or login; --strict fails on a finding (#139).
       - name: Type-check the mod
-        if: matrix.claude-code == '2.1.325'
+        if: env.IS_CODE == 'true' && matrix.claude-code == '2.1.325'
         run: claude plugin validate --strict ./hosts/claude-code
       # What the community catalog checks locally (#93), on the newest version.
       - name: Validate for the plugin directory
-        if: matrix.claude-code == '2.1.325'
+        if: env.IS_CODE == 'true' && matrix.claude-code == '2.1.325'
         run: claude plugin validate --strict --profile directory ./hosts/claude-code
       - name: Validate the marketplace
+        if: env.IS_CODE == 'true'
         run: claude plugin validate --strict .
 
       - name: Validate the test bench's neighbour mod
+        if: env.IS_CODE == 'true'
         run: claude plugin validate ./testbench/neighbour-mod
 
       # Unit tests (src/) and UI tests (tests/), no session or login needed.
       - name: Test
+        if: env.IS_CODE == 'true'
         run: claude plugin test ./hosts/claude-code
