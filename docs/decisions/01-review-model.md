@@ -283,10 +283,16 @@ plan flow stays its own: the approval panel, its options, `shift+tab` and
 only when the person asks for it.
 
 - **Found by a read, no hooks** (P3). The path is the session's last `Write` or
-  `Edit` to `~/.claude/plans/`, in `$.session.messages()`. That file is read,
-  so edits made in the editor (`ctrl+g`, `/plan open`) count; if it is gone, the
-  last `ExitPlanMode`'s `input.plan` is used. A session has one plan file: a
-  revision overwrites it. With none, the command says so.
+  `Edit` to `~/.claude/plans/`, in `$.session.messages()`, and `$.fs.read` reads
+  that file (checked in the spike on 2.1.325; on 2.1.301 found only in the
+  binary ⚠️, spec 08's *To test*). A session has one plan file: a revision
+  overwrites it. With none, the command says so.
+- **The file over the transcript:** edits made in the editor (`ctrl+g`,
+  `/plan open`) reach only the file. That goes one step past P3's "what the
+  transcript holds", and stays within it: a read, at the person's request, of the
+  file a turn wrote and the transcript names, with nothing hooked or held. If the
+  file can't be read, the last `ExitPlanMode`'s `input.plan` is reviewed, and
+  the command says that edits made in the editor may be missing.
 - **Drawn in the command's own output row,** as blocks, with the reply's actions:
   accept, reject, comment, discuss, step in. It is reviewed between turns, as a
   reply is (D24), and in fullscreen only.

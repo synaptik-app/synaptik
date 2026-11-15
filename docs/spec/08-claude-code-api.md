@@ -176,6 +176,10 @@ the numbers are not decision numbers.
     upstream request below. **Superseded by D37** (2026-10-20): measured again,
     the estimate was exact and `onScreen` updates per wheel tick, but following
     the scrolling was decided against. The tall-reply middle is #64.
+17. **`$.fs.read` on 2.1.301** (D49, #208). It's in the types from 2.1.311, and
+    the #155 spike read a plan file with it on 2.1.325. On 2.1.301 only the
+    call's name (`fs.read`) was found, in the binary. ⚠️ Check it there, or
+    raise the oldest supported version for `/synaptik plan`.
 
 ### Extension points noted
 
