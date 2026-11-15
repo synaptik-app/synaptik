@@ -21,15 +21,17 @@ If you cannot state a concrete failure, it is not a finding.
 ## What CI already does
 
 Do not re-check it; trust its result. CI runs on Claude Code 2.1.301 (the
-oldest supported) and 2.1.308 (the newest tested):
+oldest supported) and 2.1.325 (the newest tested):
 
 - `claude plugin validate` on the mod, the marketplace and the test bench's
   neighbour mod
+- the type check (`claude plugin validate --strict` on the mod: the hooks
+  module, `src/` and the tests), on 2.1.325 only
 - `claude plugin test` — the unit tests in `src/` and the UI tests in `tests/`
 - the fixtures check (`scripts/fixtures.mjs --check`)
 
-CI does **not** type-check: the API types are generated per Claude Code version
-and are not in the repository. So a type error can merge — watch for one.
+Types are checked against the newest version alone, so an API call or prop
+that only the newest version has is still worth a look (item 3 below).
 
 ## What to look for, in order
 
