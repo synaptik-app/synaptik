@@ -38,8 +38,16 @@ Before opening one:
   claude plugin test ./hosts/claude-code     # unit and UI tests, no session needed
   ```
 
-- **Check the types** — locally only, since CI can't. Claude Code writes the API
-  types when a session loads the mod, which takes a login, so load it once first
+- **Check the types** — CI does, on the newest Claude Code it tests. From
+  2.1.323 `validate` type-checks the hooks module, `src/` and the tests, with no
+  session:
+
+  ```bash
+  claude plugin validate --strict ./hosts/claude-code
+  ```
+
+  `tsc` checks against the API types Claude Code writes when a session loads the
+  mod, which takes a login, so load it once first
   (`claude --plugin-dir ./hosts/claude-code`):
 
   ```bash

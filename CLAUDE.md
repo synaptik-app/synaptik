@@ -76,12 +76,14 @@ gates, modifies or executes a tool call. See `decisions/00-principles.md` P3.
 ```bash
 claude --plugin-dir ./hosts/claude-code     # load for one session; reloads on save
 claude plugin validate ./hosts/claude-code  # list hooks and API calls, without running
+claude plugin validate --strict ./hosts/claude-code  # and fail on a type error (2.1.323+)
 claude plugin test ./hosts/claude-code      # run *.test.ts, no session needed
-npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code  # types; local only
+npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code  # types, from a session's
 ```
 
-The type check needs the API types, which Claude Code writes when a session loads
-the mod. That takes a login, so CI doesn't run it.
+`validate` type-checks with no session; CI runs it on the newest version it tests.
+`tsc` reads the API types Claude Code writes when a session loads the mod, which
+takes a login.
 
 **Testing by hand:** `testbench/` holds fixed replies to mark up. Start a session
 there (`cd testbench && claude --plugin-dir ../hosts/claude-code`) and ask it to
