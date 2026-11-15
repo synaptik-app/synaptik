@@ -431,6 +431,21 @@ test('a comment open in the reply when a turn starts is kept as a draft: not sta
   expect(suggested()).toBe('✎ "1. Cache sessions in Redis" → keep')
 })
 
+test('in an agent’s view the band steps aside, and a review running ends', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  // A subagent's transcript opened from the tasks list: the reply isn't on screen.
+  const inAgent = await band($, { agentId: 'agent-1' })
+  const texts = (await inAgent.findAll({ type: 'Text' })).map((t: FoundElement) => String(t.text))
+  expect(texts).toEqual([ENGINE_DRAWING])
+  expect(await inAgent.findAll({ type: 'Client' })).toEqual([])
+  await inAgent.unmount()
+  // Back in the main view: no review is running, and the band offers to start one.
+  expect(await (await fullscreen($, F)).findAll({ type: 'Client' })).toEqual([])
+  expect(await hintLines(await band($))).toEqual(['ctrl+x tab to review the reply', 'click here to review the reply'])
+})
+
 test('q ends the review', async ($, on) => {
   await start($, on, F)
   await fullscreen($, F)
