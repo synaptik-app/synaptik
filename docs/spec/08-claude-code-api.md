@@ -5,7 +5,7 @@ open. **The installed version's types are the authority**
 (`.claude-plugin/types/claude-code/index.d.ts`, written when a session loads the
 mod) — over this file and over the published docs, which lag.
 
-Requires Claude Code **v2.1.301+**, in the terminal (D40): the fullscreen review watches the prompt box with `prompt.change` (2.1.300), and multi-line comments use `Input`'s `rows` (2.1.301, #16). `Raster` and `Image`
+Requires Claude Code **v2.1.328+**, in the terminal (D40): the version CI tests on (D36). An older Claude Code installs an earlier release. `Raster` and `Image`
 are terminal-only and unused; the mod draws with `Box`, `Text`, `Button`,
 `Input` and `Markdown`.
 
@@ -62,7 +62,7 @@ to block user-installed mods.
 | | |
 |---|---|
 | Hook execution | 10 s (time inside a mods API call does not count) |
-| `Markdown` / `Text` text | 10,000 characters per element before Claude Code 2.1.304 (a longer one fails the whole render) — so a block is drawn in pieces (`chunk()`, each code piece fenced again). From 2.1.304, any length. One drawing holds 100,000 characters in all: a reply piece over 90,000 is left to Claude Code and reviewed from the navigator (`MAX_DRAWN`). The test kit doesn't enforce that bound, so the terminal's behaviour past it is unverified ⚠️ |
+| `Markdown` / `Text` text | Any length per element (before Claude Code 2.1.304, 10,000 characters). One drawing holds 100,000 characters in all: a reply piece over 90,000 is left to Claude Code and reviewed from the navigator (`MAX_DRAWN`). The test kit doesn't enforce that bound, so the terminal's behaviour past it is unverified ⚠️ |
 | `$.store` | 4 MiB of JSON, shared machine-wide |
 | `ui.render` redraws | throttled to ~10–30/s, coalesced |
 | Render hooks | may not write `$.state`; may call `$.ui.invalidate` |
@@ -177,9 +177,8 @@ the numbers are not decision numbers.
     the estimate was exact and `onScreen` updates per wheel tick, but following
     the scrolling was decided against. The tall-reply middle is #64.
 17. **`$.fs.read` on 2.1.301** (D49, #208). It's in the types from 2.1.311, and
-    the #155 spike read a plan file with it on 2.1.325. On 2.1.301 only the
-    call's name (`fs.read`) was found, in the binary. ⚠️ Check it there, or
-    raise the oldest supported version for `/synaptik plan`.
+    the #155 spike read a plan file with it on 2.1.325. **Moot** (2026-11-19):
+    the oldest supported version is 2.1.328.
 
 ### Extension points noted
 

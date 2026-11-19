@@ -1,4 +1,4 @@
-// A reply too long for one Markdown element, and the cap on what Synaptik draws
+// A block over 10,000 characters, and the cap on what Synaptik draws
 // itself (MAX_DRAWN). No manual fixture: nothing here needs a person's eye.
 
 import { expect, test } from 'claude-code/testing'
@@ -30,13 +30,9 @@ test('with the navigator open, a reply with a block over 10,000 characters draws
     viewport: { columns: 120, rows: 40 },
   })
   const texts = (await ui.findAll({ type: 'Markdown' })).map((m: FoundElement) => String(m.props.text ?? m.text))
-  // Drawn in pieces of at most 10,000 characters, each fenced: Claude Code
-  // before 2.1.304 refuses a longer Markdown element.
-  const pieces = texts.filter((t: string) => t.startsWith('```ts'))
-  expect(pieces.length).toBeGreaterThan(1)
-  expect(pieces.every((p: string) => p.length <= 10_000)).toBe(true)
-  expect(pieces[0]).toContain("resource/001'")
-  expect(pieces[pieces.length - 1]).toContain("resource/120'")
+  // One element, however long.
+  const code = texts.filter((t: string) => t.startsWith('```ts'))
+  expect(code).toEqual([CODE])
   expect(texts.some((t: string) => t.startsWith('Paragraph 12 of the long tail'))).toBe(true)
 })
 

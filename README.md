@@ -11,7 +11,7 @@
 
 [Install](#install) · [Keys](#keys) · [Roadmap](https://github.com/orgs/synaptik-app/projects/2) · [Contributing](CONTRIBUTING.md)
 
-[![Claude Code v2.1.301+](https://img.shields.io/badge/Claude%20Code-v2.1.301%2B-d97757?logo=claude&logoColor=white)](https://code.claude.com/docs)
+[![Claude Code v2.1.328+](https://img.shields.io/badge/Claude%20Code-v2.1.328%2B-d97757?logo=claude&logoColor=white)](https://code.claude.com/docs)
 [![Platform: terminal](https://img.shields.io/badge/platform-terminal-2B2E3A)](#known-limits)
 [![Release](https://img.shields.io/github/v/release/synaptik-app/synaptik?label=release&color=1084fe)](https://github.com/synaptik-app/synaptik/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -36,7 +36,7 @@ ordinary prompt you saw first.
 
 ## Install
 
-Requires Claude Code **v2.1.301+** in a terminal; check yours with
+Requires Claude Code **v2.1.328+** in a terminal; check yours with
 `claude --version`.
 
 ```bash
@@ -128,7 +128,7 @@ goes into it, and after a click `ctrl+u` clears it. Stepped into a code block or
 table, the actions apply to the selected line or row, and `q` steps out first.
 
 <details>
-<summary><b>Default renderer</b> (<code>/tui default</code>)</summary>
+<summary><b>Classic renderer</b> (<code>/tui classic</code>)</summary>
 
 The navigator above the band shows the selected block: Claude Code can't redraw
 what has scrolled off.

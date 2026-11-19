@@ -20,13 +20,13 @@ If you cannot state a concrete failure, it is not a finding.
 
 ## What CI already does
 
-Do not re-check it; trust its result. CI runs on Claude Code 2.1.301 (the
-oldest supported) and 2.1.325 (the newest tested):
+Do not re-check it; trust its result. CI runs on Claude Code 2.1.328, the one
+version supported and tested:
 
 - `claude plugin validate` on the mod, the marketplace and the test bench's
   neighbour mod
 - the type check (`claude plugin validate --strict` on the mod: the hooks
-  module, `src/` and the tests), on 2.1.325 only
+  module, `src/` and the tests)
 - `claude plugin test` — the unit tests in `src/` and the UI tests in `tests/`
 - the fixtures check (`scripts/fixtures.mjs --check`)
 

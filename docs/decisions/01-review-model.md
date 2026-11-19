@@ -292,8 +292,7 @@ only when the person asks for it.
 
 - **Found by a read, no hooks** (P3). The path is the session's last `Write` or
   `Edit` to `~/.claude/plans/`, in `$.session.messages()`, and `$.fs.read` reads
-  that file (checked in the spike on 2.1.325; on 2.1.301 found only in the
-  binary ⚠️, spec 08's *To test*). A session has one plan file: a revision
+  that file (checked in the spike on 2.1.325). A session has one plan file: a revision
   overwrites it. With none, the command says so.
 - **The file over the transcript:** edits made in the editor (`ctrl+g`,
   `/plan open`) reach only the file. That goes one step past P3's "what the

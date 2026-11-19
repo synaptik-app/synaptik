@@ -4,7 +4,6 @@
 
 import type { Elements, RenderElement } from 'claude-code'
 
-import { chunk } from '../../src/blocks'
 import { oneLine } from '../../src/compile'
 import { END_REVIEW, generational, PANE_ANCHOR, VERBS } from '../ui'
 
@@ -91,9 +90,7 @@ export function ClassicView(
               <Text>{m.glyph ?? ' '} </Text>
               <Box flexDirection="column" flexGrow={1} overflow="hidden">
                 <Box flexDirection="column" marginTop={-m.blockOffset}>
-                  {chunk(m.text).map(piece => (
-                    <Markdown text={piece} />
-                  ))}
+                  <Markdown text={m.text} />
                 </Box>
               </Box>
             </Box>

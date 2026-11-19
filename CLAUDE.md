@@ -76,12 +76,12 @@ gates, modifies or executes a tool call. See `decisions/00-principles.md` P3.
 ```bash
 claude --plugin-dir ./hosts/claude-code     # load for one session; reloads on save
 claude plugin validate ./hosts/claude-code  # list hooks and API calls, without running
-claude plugin validate --strict ./hosts/claude-code  # and fail on a type error (2.1.323+)
+claude plugin validate --strict ./hosts/claude-code  # and fail on a type error
 claude plugin test ./hosts/claude-code      # run *.test.ts, no session needed
 npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code  # types, from a session's
 ```
 
-`validate` type-checks with no session; CI runs it on the newest version it tests.
+`validate` type-checks with no session; CI runs it.
 `tsc` reads the API types Claude Code writes when a session loads the mod, which
 takes a login.
 

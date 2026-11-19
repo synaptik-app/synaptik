@@ -55,6 +55,11 @@ account on anyone's side.
 - **2026-10-22** — the marketplace comes with going public (#47), not at v0.1
   (#52): once the repository is public anyone can add it. Tried and working in
   #54 before that, then held back as not worth offering for an alpha.
+- **2026-11-19** — one Claude Code version is supported: the one CI tests on,
+  raised as that moves (now 2.1.328). Claude Code updates itself, and an older
+  one (a package manager's, or pinned by a team) installs an earlier release,
+  from the marketplace's history or its zip. Code for older versions goes with
+  each raise.
 
 ---
 
