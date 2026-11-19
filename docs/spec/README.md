@@ -97,7 +97,9 @@ prompt: the first reply, each follow-up, the carry-on. A prompt the person types
 during the run is still where the reply starts.
 
 **A resumed session is markable at once.** On `session.start` the mod reads the
-transcript (`$.session.messages()`) and adopts its last turn. A resume ends the
+transcript (`$.session.messages()`) and adopts its last turn. Every read takes
+only the newest rows, 64 of them, and reads further back (512, then 4,096) only
+when those rows start inside the turn. A resume ends the
 transcript with an engine-written `No response requested.` row, which is
 skipped.
 

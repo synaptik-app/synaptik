@@ -4,7 +4,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { arrow, band, ENGINE_DRAWING, engine, log, opened, pane, position, registered, reply, start, transcriptOf, turn } from './engine'
+import { arrow, band, ENGINE_DRAWING, engine, log, opened, pane, position, reads, registered, reply, start, transcriptOf, turn } from './engine'
 import type { Row } from './engine'
 import { FIXTURES } from './fixtures.generated'
 import { segment } from '../src/blocks'
@@ -36,6 +36,27 @@ test('a completed turn adopts the new reply: its blocks, from the last one', asy
   const ui = await pane($, 'inline')
   expect(await position(ui)).toEqual({ at: 2, of: 2 })
   expect((await ui.find({ type: 'Markdown' }))?.props.text).toBe('Second new point.')
+})
+
+test('a completed turn reads only the newest rows that hold it', async ($, on) => {
+  const rows = await start($, on, F)
+  reads.length = 0
+  await turn($, rows, [ask('and then?'), answer(NEW_REPLY)])
+  expect(reads).toEqual([64])
+})
+
+test('a turn longer than the first read is read further back, and adopted whole', async ($, on) => {
+  const rows = await start($, on, F)
+  // 40 tool calls, two rows each, between the reply's first and last text.
+  const calls = Array.from({ length: 40 }, (): Row[] => [
+    { role: 'assistant', text: '', toolUses: [{ tool: 'Bash', input: { command: 'true' } }] },
+    { role: 'user', text: '', toolUses: [], toolResults: [{ text: '' }] },
+  ]).flat()
+  reads.length = 0
+  await turn($, rows, [ask('and then?'), answer('First new point.'), ...calls, answer('Second new point.')])
+  expect(reads).toEqual([64, 512])
+  const ui = await pane($, 'inline')
+  expect(await position(ui)).toEqual({ at: 2, of: 2 })
 })
 
 test('a completed turn starts the tray fresh', async ($, on) => {

@@ -70,7 +70,7 @@ to block user-installed mods.
 | Unasked `$.ui.open` | waits undrawn below 144 columns (110 once opened by the person) |
 | Module reload | closes the mod's panes (`ui.close`, origin `unload`) |
 | `onScreen` | fullscreen only; per reply piece, not per element |
-| `$.session.messages()` | the newest 4,096 entries |
+| `$.session.messages()` | the newest 4,096 entries; `{ last }` fewer, and a ranged read can be refused (`SessionMessagesDeny`), which falls back to the plain read |
 | `autoFocus` | accepts only `true`, so focus is managed per render rather than by flipping a prop off |
 
 ---
