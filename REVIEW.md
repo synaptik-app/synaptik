@@ -20,22 +20,19 @@ If you cannot state a concrete failure, it is not a finding.
 
 ## What CI already does
 
-Do not re-check it; trust its result. CI runs on Claude Code 2.1.301 (the
-oldest supported) and 2.1.325 (the newest tested):
+Do not re-check it; trust its result. CI runs on Claude Code 2.1.328, the one
+version supported and tested:
 
 - `claude plugin validate` on the mod, the marketplace and the test bench's
   neighbour mod
 - the type check (`claude plugin validate --strict` on the mod: the hooks
-  module, `src/` and the tests), on 2.1.325 only
+  module, `src/` and the tests)
 - `claude plugin test` — the unit tests in `src/` and the UI tests in `tests/`
 - the fixtures check (`scripts/fixtures.mjs --check`)
 
 A change to docs alone (`docs/`, `demo/`, the PR template, Markdown at the root)
 skips the checks: they pass without running. The test bench's fixtures count as
 code.
-
-Types are checked against the newest version alone, so an API call or prop
-that only the newest version has is still worth a look (item 3 below).
 
 ## What to look for, in order
 
@@ -47,12 +44,12 @@ that only the newest version has is still worth a look (item 3 below).
    throw. Look for work that grows with the transcript inside a render hook,
    anything awaited without need, and redraws on every event rather than on a
    change (D33).
-3. **The mods API.** A `$` call new to this PR, or used in a new way, must
-   exist in the oldest supported version. The tests run on both versions, so a
-   missing call fails CI — but only on a path a test reaches. Flag a new `$`
-   call, or a new argument shape, on a path no test exercises: that is where
-   one gets through. The types are not in the checkout: do not guess — say
-   which call to check against `.claude-plugin/types/claude-code/index.d.ts`.
+3. **The mods API.** CI type-checks every `$` call against 2.1.328, so a call
+   that doesn't exist fails there. What gets through is a call cast past the
+   types (`as never`, `as unknown`) or one whose behaviour, not its shape, is
+   new to this PR. Flag those, on a path no test exercises especially. The
+   types are not in the checkout: do not guess — say which call to check
+   against `.claude-plugin/types/claude-code/index.d.ts`.
    Anything marked ⚠️ in `docs/spec/` must not be relied on.
 4. **Correctness.** Wrong behavior against `docs/spec/`; edge cases — an
    empty reply, one block, a very long reply, the last block, the classic and

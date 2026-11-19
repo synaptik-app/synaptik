@@ -7,7 +7,7 @@
 
 import type { ClientModule } from 'claude-code'
 
-import { chunk, lineKey, partsOf } from '../../src/blocks'
+import { lineKey, partsOf } from '../../src/blocks'
 import { oneLine, PARTLY } from '../../src/compile'
 import type { Mark } from '../../src/compile'
 import { COMMENT_HINT } from '../ui'
@@ -166,7 +166,7 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
     return span ? span.top + span.height : rowOf(line + 1)
   }
   const lastRow = () => table?.end ?? rowOf(parts?.lines.length ?? 0)
-  const whole = () => chunk(props.text).map(piece => Markdown({ text: piece }))
+  const whole = () => [Markdown({ text: props.text })]
   const windowed = (from: number, to: number, backgroundColor?: 'selectionBg') =>
     Box({
       height: to - from,
@@ -226,8 +226,7 @@ const Block: ClientModule<BlockProps, BlockState> = (props, surface) => {
             flexDirection: 'column',
             paddingLeft: props.indent,
             backgroundColor: isSelected && !stepped ? 'selectionBg' : undefined,
-            // Pieces of at most 10,000 characters: older Claude Code refuses more.
-            children: stepped ? drawCode(stepped) : chunk(props.text).map(piece => Markdown({ text: piece })),
+            children: stepped ? drawCode(stepped) : [Markdown({ text: props.text })],
           }),
         ],
       }),

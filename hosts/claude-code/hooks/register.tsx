@@ -1017,19 +1017,13 @@ export const register: Register = on => {
   // The band's ring: in fullscreen it stops on Synaptik's actions only (j / k are
   // hotkeys, not stops). Landing on one starts the review (ctrl+x tab); leaving
   // them ends it — unless a block takes the keyboard (a click into the reply),
-  // which its own post reports right after.
-  on('ui.focus', { component: 'AbovePrompt' }, async ($, e, next) => {
+  // which its own post reports right after. `'*'`: a hook naming no plugin hears
+  // only Synaptik's own elements, and the ring moving onto another mod's button
+  // ends the review too.
+  on('ui.focus', { component: 'AbovePrompt', plugin: '*' }, async ($, e, next) => {
     if (!isFullscreen) return next(e)
     const deny = bandFocus($, e.plugin, e.element, e.origin.kind)
     return deny ? { deny } : next(e)
-  }).catch(($, e, next) => next(e))
-
-  // From 2.1.325 a hook naming no plugin hears only its own plugin's elements, so
-  // the ring moving onto another mod's button comes here. Before, `'*'` matched
-  // nothing, and the hook above heard every move.
-  on('ui.focus', { component: 'AbovePrompt', plugin: '*' }, async ($, e, next) => {
-    if (isFullscreen && e.plugin !== undefined && e.plugin !== 'synaptik') bandFocus($, e.plugin, e.element, e.origin.kind)
-    return next(e)
   }).catch(($, e, next) => next(e))
 
   // An edit in the prompt box. A paste while a comment is open in the reply goes
@@ -1343,8 +1337,7 @@ export const register: Register = on => {
           heading,
           crumb,
           barHeights: minimap(blocks.map(b => b.text.length), Math.max(blocks.length, rows - 2)),
-          // One truncated line each; clipped, since a Text over 10,000
-          // characters is refused before Claude Code 2.1.304.
+          // One truncated line each; clipped, as only its start shows.
           previous: prev ? clip(quote(prev.text, 10_000), 500) : undefined,
           next: nextBlock ? clip(quote(nextBlock.text, 10_000), 500) : undefined,
           text: current?.text ?? '',

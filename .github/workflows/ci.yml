@@ -54,9 +54,9 @@ jobs:
       fail-fast: false
       matrix:
         # Pinned: a new Claude Code release cannot break CI without a deliberate
-        # bump. The oldest version Synaptik supports (README, docs/spec/08-claude-code-api.md), and the
-        # newest it is tested on.
-        claude-code: ['2.1.301', '2.1.325']
+        # bump. The one version Synaptik supports and is tested on (README,
+        # docs/spec/08-claude-code-api.md, D36).
+        claude-code: ['2.1.328']
     env:
       CLAUDE_CODE_VERSION: ${{ matrix.claude-code }}
       DISABLE_AUTOUPDATER: '1'
@@ -88,14 +88,14 @@ jobs:
       - name: Validate the mod
         if: env.IS_CODE == 'true'
         run: claude plugin validate ./hosts/claude-code
-      # From 2.1.323 validate also type-checks the hooks module, src/ and the
-      # tests, with no session or login; --strict fails on a finding (#139).
+      # validate also type-checks the hooks module, src/ and the tests, with no
+      # session or login; --strict fails on a finding (#139).
       - name: Type-check the mod
-        if: env.IS_CODE == 'true' && matrix.claude-code == '2.1.325'
+        if: env.IS_CODE == 'true'
         run: claude plugin validate --strict ./hosts/claude-code
-      # What the community catalog checks locally (#93), on the newest version.
+      # What the community catalog checks locally (#93).
       - name: Validate for the plugin directory
-        if: env.IS_CODE == 'true' && matrix.claude-code == '2.1.325'
+        if: env.IS_CODE == 'true'
         run: claude plugin validate --strict --profile directory ./hosts/claude-code
       - name: Validate the marketplace
         if: env.IS_CODE == 'true'
