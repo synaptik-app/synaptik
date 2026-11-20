@@ -26,24 +26,27 @@ const isPrompt = (row: Row) =>
 const isReplyText = (row: Row) =>
   row.role === 'assistant' && row.text.trim() !== '' && !SYNTHETIC.has(row.text.trim())
 
-// The text of the last turn: every assistant row with text since the last
-// prompt, joined in order. A reply that runs a tool mid-way is stored as
-// several assistant rows; taking only the last one left the text before the
-// tool call unmarkable. Rows after the turn that are not assistant text (a
-// slash command's record, a synthetic row) are skipped.
-export function lastTurnText(rows: readonly Row[]): string {
+// The last turn: every assistant row with text since the last prompt, joined
+// in order. A reply that runs a tool mid-way is stored as several assistant
+// rows; taking only the last one left the text before the tool call
+// unmarkable. Rows after the turn that are not assistant text (a slash
+// command's record, a synthetic row) are skipped. `isBounded`: the prompt that
+// starts the turn is among the rows, so rows before them can't change it.
+export function lastTurn(rows: readonly Row[]): { text: string; isBounded: boolean } {
   let end = rows.length - 1
   while (end >= 0 && !isReplyText(rows[end]!)) end -= 1
-  if (end < 0) return ''
+  if (end < 0) return { text: '', isBounded: false }
 
   const pieces: string[] = []
   for (let i = end; i >= 0; i -= 1) {
     const row = rows[i]!
-    if (isPrompt(row)) break
+    if (isPrompt(row)) return { text: pieces.join('\n\n'), isBounded: true }
     if (isReplyText(row)) pieces.unshift(row.text.trim())
   }
-  return pieces.join('\n\n')
+  return { text: pieces.join('\n\n'), isBounded: false }
 }
+
+export const lastTurnText = (rows: readonly Row[]): string => lastTurn(rows).text
 
 // Whether `after` is `before` with blocks added at its end: every segment of
 // `before` unchanged, in place, and more after them. A background agent's

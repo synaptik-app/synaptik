@@ -87,6 +87,9 @@ export const registered: string[] = []
 
 
 
+// The `last` of every transcript read. Reset by `engine`.
+export const reads: (number | undefined)[] = []
+
 // Every prompt submitted by Synaptik — none: the person sends (D30). Reset by
 // `engine`.
 export const submitted: string[] = []
@@ -103,6 +106,7 @@ export function engine(on: On, rows: Row[]) {
   registered.length = 0
   closed.length = 0
   forks.length = 0
+  reads.length = 0
   session.id = 'session-1'
   forkAnswer.text = 'An answer.'
   const event = (name: string, fn: (e: never) => unknown) =>
@@ -110,7 +114,11 @@ export function engine(on: On, rows: Row[]) {
   const call = (name: string, value: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => ({ value: value(e) })) as never)
 
-  call('session.messages', () => rows)
+  // The newest `last` rows, as Claude Code cuts them; all of them with none.
+  call('session.messages', (e: { last?: number }) => {
+    reads.push(e.last)
+    return e.last ? rows.slice(-e.last) : rows
+  })
   call('session.id', () => session.id)
   event('session.end', (e: { sessionId: string }) => ({ sessionId: e.sessionId }))
   call('command.register', (e: { name: string }) => {

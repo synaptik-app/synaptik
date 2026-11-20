@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { grows, lastTurnText } from './turn'
+import { grows, lastTurn, lastTurnText } from './turn'
 import type { Row } from './turn'
 
 const prompt = (text: string): Row => ({ role: 'user', text })
@@ -37,6 +37,16 @@ test('skips a resume placeholder and rows recorded after the turn', async () => 
 test('nothing to adopt before the first reply', async () => {
   expect(lastTurnText([prompt('q')])).toBe('')
   expect(lastTurnText([])).toBe('')
+})
+
+test('bounded once the rows reach the prompt that starts the turn', async () => {
+  expect(lastTurn([prompt('q'), reply('a'), toolCall, toolResult, reply('b')])).toEqual({ text: 'a\n\nb', isBounded: true })
+})
+
+test('not bounded when the rows start inside the turn, or hold no reply', async () => {
+  // The newest rows of a long turn: its prompt is further back.
+  expect(lastTurn([toolResult, reply('a'), toolCall, toolResult, reply('b')])).toEqual({ text: 'a\n\nb', isBounded: false })
+  expect(lastTurn([toolCall, toolResult])).toEqual({ text: '', isBounded: false })
 })
 
 // A background run, as Claude Code 2.1.325 stores it (#213): each agent's

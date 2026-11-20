@@ -12,7 +12,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Mark } from '../types'
 import { lineKey, partCounts, partsOf, quote, segment } from '../src/blocks'
-import { grows, lastTurnText } from '../src/turn'
+import { grows, lastTurn } from '../src/turn'
 import { compile as compileTray, GLYPH, PARTLY, preview, THREAD_GLYPH } from '../src/compile'
 import { clear as clearMark, clearBlock, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, lineMarks, toggle as toggleMark } from '../src/tray'
 import type { Part, Tray } from '../src/tray'
@@ -241,6 +241,25 @@ async function suggestTray($: EngineInterface) {
 // Set by session.start in a non-interactive session (claude -p, the SDK).
 let isHeadless = false
 
+// How many of the newest rows to read for the last turn, in turn: most turns
+// fit the first; a long run of tool calls needs more. 4096 is what a read
+// naming no number gets.
+const TURN_READS = [64, 512, 4096]
+
+// The last turn's text, from as few of the newest rows as hold it whole.
+async function readLastTurn($: EngineInterface): Promise<{ text: string; rows: number }> {
+  for (const last of TURN_READS) {
+    const read = await $.session.messages({ last })
+    // A ranged read can be refused (SessionMessagesDeny): the plain read then.
+    const rows = Array.isArray(read) ? read : await $.session.messages()
+    const turn = lastTurn(rows)
+    if (turn.isBounded || rows.length < last || last === TURN_READS[TURN_READS.length - 1]) {
+      return { text: turn.text, rows: rows.length }
+    }
+  }
+  return { text: '', rows: 0 }
+}
+
 // Reads the last assistant reply from the transcript. A different reply than
 // the one marked so far starts a fresh tray; the same one (a reload) keeps it.
 async function adoptLastReply($: EngineInterface) {
@@ -249,9 +268,8 @@ async function adoptLastReply($: EngineInterface) {
   if (isHeadless) return
   // The whole last turn, not its last message: text before a tool call is a
   // separate message and was left unmarkable.
-  const messages = await $.session.messages()
-  const text = lastTurnText(messages)
-  observe(`adopt ${messages.length} messages, picked ${text.length} chars`)
+  const { text, rows } = await readLastTurn($)
+  observe(`adopt ${rows} messages, picked ${text.length} chars`)
   const before = await read($, lastText)
   // Blocks added at the end, as a background agent's follow-up adds them: the
   // review stays, marks and all, and the new blocks join it (#213).
