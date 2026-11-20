@@ -108,7 +108,7 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D49 | The plan is reviewed on request, in Synaptik's own row | [review-model](01-review-model.md#d49--the-plan-is-reviewed-on-request-in-synaptiks-own-row) | settled |
 | D50 | Declined questions are reviewed with the reply | [review-model](01-review-model.md#d50--declined-questions-are-reviewed-with-the-reply) | settled |
 | E1 | Branched sub-sessions (was D16, D17) | [thread](05-thread.md#e1--branched-sub-sessions-was-d16-d17) | proposed |
-| E2 | Promote a thread to a branched session | [thread](05-thread.md#e2--promote-a-thread-to-a-branched-session) | proposed |
+| E2 | A thread's tasks run in a subagent | [thread](05-thread.md#e2--a-threads-tasks-run-in-a-subagent-was-promote-a-thread-to-a-branched-session) | proposed |
 | E3 | Worktree isolation (was D19) | [thread](05-thread.md#e3--worktree-isolation-was-d19) | proposed |
 | E4 | Summary-based merge between sessions (was D18) | [thread](05-thread.md#e4--summary-based-merge-between-sessions-was-d18) | proposed |
 | E5 | Edit and resend a denied command | [rendering](02-rendering.md#e5--edit-and-resend-a-denied-command) | dead |
