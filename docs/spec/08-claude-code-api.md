@@ -22,16 +22,19 @@ hooks (P3).
 | `session.start` | registers `/synaptik`, and picks up the last reply |
 | `session.end` | after `/resume` or `/clear`, picks up the reply of the session that follows |
 | `command.run` | answers `/synaptik` only; other commands aren't touched |
-| `turn.start`, `turn.complete` | stops marking during a turn, and picks up the new reply after it |
+| `turn.start`, `turn.complete` | stops marking during a turn, and picks up the new reply after it; a thread's agent's `turn.complete` (`agentId`) brings its report to the thread (D51) |
+| `session.append` | rewords Claude Code's notice about one of Synaptik's own agents, without its result (D51); every other row passes untouched |
+| `prompt.submit` | drops that notice's prompt, so it starts no turn (D51); every other prompt passes untouched |
 | `ui.render` | draws the reply while it's under review or carries marks, the band above the prompt, and its own panes: the navigator and discuss threads. It also notes which turn row is the newest, without changing it. |
 | `ui.message` | receives clicks and keys from its own elements |
 | `ui.focus`, `ui.scroll`, `ui.close` | tracks focus in the band and its own panes, moves between blocks and within a thread, and notices its panes closing: closing a thread asks for its summary. It refuses focus only on its own hidden keys. |
 | `prompt.edit` | colours the ✓ ✗ ✎ glyphs in the box, proposes the suggestion again when you empty it, and moves a paste into a comment you have open. Typing there ends a review. |
 | `prompt.change` | proposes the suggestion again after a clear, an undo or a recalled entry, and puts the whole review in the box when you take the shortened one |
 
-`ui.render` draws on `AssistantMessage` (the reply), `AbovePrompt` (the band),
-`Pane` (the navigator and thread panes) and `TurnDuration` (to reveal the end of a
-tall reply).
+`ui.render` draws on `AssistantMessage` (the reply, and in a thread's agent's
+view its replies without the report), `AbovePrompt` (the band), `Pane` (the
+navigator and thread panes), `TurnDuration` (to reveal the end of a tall reply)
+and `AgentRow` (a thread's agent's label).
 
 **Calls:**
 
@@ -42,6 +45,9 @@ tall reply).
 | `$.prompt.read` | whether the box holds text, for the discard warning (D24) |
 | `$.session.messages`, `$.session.id` | the last reply, on start, resume and clear |
 | `$.model.fork` | a thread's answers, summary and verdict (D14) |
+| `$.agent.spawn`, `$.agent.list` | a thread's agent, and whether it is still running or already done (D51) |
+| `$.session.send` | the thread's `<to-agent>` to its agent (D51) |
+| `$.ui.view` | a thread's agent's view, from the pane's button (D51) |
 | `$.ui.open`, `$.ui.close`, `$.ui.focus` | the navigator and thread panes |
 | `$.ui.scroll` | bringing the reply into view, from the person's own keys |
 | `$.ui.invalidate` | redrawing the reply, band and panes after a change |
@@ -70,6 +76,8 @@ to block user-installed mods.
 | Unasked `$.ui.open` | waits undrawn below 144 columns (110 once opened by the person) |
 | Module reload | closes the mod's panes (`ui.close`, origin `unload`) |
 | `onScreen` | fullscreen only; per reply piece, not per element |
+| `$.ui.view({ agentId })` | only from the person's own input, and only while the agent is in the tasks list |
+| A thread's agent | its first `turn.start` comes before `spawn` returns its id; a finished one keeps its row, undrawn, until the engine drops its task |
 | `$.session.messages()` | the newest 4,096 entries; `{ last }` fewer, and a ranged read can be refused (`SessionMessagesDeny`), which falls back to the plain read |
 | `autoFocus` | accepts only `true`, so focus is managed per render rather than by flipping a prop off |
 
@@ -87,6 +95,7 @@ Answered by the spike on 2026-10-15, against the installed types, unless dated.
 | Q10 | Can the `AssistantMessage` hook match Claude Code's markdown? | **Yes.** Compared on and off construct by construct (lists, nesting, table, code, blockquote): identical once the mod draws no column of its own and keeps the top margin. A `Box` background around `Markdown` paints behind the text. |
 | Q11 | Is `prompt.suggest` a separate layer beside typed text? | **No** — it shows only in an empty box. Turned out not to matter (D30). |
 | Q12 | Do mouse clicks work in the terminal? | **Yes**, on `Button`s and `Client`s drawn in a reply, in the fullscreen terminal. |
+| — | Can Synaptik run a thread's tasks in a subagent and keep it out of the main conversation? (2.1.328, #158) | **Yes.** A fork spawned by a mod answers with its own `turn.complete` and hands nothing back. `$.session.send` reaches a running agent at its next tool call and resumes a finished one. After a resume, its notices come as prompts; reworded in `session.append` and dropped in `prompt.submit`, they leave no turn and no row. A rewrite of `AssistantMessage`'s text holds in the agent's view (D51). |
 
 The full list, with the questions not numbered here, is the spike checklist
 below.

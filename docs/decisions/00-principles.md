@@ -36,6 +36,11 @@ model for anything, and does not teach it any protocol.
   gone and the session is unaffected.
 - **Naming the mod is fine**, for example a slash command whose output the model
   reads.
+- **The one exception is D51's:** a thread's agent is the mod's own, and Claude
+  Code's notices about it, which would carry its result into the main
+  conversation and start a turn there, are reworded without the result (the
+  wrapper and task id kept) and dropped. What the agent did reaches the main
+  conversation only in the summary the person sends.
 
 **The test for anything new:** does it put something into the flow that the
 person didn't see and choose, or block, rewrite or hold the flow? If so, it
@@ -50,6 +55,8 @@ breaks P1. An exception has to be a decision of its own that says so.
 - **2026-11-10** — rewritten to stand on its own; references to proposals
   dropped. Scoped to the main conversation: the mod's own forks (threads) are
   instructed, and only what the person sees and sends reaches the main flow.
+- **2026-11-21** — one exception, D51: Claude Code's notices about the mod's own
+  agents are reworded and dropped.
 
 ---
 

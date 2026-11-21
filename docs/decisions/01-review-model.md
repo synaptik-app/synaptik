@@ -250,6 +250,12 @@ entirely, and is what makes render-time segmentation safe (D5).
 and it goes alone: no appended marks, no interception of `prompt.submit`. That
 prompt brings a new reply, so marks staged on the previous one go.
 
+**The one prompt Synaptik stops is not the person's:** Claude Code's notice that
+one of Synaptik's own agents stopped (D51), submitted on its own as a prompt.
+It is dropped in `prompt.submit`, so the main conversation gets no turn and
+keeps no row, and the reply and its review stay as they are. Every other
+notice, and everything the person types, goes through untouched.
+
 **The risk is losing them silently**: sending a quick side question intending to
 return to five marks, and finding them gone with no sign they existed.
 
@@ -279,6 +285,8 @@ reply,** not a confirm dialog.
 - **2026-11-15** — declined questions join the reply's review (D50).
 - **2026-11-15** — a background run is one reply, and a reply that grows keeps
   its review (#213, from #162's spike).
+- **2026-11-21** — Claude Code's notices about Synaptik's own agents are dropped
+  in `prompt.submit` (D51); before, the mod intercepted no prompt at all.
 
 ---
 

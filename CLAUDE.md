@@ -56,6 +56,8 @@ their back, submits on its own, or holds a turn. No markers or identifiers in
 what is sent — they are noise. The agent knowing the mod exists is fine
 (`decisions/00-principles.md` P1, revised). Sending is a suggestion the person
 takes (`$.prompt.suggest`) and sends with `⏎`; the mod never submits (D30).
+The one exception: Claude Code's notices about Synaptik's own agents are
+reworded without their result and dropped, so they start no turn (D51).
 
 **The mod relays; it does not analyse.** It captures what the user meant and
 hands it over verbatim. It does not reconcile contradictory marks, decide what is
