@@ -160,8 +160,7 @@ holds the agent, with its state, and opens its view.
 
 **The agent is a fork** (`$.agent.spawn({ subagentType: 'fork' })`): it has the
 main conversation, plus the block, the thread's messages and its summary
-whole, as its tasks. A fresh agent in its place, whose view would show only
-its own work, is #223. It runs under the session's permission mode. Its prompt
+whole, as its tasks. It runs under the session's permission mode. Its prompt
 (`src/prompts.ts`) says what it is for, and who "the coordinator" is: Claude
 Code frames Synaptik's messages to it as the coordinator's, and the agent
 can't know that this is the thread.
@@ -288,6 +287,8 @@ view. Fullscreen only.
 - A list of Synaptik's agents, or the band naming one waiting for you: Claude
   Code's agent list already is the list, with its keys and opening, and the
   label says it.
+- A fresh agent in place of the fork (#223): it hands every report back to the
+  main conversation, where it starts a turn.
 
 **Revisions**
 - **2026-11-22** — no buttons: the answer offers the agent and starts it when
