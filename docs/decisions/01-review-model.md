@@ -430,6 +430,7 @@ siblings. Cut for its cost: a held tool call, and the unknowns of holding one.
 
 **Replaced by D50:** the questions are read from the transcript after the person
 leaves the panel with Esc, and reviewed with the reply; nothing is held.
+
 ---
 
 ### D7 — Structure comes from tool payloads, not prose markup

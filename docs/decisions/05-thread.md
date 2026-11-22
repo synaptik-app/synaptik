@@ -344,6 +344,7 @@ the suggestion, with what the agent did in sections of its own; one
 - **2026-11-20** — the thread's tasks, not the thread: the thread's agent marks
   them, the person runs them; the report in the suggestion.
 - **2026-11-21** — superseded by D51: the thread steers its agent.
+
 ---
 
 ### E3 — Worktree isolation (was D19)
@@ -426,6 +427,7 @@ conclusion, a false positive quietly adds noise.
 
 **Done another way (2026-11-04, #156):** D45 has the thread's own fork give a
 verdict with each answer, as the switch's default — no `$.model.classify`.
+
 ---
 
 ### D16–D19 — Branched sessions, depth, merge, worktrees
