@@ -121,7 +121,10 @@ selects nothing inside one.
   on an empty comment cancels it; `ctrl+u` empties it, every line, and the hint
   names that once there is text; `c` on a commented block reopens its text.
 - **A paste** while a comment is open goes into the comment: Claude Code hands
-  every paste to the prompt box, and a `prompt.edit` hook moves it.
+  every paste to the prompt box, and a `prompt.edit` hook moves it. A paste of 4
+  lines or more stays in the box: Claude Code keeps it aside and puts a
+  `[Pasted text #1 +3 lines]` reference there in its place, and the text itself
+  never reaches a hook.
 
 **With the keyboard:** only a click can focus a `Client`, so the review stays in
 the **band**, where `ctrl+x tab` put it. Its ring stops on the four actions (hidden; the menu in the

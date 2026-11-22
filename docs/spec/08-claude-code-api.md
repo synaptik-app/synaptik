@@ -74,6 +74,7 @@ to block user-installed mods.
 | Docked pane | ~23 columns in practice; a request for 4 was not honoured |
 | Unasked `$.ui.open` | waits undrawn below 144 columns (110 once opened by the person) |
 | Module reload | closes the mod's panes (`ui.close`, origin `unload`) |
+| A paste of 4 lines or more | Claude Code keeps it aside, with a `[Pasted text #N +M lines]` reference in the prompt box; its text never reaches a hook, so it can't be moved into a comment. Claude Code's own behaviour, not a bug |
 | `onScreen` | fullscreen only; per reply piece, not per element |
 | `$.ui.view({ agentId })` | only from the person's own input, and only while the agent is in the tasks list |
 | A thread's agent | its first `turn.start` comes before `spawn` returns its id; a finished one keeps its row, undrawn, until the engine drops its task |
