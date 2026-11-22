@@ -89,7 +89,7 @@ under the block's quote. It comes in sections, each label once and only when it
 has something: `Actions:` (changes to make and work to carry out: commands to run,
 files to edit, tests to run; a thread can't run them, so they go to the main
 conversation), `Decisions:`, and `Open questions:` only if one is left; with an
-agent, three more after them (below). A section
+agent, `Subagent:` after them (below). A section
 with one point keeps it on the label's line; with several, each follows as a
 `- ` line. It sticks to what the thread discussed, and may refer to other parts of
 the reply. Not what was only explained; no recap, no mention of a thread. A thread
@@ -140,12 +140,12 @@ button, under the switch:
 ```
 │ [ ✓ include in review ]                           │
 │   ⎿  Actions: Run npm test -- greet …             │
-│ [ ▶ run as agent · needs tools ]                  │
+│ [ ▶ run agent for tasks ]                         │
 ```
 
 **The press** writes a summary first if the latest answer came without one,
 turns the switch on unless the person set it, rewrites the summary with the
-tasks under `A subagent is still on:`, and spawns the agent
+tasks under `Subagent:` `Still on:`, and spawns the agent
 (`$.agent.spawn({ prompt, description, subagentType: 'fork' })`, its
 `description` `Synaptik · <block>`). Its prompt (`src/prompts.ts`) holds the
 block, the thread's messages and its summary whole as its tasks, says who "the
@@ -193,11 +193,17 @@ for the person, and the summary rewritten. That answer carries no
 `<to-agent>`, so a report never wakes the agent; the person's next message can.
 What the person settled in the agent's own view comes back in the report.
 
-**The summary** gains three sections, after `Open questions:`, each only when
-it has something: `Done by a subagent:` (what it carried out, checked or ran,
-and what came of it), `Changed by a subagent:` (the files), and `A subagent is
-still on:` (only while it runs). Only the summary goes into the suggestion,
-never a report.
+**The summary** gains one section, after `Open questions:`, with a sub-point
+for each that has something:
+
+```
+Subagent:
+- Done: what it carried out, checked or ran, and what came of it
+- Changed: the files
+- Still on: what it is working on, only while it runs
+```
+
+Only the summary goes into the suggestion, never a report.
 
 **In the agent's view**, its replies draw without the report: the
 `AssistantMessage` text is rewritten from `<report` to `</report>` (to the end
@@ -214,7 +220,7 @@ The transcript and `turn.complete` keep the whole answer.
 adds a `<task-notification>` there with the whole answer and submits it. For
 Synaptik's own agents, `session.append` rewords it (wrapper and `<task-id>`
 kept: "A side task the person started from a Synaptik thread", no result) and
-`prompt.submit` drops it: no turn, no row, one yellow `Prompt dropped by a hook:
+`prompt.submit` drops it: no turn, no transcript row, one yellow `Prompt dropped by a hook:
 Synaptik agent notice` line.
 
 **Its ids are kept with the thread**, in `$.state`. When `spawn` returns,

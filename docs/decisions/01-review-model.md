@@ -253,7 +253,7 @@ prompt brings a new reply, so marks staged on the previous one go.
 **The one prompt Synaptik stops is not the person's:** Claude Code's notice that
 one of Synaptik's own agents stopped (D51), submitted on its own as a prompt.
 It is dropped in `prompt.submit`, so the main conversation gets no turn and
-keeps no row, and the reply and its review stay as they are. Every other
+keeps no transcript row, and the reply and its review stay as they are. Every other
 notice, and everything the person types, goes through untouched.
 
 **The risk is losing them silently**: sending a quick side question intending to

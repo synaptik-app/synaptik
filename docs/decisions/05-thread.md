@@ -110,8 +110,8 @@ threads (tabs come free when docked).
   verdict could come back `exclude` with an empty summary under a switch that was
   on.
 - **2026-11-07** — corrected: a click on a block doesn't restart the review.
-- **2026-11-21** — with an agent (D51), the summary gains `Done by a subagent:`,
-  `Changed by a subagent:` and `A subagent is still on:`, and every answer
+- **2026-11-21** — with an agent (D51), the summary gains a `Subagent:` section
+  (`Done:`, `Changed:`, `Still on:`), and every answer
   carries `<next>agent</next>` when its tasks need tools.
 
 ---
@@ -158,7 +158,7 @@ way to start agents: Claude Code has `/btw`, forks and its own agents for that.
 **The thread's agent decides, the person starts.** Every answer carries
 `<next>agent</next>` beside the summary's tags when its Actions or Open
 questions need tools (a search, a command, an edit), with the include switch
-on or off. Then, and only then, the pane shows `▶ run as agent · needs tools`.
+on or off. Then, and only then, the pane shows `▶ run agent for tasks`.
 Nothing runs, costs or asks for permission unless the person chose it (D30).
 On the press, a summary is written first if the latest answer came without
 one, as switching on does, and the include switch turns on unless the person
@@ -179,6 +179,12 @@ can't know that this is the thread.
 | The agent reports | The thread's agent answers on its own, in the pane ("it finished X and changed these files; it waits for you to choose A or B"), and rewrites the summary. That answer never carries `<to-agent>`, so a report never starts another agent turn: only the person's next message can. |
 | The person answers the agent in the thread | It reaches the agent through `<to-agent>`. |
 | The person talks to the agent in its view | Untouched. The thread doesn't see it; the agent's next report carries what was settled (`Settled with you:`), and the thread carries on from there. |
+
+**The thread's agent, and what it is sent, are outside the main flow**, as a
+thread's fork is (P1): neither reaches the main conversation, and what the
+agent did reaches it only in the thread's summary, which the person sends
+(D30). So `<to-agent>` needs no press of its own, and it is no exception to
+P1: the pane shows what was sent.
 
 Nothing is queued on Synaptik's side: Claude Code hands a message for a
 running agent over at its next tool call, inside its turn, and a message for
@@ -222,21 +228,22 @@ as the agent's, so the main Claude knows the files changed under it:
 Actions: …                     what is left for the main conversation
 Decisions: …
 Open questions: …
-Done by a subagent: …          what it carried out, checked or ran, and what came of it
-Changed by a subagent: …       the files
-A subagent is still on: …      only while it runs
+Subagent:
+- Done: …                      what it carried out, checked or ran, and what came of it
+- Changed: …                   the files
+- Still on: …                  only while it runs
 Context: …
 ```
 
-On the press, the summary is rewritten with the tasks moved to `A subagent is
-still on:`; each report's answer moves them on. The reports show in the pane
+`Subagent:` holds only the sub-points that have something. On the press, the
+summary is rewritten with the tasks moved to `Still on:`; each report's answer
+moves them on. The reports show in the pane
 as the thread's entries, and the thread's agent reads them; none goes into the
 suggestion.
 
-**In the UI it is "agent"**, as Claude Code says; a stopped one is "waiting for
-you" (not "waiting": an idle or finished agent waits too; not "asks you": it
-also stops for a choice or a tool). In the tag it stays `needs-you`, which is
-clearer for the agent.
+**In the UI it is "agent"**, as Claude Code says, and a stopped one is
+"waiting for you". In the tag it stays `needs-you`, which is clearer for the
+agent.
 
 | Where | What it shows |
 |---|---|
@@ -250,8 +257,9 @@ Claude Code tells the main conversation nothing. After a resume (a send, or
 the person in its view), each stop adds a `<task-notification>` there, the
 whole answer in `<result>`, and submits it as a prompt, which would start a
 main turn. For Synaptik's own agents only, the notice is **reworded** (the
-wrapper and task id kept, the text "a side task ran from a Synaptik thread",
-no result) and the prompt **dropped**: no turn, no row, one yellow "Prompt
+wrapper and task id kept, the text "A side task the person started from a
+Synaptik thread", no result) and the prompt **dropped**: no turn, no transcript
+row, one yellow "Prompt
 dropped by a hook" line. This is the one exception to P1 and to D24's "no
 interception of `prompt.submit`", and it holds only for these notices.
 
@@ -295,9 +303,6 @@ view. Fullscreen only.
 - A list of Synaptik's agents, or the band naming one waiting for you: Claude
   Code's agent list already is the list, with its keys and opening, and the
   label says it.
-- `<status>` in a tag of its own, or the report as a fenced block or a quote:
-  one tag is one thing to find and cut, a fence breaks on the commands it
-  quotes, and a quote has no clear end while it streams.
 
 ---
 
@@ -477,8 +482,8 @@ discussion; applied file changes need a real git merge, not a conversation merge
   report's own `Changed:` line (#159). No `$.session.send`, no `git diff`:
   the subagent is in the same session. This entry stays for E1's sessions.
 - **2026-11-21** — under D51 no report goes into the review: the thread's
-  summary carries what the agent did (`Done by a subagent:`, `Changed by a
-  subagent:`), written knowing its reports.
+  summary carries what the agent did, in its `Subagent:` section, written
+  knowing its reports.
 
 ---
 
