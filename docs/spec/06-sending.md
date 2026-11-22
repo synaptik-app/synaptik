@@ -137,8 +137,10 @@ glyph, so a nested mark arrives under the item it belongs to.
 ```
 
 **A marked code line** nests under its block, with its number from 1, counted from
-the block's first line of code, and the line trimmed to 60 characters. A blank line
-has only its number. The block goes first, for context, even when it has no mark:
+the block's first line of code, and the line trimmed to 60 characters, as
+written. A trim that would leave a code span open (an odd number of backticks)
+ends before its last backtick, so the quote doesn't pair with the next one when
+the transcript draws the prompt as Markdown. A blank line has only its number. The block goes first, for context, even when it has no mark:
 
 ```
 "const routes = [ { path: '/api/v1/users'," (code block)
@@ -147,7 +149,8 @@ has only its number. The block goes first, for context, even when it has no mark
 ```
 
 **A marked table row** nests the same way, with its number from 1, counted from the
-first data row, and its cells joined and trimmed to 60 characters:
+first data row, and its cells joined and trimmed to 60 characters, as plain
+text: code spans, bold and emphasis dropped, as in a block's quote (#222):
 
 ```
 "table: Option · Latency · Cost"
