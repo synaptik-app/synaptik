@@ -110,6 +110,9 @@ threads (tabs come free when docked).
   verdict could come back `exclude` with an empty summary under a switch that was
   on.
 - **2026-11-07** — corrected: a click on a block doesn't restart the review.
+- **2026-11-21** — with an agent (D51), the summary gains a `Subagent:` section
+  (`Done:`, `Changed:`, `Still on:`), and every answer
+  carries `<next>agent</next>` when its tasks need tools.
 
 ---
 
@@ -142,6 +145,167 @@ stepping in already said, and the margin couldn't show where it is).
 
 ---
 
+### D51 — A thread's tasks run in its agent
+**Status:** settled · added 2026-11-21
+
+Replaces E2 (#158). **A thread can hand its tasks to an agent of its own**, a
+fork subagent with tools, when the thread's agent says they need them. The
+thread then works like the main conversation with its subagents: the thread's
+agent hears every report, steers the agent on the person's word, and its
+summary is the one account that goes into the review. Discuss is not another
+way to start agents: Claude Code has `/btw`, forks and its own agents for that.
+
+**The thread's agent decides, the person starts.** Every answer carries
+`<next>agent</next>` beside the summary's tags when its Actions or Open
+questions need tools (a search, a command, an edit), with the include switch
+on or off. Then, and only then, the pane shows `▶ start agent on tasks`.
+Nothing runs, costs or asks for permission unless the person chose it (D30).
+On the press, a summary is written first if the latest answer came without
+one, as switching on does, and the include switch turns on unless the person
+set it. The agent is not tied to the switch after that.
+
+**The agent is a fork** (`$.agent.spawn({ subagentType: 'fork' })`): it has the
+main conversation, plus the block, the thread's messages and its summary
+whole, as its tasks. It runs under the session's permission mode. Its prompt
+(`src/prompts.ts`) says what it is for, and who "the coordinator" is: Claude
+Code frames Synaptik's messages to it as the coordinator's, and the agent
+can't know that this is the thread.
+
+**The loop:**
+
+| Event | What happens |
+|---|---|
+| The person writes in the thread | The thread's agent answers. If the answer changes the agent's work (a new, changed or dropped task, a revert), it carries `<to-agent>…</to-agent>`, which Synaptik sends at once (`$.session.send`): the person chose to send when they pressed ⏎. Otherwise no tag, and the agent is left alone. |
+| The agent reports | The thread's agent answers on its own, in the pane ("it finished X and changed these files; it waits for you to choose A or B"), and rewrites the summary. That answer never carries `<to-agent>`, so a report never starts another agent turn: only the person's next message can. |
+| The person answers the agent in the thread | It reaches the agent through `<to-agent>`. |
+| The person talks to the agent in its view | Untouched. The thread doesn't see it; the agent's next report carries what was settled (`Settled with you:`), and the thread carries on from there. |
+
+**The thread's agent, and what it is sent, are outside the main flow**, as a
+thread's fork is (P1): neither reaches the main conversation, and what the
+agent did reaches it only in the thread's summary, which the person sends
+(D30). So `<to-agent>` needs no press of its own, and it is no exception to
+P1: the pane shows what was sent.
+
+Nothing is queued on Synaptik's side: Claude Code hands a message for a
+running agent over at its next tool call, inside its turn, and a message for
+a finished one resumes it. Every agent turn ends in its `turn.complete`, with
+the whole answer, however it was woken: the automatic answer hangs off that.
+
+**It always reports.** It writes to the person as in any chat, ending its
+prose with any question, asked plainly. Then, last, one tag:
+
+```
+<report status="done | needs-you">
+Done: what it did, and what it found
+Ran: the commands that changed or checked something (tests, builds,
+  migrations), and how each ended; not reads or searches
+Changed: the files it changed, by any means
+Not done: what is left, and why
+Settled with you: what the person decided or told it directly, in their words
+Questions: what it needs from the person (only with needs-you)
+</report>
+```
+
+`status` is about its tasks: `done`, resolved; `needs-you`, it stopped with
+something for the person (a question, a tool it couldn't run, a choice).
+Whether it is running at all is Claude Code's (`$.agent.list()`). The files
+come from the report: Synaptik reads nothing out of its transcript, and a file
+written by a shell command has no `Edit` or `Write` call.
+
+**In its view, the report is cut.** Its rows draw without the tag
+(`AssistantMessage`, the text rewritten: the transcript, and `turn.complete`,
+keep it whole), and a dim `⎿ reported to the thread · <state>` takes its
+place. Only a `<report status="…">` tag, only in the view of one of Synaptik's
+agents: a tag it asked its own agent for, not something read out of the main
+conversation. A closed tag is cut alone; an open one, still streaming, to the
+end of the text.
+
+**The summary is the one account.** Only the thread's summary goes into the
+suggestion, written knowing the agent's reports. What the agent did is said
+as the agent's, so the main Claude knows the files changed under it:
+
+```
+Actions: …                     what is left for the main conversation
+Decisions: …
+Open questions: …
+Subagent:
+- Done: …                      what it carried out, checked or ran, and what came of it
+- Changed: …                   the files
+- Still on: …                  only while it runs
+Context: …
+```
+
+`Subagent:` holds only the sub-points that have something. On the press, the
+summary is rewritten with the tasks moved to `Still on:`; each report's answer
+moves them on. The reports show in the pane
+as the thread's entries, and the thread's agent reads them; none goes into the
+suggestion.
+
+**In the UI it is "agent"**, as Claude Code says, and a stopped one is
+"waiting for you". In the tag it stays `needs-you`, which is clearer for the
+agent.
+
+| Where | What it shows |
+|---|---|
+| The pane's button, after the press | `▶ open agent · working`, `· waiting for you`, `· done`, which switches to its view (`$.ui.view`); `▶ agent done`, with no press, once Claude Code no longer draws its row |
+| Claude Code's agent list | its row relabelled, `Synaptik · <block> · <state>` (`AgentRow`). Claude Code decides when it hides; Synaptik reads `isHidden` and never sets it |
+| The block's margin | in place of `💬` while the thread has an agent: ⏳ working, ✋ waiting for you, ✅ done; back to `💬` once Claude Code drops it. The suggestion keeps `💬` and the summary's words |
+| The band | nothing of the agent |
+
+**Its results stay out of the main conversation.** The first time it stops,
+Claude Code tells the main conversation nothing. After a resume (a send, or
+the person in its view), each stop adds a `<task-notification>` there, the
+whole answer in `<result>`, and submits it as a prompt, which would start a
+main turn. For Synaptik's own agents only, the notice is **reworded** (the
+wrapper and task id kept, the text "A side task the person started from a
+Synaptik thread", no result) and the prompt **dropped**: no turn, no transcript
+row, one yellow "Prompt
+dropped by a hook" line. This is the one exception to P1 and to D24's "no
+interception of `prompt.submit`", and it holds only for these notices.
+
+**State:** the agent ids are kept with the threads in `$.state`; a module
+reload loses them, and the pane loses track of a running agent (accepted). An
+agent's first `turn.start` comes before `spawn` returns its id, so when it
+returns, `$.agent.list()` is checked: an agent already `completed` is read from
+`$.session.messages({ agentId })` and handled as its `turn.complete`.
+
+**Limits:** a thread is discarded with its reply (D24), so the person waits for
+the agent before taking the review onward; one still running when a new reply
+arrives keeps running, and its result joins no review (#194). Reviewing the
+agent's own replies in its view is #219: a suggestion shows only in the main
+view. Fullscreen only.
+
+**From the spike, on 2.1.328** (#158):
+- A mod's subagent answers with its own `turn.complete` (`agentId`) and hands
+  nothing back to the main loop.
+- `$.session.send({ to: { agentId } })` resolves `isDelivered` at once. Three
+  sends to a running agent reached it together at its next tool call, framed
+  "the coordinator sent a message while you were working"; one to a finished
+  agent resumed it with a new turn and `turn.complete`.
+- Its notices: none the first time it stops; after a resume, "resumed by the
+  user" (queued, never a prompt) and each completion, reworded in
+  `session.append` and dropped in `prompt.submit` 16 ms later, in either view.
+  The main transcript kept no row of either.
+- A rewrite of `AssistantMessage`'s text takes effect on the agent's own rows
+  in its view.
+- What the person said in its view came back under `Settled with you:`.
+- `$.ui.view({ agentId })` works only from the person's own press, and only
+  while the agent is in the tasks list. A finished agent keeps its row,
+  undrawn, until the engine drops its task.
+
+**Considered:**
+- A press to send `<to-agent>`: friction, since the person just sent the
+  message it answers. The pane shows what was sent.
+- Automatic rounds, the thread answering a report with `<to-agent>`: a loop
+  with nobody watching. Left for later, once this has matured.
+- The agent's report in the suggestion beside the summary, or in its place: two
+  accounts of one thread, and the report is written for the thread.
+- A list of Synaptik's agents, or the band naming one waiting for you: Claude
+  Code's agent list already is the list, with its keys and opening, and the
+  label says it.
+
+---
+
 ## Extensions
 
 ### E1 — Branched sub-sessions (was D16, D17)
@@ -165,11 +329,13 @@ Synaptik-owned session tree, and hiding branches from the resume list.
   after living with D15's delegate loop".
 - **2026-11-20** — a thread no longer leads here: E2 runs a thread's tasks in a
   fork subagent, inside the session. A session of its own stays this idea's.
+- **2026-11-21** — E2 is superseded by D51, which keeps the thread's agent a
+  subagent inside the session.
 
 ---
 
 ### E2 — A thread's tasks run in a subagent (was: promote a thread to a branched session)
-**Status:** proposed · added by 2026-10-14
+**Status:** superseded → D51 · added by 2026-10-14
 
 **A thread can hand its tasks to a subagent, when the thread's agent says they
 need tools.** Discuss is not another way to start agents: Claude Code has
@@ -254,6 +420,11 @@ new reply arrives keeps running, and its result joins no review. #194 lifts it.
 
 **Later:** `/synaptik branch`, the same on the whole reply.
 
+**Replaced by D51:** the thread's agent steers the agent and answers its
+reports; `<to-agent>` goes out at once; only the thread's summary goes into
+the suggestion, with what the agent did in sections of its own; one
+`<report status>` tag, cut in the agent's view.
+
 **Revisions**
 - **2026-10-24** — the `branch` button, and both contexts carried (#106).
 - **2026-11-15** — a fork subagent, not a session (#158): Claude Code keeps
@@ -271,6 +442,8 @@ new reply arrives keeps running, and its result joins no review. #194 lifts it.
   reworded and dropped; a file written from the shell has no `Write` call, so
   the report names changed files itself (`Changed:`); a suggestion can't show
   in an agent's view, so reviewing there is #219.
+- **2026-11-21** — superseded by D51: the thread steers its agent, spiked on
+  2.1.328 (`$.session.send`, the view cut).
 
 ---
 
@@ -308,6 +481,9 @@ discussion; applied file changes need a real git merge, not a conversation merge
   the review in place of the thread's summary; the files it changed are the
   report's own `Changed:` line (#159). No `$.session.send`, no `git diff`:
   the subagent is in the same session. This entry stays for E1's sessions.
+- **2026-11-21** — under D51 no report goes into the review: the thread's
+  summary carries what the agent did, in its `Subagent:` section, written
+  knowing its reports.
 
 ---
 
