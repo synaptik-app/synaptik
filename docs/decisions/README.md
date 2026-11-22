@@ -46,8 +46,9 @@ What holds today, and why — rewritten when it changes, never appended to.
 - **The body is always current.** A revision rewrites it; what it replaced goes
   to *Revisions*, one dated line each. The full story of an attempt stays in
   its issue and pull request.
-- **A superseded or dead DR** is written as it stood when it was replaced, and
-  says what replaced it or why it died.
+- **A superseded or dead DR** says what it proposed or decided, and what
+  replaced it or why it died. Detail that no longer applies is cut; the issue
+  or pull request holds it.
 - **A rule between every DR**, so each reads as one unit.
 - **A DR stands on its own.** It states its rule in its own words and cites
   another DR only where it depends on it. Proposals (E) are not cited from

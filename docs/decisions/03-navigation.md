@@ -36,18 +36,9 @@ focus goes, never which key sent it. So:
   the keyboard, through the band (D41).
 - **Classic** uses a pane, whose scrolling turns ↑/↓ into block moves (D31).
 
-#### Tried and dropped
-
-- **`Cmd+S` to enter:** the terminal emulator usually swallows Cmd combinations,
-  and Cmd does not exist in Linux or Windows terminals. **`Ctrl+S`** is the
-  classic terminal XOFF, which some terminals still honour.
-- **Verbs and blocks on one band ring:** ↓ walked the verbs, then fell through to
-  the next block. Confusing.
-- **Borrowed Global actions for blocks** (`app:diffFileListUp/Down`, `ctrl`/`⌥` +
-  ↑↓): did not fire on macOS — Mission Control takes `ctrl+↑`, and `⌥` needs the
-  terminal's Option-as-Meta. Borrowing another feature's action is fragile anyway.
-- **A bare digit from the empty prompt** to enter: it presses a band button, but
-  `$.ui.focus` from there is refused; it did not give the band the keyboard.
+**Not to retry:** `Cmd+S` or `Ctrl+S` to enter (the terminal swallows them),
+verbs and blocks on one band ring, borrowed global actions for block moves (the
+OS takes them), a bare digit from the empty prompt (`$.ui.focus` is refused).
 
 **Revisions**
 - **2026-10-13** — visible controls on the selected block, not hotkeys alone.

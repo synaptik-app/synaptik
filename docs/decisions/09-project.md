@@ -138,13 +138,9 @@ repository would repeat them and go stale, and nothing is built from it. An
 agent reads them with `gh` when it needs them. An agent's own memory is local to
 one machine and isn't the project's record either.
 
-**Rejected:**
-- **Per-issue logs in `docs/log/`** (#167): one Markdown file per issue, appended
-  before an approach was abandoned, with rules in `CLAUDE.md` and a `PreCompact`
-  hook to remind the agent. No log was ever written, and the folder held only
-  the early design notes, which stay in git history.
-- **Backfilling logs from past session transcripts:** costly, partly inferred,
-  and duplicating what the issues already say.
+**Rejected:** per-issue logs in `docs/log/` (#167), and backfilling them from
+past session transcripts: a second copy of what the issues hold, and none was
+ever written.
 
 **Cost, accepted:** an attempt dropped in a session and never mentioned on its
 issue is lost. The rule above is the guard.
@@ -156,23 +152,9 @@ issue is lost. The rule above is the guard.
 ### D34 — The spike evolves into phase 1
 **Status:** superseded → D27 · added 2026-10-18
 
-Phase 1 evolves the spike's code rather than building fresh from the spec, as
-D27 first had it. By the end of spike 0 the code had been tested against the
-bench's fixtures, the classic renderer and a second mod, with real fixes in it —
-the whole turn as the reply, multi-paragraph items, the shared band, focus
-handling, the suggestion's re-proposal.
-
-**Phase 1, deliberately:**
-- **Keep** the hooks file's tested behaviour and the tested `src/` pieces
-  (`lastTurnText`, the compile step), renamed out of `spike-*`.
-- **Rewrite the segmenter** properly from `spec/01-review-model.md` §3 — the most naive part; tables,
-  quotes, code and multi-paragraph items with tests from the bench's fixtures.
-- **Add a tray module** for §5's state rules, with tests.
-- **Split the hooks file** (~700 lines) into a few files by surface.
-
-**Why not rewrite:** it would redo work that was tested against real use, and
-D27's reason — finding out whether rendering could work before building state on
-it — has been served. D27's other point stands: phases stay thin but end-to-end.
+Phase 1 evolved the spike's code rather than building fresh from the spec: by
+then it was tested against the bench's fixtures, the classic renderer and a
+second mod, with real fixes in it. Rewriting would have redone tested work.
 
 **Revisions**
 - **2026-11-10** — superseded by D27: phase 1 is done, and its rule — evolve tested

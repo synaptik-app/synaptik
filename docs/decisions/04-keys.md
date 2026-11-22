@@ -115,39 +115,17 @@ Moved to E10 as an extension.
 **Status:** superseded → D42 · added 2026-10-20
 
 As it stood when D42 replaced it: **`/synaptik config` edited
-`~/.claude/keybindings.json`**, the only place Claude Code takes keys from, in the
-classic renderer only, with one setting, *Move between actions*: Tab / ⇧Tab
-(default) or ← / →, in `Pane` → `abovePrompt:previous` / `:next`. It read what was
-bound, showed exactly what it would add and which of Claude Code's own keys a
-choice gave up, and **wrote only when the person confirmed** — never silently
-(D32, P1 as revised). In fullscreen it opened nothing and said it was for the
-default renderer.
-
-- **The menu was a mode of the navigator pane** — one tab; Esc returned to the
-  navigator. (A second pane showed as a second tab.)
-- **Keys were not `userConfig` options.** Claude Code obeys only the file; a copy
-  in `userConfig` would have to be written into the file on reload, unseen, and
-  would drift from hand edits. One store: the file.
-- **The key that opens Synaptik was not Synaptik's to set:** `ctrl+x tab` is
-  Claude Code's, and a key the person bound stays theirs, untouched.
-
-**`userConfig` was to hold behaviour options**, as `/config` rows: changing one
-reloads the mod with the new value (`register(on, options)`), which closes its
-panes — so the key menu, which wrote the file, did not edit them. Only one was
-planned: **marks after review**, keep (default) or only while reviewing. It was
-never built (E17).
+`~/.claude/keybindings.json`**, in the classic renderer only, with one setting,
+*Move between actions* (Tab / ⇧Tab, or ← / →). It showed what it would add and
+which of Claude Code's keys a choice gave up, and **wrote only when the person
+confirmed**. Keys were not `userConfig` options: Claude Code obeys only the
+file, and a copy would drift from hand edits.
 
 **Why it went (D42):** one setting, in one renderer, didn't justify reading the
 person's environment and writing one of their files.
 
 **Revisions**
-- **2026-10-20** — settles D32's candidate; spike on #8. Settings: the entry key
-  (`ctrl+x tab` · `ctrl+s` · custom) and the verb keys.
-- **2026-10-21** — custom keys, captured by clicking a `Client` region and pressing
-  the key, removed: built in #71, but a mouse click to capture a key is poor UX
-  for a keyboard tool. Presets only; custom keys are #80.
-- **2026-10-27** — classic only (D41, #113): fullscreen needs none. The `ctrl+s`
-  entry option goes (it gives up the prompt stash).
-- **2026-10-28** — one setting, *Move between actions*; the entry key is no longer
-  Synaptik's to set (#113).
+- **2026-10-20** — settles D32's candidate; spike on #8.
+- **2026-10-27** — classic only (D41, #113).
+- **2026-10-28** — one setting, *Move between actions* (#113).
 - **2026-10-31** — superseded by D42.

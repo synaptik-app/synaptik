@@ -39,7 +39,8 @@ transcript can't scroll to a block (#64). A pane gives typing its own field and
 scroll, and sees Esc.
 
 **The field is a fixed 6 rows.** Claude Code wraps and scrolls it, and `\` then ⏎
-is a new line.
+is a new line. Grown to fit its text, it would have to predict how Claude Code
+wraps it beside its key hint, and a row counted short hides the text (#146).
 
 **Include is a switch**: a button showing its state; no hotkey, since the field
 holds the keyboard and ↓ reaches the button. **The thread's own fork adds a summary
@@ -62,37 +63,16 @@ to the thread's discussion but may name other parts of the reply, since a row is
 often weighed against its neighbours. **It hangs under the switch**, led by `⎿` as
 a tool's result hangs from its call, **and only while the switch is on**: what is
 shown is what goes. Its state is a note beside the switch. Editing it is the prompt
-box's job, as for every other mark.
+box's job, as for every other mark: an editor in the pane would need its height
+from how the summary wraps, which can't be measured, and asking the thread to
+change it does the same with nothing to build.
 
-**From the spike, on 2.1.309:**
-- Two forks sent together both answered, 0.8 s apart: they run in parallel, so
-  threads need no queue.
-- A fork reads the main conversation from the cache (~51,000 tokens) and pays for
-  ~16 uncached ones: a thread costs about its own text. A separate fork per answer
-  for the summary would have doubled that (each re-reads ~74,000 cached tokens).
-- `$.ui.focus` moves focus only inside the site that already holds it, so after a
-  thread the keyboard can't go back to the review. Keeping the review on left the
-  band naming ↑/↓ while they recalled prompt history, so **the review lets go**
-  when a thread takes the keyboard or closes; `ctrl+x tab` or the band's hint
-  starts it again (a click on a block doesn't: outside a review the blocks take no
-  click).
-- A pane opened from the reply is unasked, a `Client`'s post: below 144 columns it
-  isn't placed. From the band it is.
-- The pane's own close (`$.ui.close`) raised no `ui.close` in the log. Esc does,
-  which is the one way out.
+**The review lets go** when a thread takes the keyboard and when it closes:
+`$.ui.focus` can't move the keyboard back to it, and a review left on named ↑/↓
+on the band while they recalled prompt history.
 
-**Tried and dropped:**
-- **A summary editor in the pane** (2026-11-04). A field holding the summary needs
-  its height from how its lines wrap beside Claude Code's key hint, which can't be
-  measured: too short, it hid the person's text; one-row fields per line wrapped
-  and were cut; a fixed height worked but cost a lot of a narrow pane. Asking the
-  thread to change the summary does the same with nothing to build, and the prompt
-  box is there for exact wording.
-- **A field that grows with its text**, which meant predicting how Claude Code
-  wraps it beside its key hint (measured: by word, beside `⏎ send` on one row and
-  ` ⏎ send · \⏎ new line` from two). A row counted short hid the text, and some
-  wraps hide it whatever the count: an `Input` collapses when a row is filled
-  exactly by a word and its space (#146).
+**Rests on the spike on 2.1.309:** forks run in parallel, so threads need no
+queue, and a thread costs about its own text (spec 08, Q6).
 
 **Considered:** `q` or a close button to leave a thread (the field types `q`, and a
 close from the plugin hands the keyboard to the prompt just the same, so Esc does
@@ -115,12 +95,10 @@ threads (tabs come free when docked).
 - **2026-11-21** — with an agent (D51), the summary gains a `Subagent:` section
   (`Done:`, `Changed:`, `Still on:`), and every answer
   carries `<next>agent</next>` when its tasks need tools.
-- **2026-11-22** — while the verdict sets the switch, the answer says in one
-  sentence of its own when it changes it ("I put this in your review so the
-  main conversation runs the check."), so the person knows what the thread's agent did; the summary
-  opens with a `Context:` line when its Actions rest on what the main
-  conversation never saw. `<next>agent</next>` now starts the agent, carried
-  only when the person asks for it (D51).
+- **2026-11-22** — the answer says when its verdict changes the switch; the
+  summary opens with `Context:` when its Actions rest on what the main
+  conversation never saw; `<next>agent</next>` starts the agent, on the
+  person's word (D51).
 
 ---
 
@@ -298,23 +276,7 @@ arrives keeps running, and its result joins no review (#194). Reviewing the
 agent's own replies in its view is #219: a suggestion shows only in the main
 view. Fullscreen only.
 
-**From the spike, on 2.1.328** (#158):
-- A mod's subagent answers with its own `turn.complete` (`agentId`) and hands
-  nothing back to the main loop.
-- `$.session.send({ to: { agentId } })` resolves `isDelivered` at once. Three
-  sends to a running agent reached it together at its next tool call, framed
-  "the coordinator sent a message while you were working"; one to a finished
-  agent resumed it with a new turn and `turn.complete`.
-- Its notices: none the first time it stops; after a resume, "resumed by the
-  user" (queued, never a prompt) and each completion, reworded in
-  `session.append` and dropped in `prompt.submit` 16 ms later, in either view.
-  The main transcript kept no row of either.
-- A rewrite of `AssistantMessage`'s text takes effect on the agent's own rows
-  in its view.
-- What the person said in its view came back under `Settled with you:`.
-- `$.ui.view({ agentId })` works only from the person's own press, and only
-  while the agent is in the tasks list. A finished agent keeps its row,
-  undrawn, until the engine drops its task.
+**Rests on the spike on 2.1.328** (#158); what it answered is in spec 08.
 
 **Considered:**
 - A press to send `<to-agent>`: friction, since the person just sent the
@@ -368,88 +330,10 @@ Synaptik-owned session tree, and hiding branches from the resume list.
 ### E2 — A thread's tasks run in a subagent (was: promote a thread to a branched session)
 **Status:** superseded → D51 · added by 2026-10-14
 
-**A thread can hand its tasks to a subagent, when the thread's agent says they
-need tools.** Discuss is not another way to start agents: Claude Code has
-`/btw`, forks and its own agents for that. A subagent starts only for tasks a
-thread raised, and only when the person presses for it. Design: #158.
-
-**The thread's agent decides, the person starts.** The thread's summary carries
-`<next>agent</next>` beside `<verdict>` when its Actions or Open questions need
-tools (a search, a command, an edit). Then, and only then, the pane shows
-`▶ run as agent · needs tools` with those tasks under it. Without the tag there
-is no button. Nothing runs, costs or asks for permission unless the person
-chose it (D30).
-
-**The subagent is a fork** (`$.agent.spawn({ subagentType: 'fork' })`): it has
-the main conversation, plus the block, the thread's messages, and the thread's
-summary whole, as its tasks: work through the Actions, answer the Open
-questions. It runs under the session's permission mode. The person talks to it
-in its own view, which the pane's `open` switches to (`$.ui.view`, while it is
-in the tasks list); a message there resumes it. Its answer reaches Synaptik
-alone, as its own `turn.complete` (`agentId`): nothing hands back to the main
-conversation.
-
-**It always reports**, at the end of every reply, since it was started to
-resolve tasks:
-
-```
-<report>
-Done: what it did, and what it found
-Ran: the commands that changed or checked something (tests, builds,
-  migrations), and how each ended; not reads or searches
-Changed: the files it changed, by any means
-Not done: what is left, and why
-Questions: what it needs from the person (only with needs-you)
-</report>
-<status>done | needs-you</status>
-```
-
-`<status>` is about its tasks: `done`, resolved; `needs-you`, it stopped with
-something for the person (a question, a tool it couldn't run, a choice).
-Whether it is running at all is Claude Code's (`$.agent.list()`, `taskStatus`).
-
-**The block's entry in the suggestion, each part whole** (nothing is cut out of
-a summary or a report):
-
-| State | Under the block's quote |
-|---|---|
-| thread only | the thread's summary |
-| subagent working, no report yet | the thread's summary, then `A subagent is working on these actions and questions; its report will follow.` |
-| subagent reported, `needs-you` | the thread's summary, then its latest report |
-| subagent reported, `done` | its report, in place of the thread's summary |
-
-The report says which files it changed (`Changed:`): the main conversation's
-picture of them is stale (E3). Synaptik reads nothing out of its transcript: a
-file written by a shell command has no `Edit` or `Write` call. The thread's
-include switch stays the person's throughout.
-
-**In the UI it is "agent"**, as Claude Code says; "branch" stays the word in
-the DRs. The pane shows the state in place of its field (`▶ agent working ·
-open`, `▶ agent needs you · open`, `✓ agent done · open`, `✗ agent stopped ·
-open`); its row in the agent list (`AgentRow`) reads `Synaptik · <block> ·
-<status>`.
-
-**Its results stay out of the main conversation.** Left alone, a subagent
-Synaptik starts reaches nothing there: no notice, no turn. Once the person
-messages it from its view, it counts as resumed by them, and each time it
-stops Claude Code adds a `<task-notification>` to the main conversation, its
-whole answer in `<result>`, and submits it as a prompt, which starts a main
-turn. For Synaptik's own subagents only, the notice is **reworded** (the
-wrapper and task id kept, the text "a side task ran from a Synaptik thread",
-no result) and the prompt **dropped**: no turn, one yellow "Prompt dropped by a
-hook" line. The result reaches the main Claude only in the review the person
-takes. Both need D24 (drop) and the prompt/response rule (reword) revised
-before building.
-
-**Reviewing the subagent's own replies, in its view,** is #219: a suggestion
-shows only in the main view, so sending to it would take `$.prompt.fill` on
-the person's press (a D30 revision).
-
-**Limit:** a thread is discarded with its reply (D24), so the person waits for
-the subagent before taking the review onward. A subagent still running when a
-new reply arrives keeps running, and its result joins no review. #194 lifts it.
-
-**Later:** `/synaptik branch`, the same on the whole reply.
+**A thread could hand its tasks to a fork subagent with tools**, started by the
+person when the thread's agent said they needed tools. The subagent reported at
+the end of every reply, and its report went into the suggestion beside the
+thread's summary, or in its place once it was done. Design and spikes: #158.
 
 **Replaced by D51:** the thread's agent steers the agent and answers its
 reports; `<to-agent>` goes out at once; only the thread's summary goes into
@@ -459,22 +343,10 @@ the suggestion, with what the agent did in sections of its own; one
 **Revisions**
 - **2026-10-24** — the `branch` button, and both contexts carried (#106).
 - **2026-11-15** — a fork subagent, not a session (#158): Claude Code keeps
-  every session and a mod can't delete one. Spiked on 2.1.325: a mod spawns a
-  fork; each reply hands back to the main loop as a prompt; `prompt.submit`
-  can drop it; a tool hook on the hand-back loops.
+  every session and a mod can't delete one.
 - **2026-11-20** — the thread's tasks, not the thread: the thread's agent marks
-  them (`<next>agent</next>`), the person runs them (`run as agent`); the
-  report and its states in the suggestion; "agent" in the UI. Before: a
-  `branch` button on every thread, opening a session with `/branch`, the
-  thread seeded with `$.prompt.fill` through a `$.store` handshake.
-- **2026-11-20** — spiked on 2.1.328 (#158): the report format holds; a mod's
-  subagent answers with its `turn.complete` and hands nothing back; notices
-  come only after the person messages it, carrying the result, so they are
-  reworded and dropped; a file written from the shell has no `Write` call, so
-  the report names changed files itself (`Changed:`); a suggestion can't show
-  in an agent's view, so reviewing there is #219.
-- **2026-11-21** — superseded by D51: the thread steers its agent, spiked on
-  2.1.328 (`$.session.send`, the view cut).
+  them, the person runs them; the report in the suggestion.
+- **2026-11-21** — superseded by D51: the thread steers its agent.
 
 ---
 
@@ -550,21 +422,11 @@ it → new response → mark that up. The mod is iterative, not one-shot.
 ### E6 — Auto-classify thread outcomes
 **Status:** superseded → D45 · added by 2026-10-14
 
-As it stood when D45 took it in: decide automatically whether a thread has something worth appending, removing
-the manual commit step.
-**Primitive exists:** `$.model.classify`, alongside `complete` and `fork` — a
-cheap classification call, so the work is the prompt and threshold, not
-machinery.
-**Design:** classify **auto-stages into the tray; it never auto-sends.** The
-tray stays the one place where everything riding along is visible and removable.
-**Show the verdict live in the thread pane** as an include/exclude state the
-user can flip, with the summary that would be staged — a state reading
-"included" without showing what gets sent is still opaque. Per D3's build note,
-MVP already ships this as a toggle, so E6 changes one default.
-**Failure modes, both hard to notice:** a false negative silently drops a needed
-conclusion; a false positive quietly injects noise.
-**Open:** Q9 — whether `classify` is cheap enough to run per thread turn rather
-than only on close.
+As it stood when D45 took it in: decide automatically whether a thread has
+something worth sending, with `$.model.classify`. It would stage, never send,
+and show the verdict in the thread pane as a state the person can flip, with
+the summary it would send: a false negative silently drops a needed
+conclusion, a false positive quietly adds noise.
 
 **Done another way (2026-11-04, #156):** D45 has the thread's own fork give a
 verdict with each answer, as the switch's default — no `$.model.classify`.
