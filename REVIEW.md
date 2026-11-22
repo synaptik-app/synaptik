@@ -76,10 +76,10 @@ in order.
 2. **A DR is cited for what it says.** Every D, E or P number named exists, has
    the status implied (a superseded DR cited as if it still held is a
    finding), and says what the citing text claims. A settled DR cites no E (proposal).
-3. **The DR format holds.** Numbers never reused or renumbered; a superseded or
-   dead DR says what replaced it or why it died, and its index row says the
-   same; the body reads as what holds today, and each change is one dated line
-   under *Revisions*. What was tried and dropped, and how the work got there,
+3. **The DR format holds.** Numbers never reused or renumbered; a settled DR's
+   body reads as what holds today, and each change is one dated line under
+   *Revisions*; a superseded or dead DR says what it was, and what replaced it
+   or why it died, and its index row says the same. What was tried and dropped, and how the work got there,
    belongs on the issue or PR (D48): a DR that grows a log of attempts is a
    finding.
 4. **Nothing a decision rests on was lost.** When text is cut or shortened, the
