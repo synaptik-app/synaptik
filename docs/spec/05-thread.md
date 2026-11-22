@@ -188,10 +188,12 @@ as `▶ to agent: …`, and Synaptik sends it at once
 agent at its next tool call, and resumes a finished one.
 
 **The agent reports.** Each of its turns ends in its `turn.complete`
-(`agentId`). Synaptik adds the answer to the thread as `▶ agent: …`, whole, and
+(`agentId`). Synaptik adds the answer to the thread whole, drawn as one dim line,
+`▶ agent reported · <state>`, and
 asks the thread's fork for an answer of its own: what the agent did, what waits
 for the person, and the summary rewritten. That answer carries no
 `<to-agent>`, so a report never wakes the agent; the person's next message can.
+
 **The person writes to the agent in its view.** What they type joins the
 thread as theirs, `› to agent: …`, before the report that follows it, and the
 thread's agent reads it there. It is taken from the agent's rows in

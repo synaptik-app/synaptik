@@ -278,10 +278,3 @@ export function typedInView(text: string): string {
   return (text.match(MID_TURN)?.[1] ?? text).trim()
 }
 
-// An agent's answer as its thread shows it, whole: what it wrote to the person,
-// and its report's lines apart from it.
-export function splitReport(answer: string): { prose: string; report?: string } {
-  const m = answer.match(REPORT)
-  if (!m) return { prose: answer.trim() }
-  return { prose: answer.replace(m[0], '').trim(), report: m[2]!.trim() }
-}

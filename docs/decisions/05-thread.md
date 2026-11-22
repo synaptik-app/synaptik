@@ -255,11 +255,12 @@ Subagent:
 Without its `Context:` line, an Action that rests on the agent's finding, or
 on what the person told the agent, reads as out of nowhere (D45).
 
-`Subagent:` holds only the sub-points that have something. On the press, the
-summary is rewritten with the tasks moved to `Still on:`; each report's answer
-moves them on. The reports show in the pane
-as the thread's entries, and the thread's agent reads them; none goes into the
-suggestion.
+`Subagent:` holds only the sub-points that have something. When the agent
+starts, the summary is rewritten with the tasks moved to `Still on:`; each
+report's answer moves them on. Each report is a thread entry, which the
+thread's agent reads whole; the pane draws it as one dim line, `▶ agent
+reported · <state>`, since the thread's answer under it already says what the
+agent did. None goes into the suggestion.
 
 **In the UI it is "agent"**, as Claude Code says, and a stopped one is
 "waiting for you". In the tag it stays `needs-you`, which is clearer for the
@@ -267,7 +268,7 @@ agent.
 
 | Where | What it shows |
 |---|---|
-| The pane | no button: the agent's reports, what was sent to it and what the person wrote to it, as the thread's entries |
+| The pane | no button: a line for each report, what was sent to the agent and what the person wrote to it, as the thread's entries |
 | Claude Code's agent list | its row relabelled, `Synaptik · <block> · <state>` (`AgentRow`), and the way into its view. Claude Code decides when it hides; Synaptik reads `isHidden` and never sets it |
 | The block's margin | in place of `💬` while the thread has an agent: ⏳ working, ✋ waiting for you, ✅ done; back to `💬` once Claude Code drops it. The suggestion keeps `💬` and the summary's words |
 | The band | nothing of the agent |
@@ -336,6 +337,9 @@ view. Fullscreen only.
 - Reading what the person typed in the agent's view from
   `$.session.messages({ agentId, after })` on each report: those rows carry no
   origin, so the person's words and Synaptik's sends can't be told apart.
+- The report drawn whole in the pane, its prose and its lines (built
+  2026-11-21, dropped 2026-11-22): the thread's answer under it says the same,
+  and the agent's view has what it wrote.
 - Hiding the main conversation in a fork's view by re-rendering its rows: rows
   carry no id or position, and ctrl+o shows them anyway. #223 takes a fresh
   agent instead.
@@ -344,7 +348,8 @@ view. Fullscreen only.
 - **2026-11-22** — no buttons: the answer offers the agent and starts it when
   the person asks; what the person types in the agent's view joins the thread;
   the report is cut only where its tag opens a line; the summary opens with
-  `Context:` when its Actions rest on what the main conversation never saw.
+  `Context:` when its Actions rest on what the main conversation never saw;
+  a report draws as one line in the pane.
 
 ---
 

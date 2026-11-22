@@ -112,8 +112,9 @@ test("a report joins the thread whole, sets the agent's state, and the thread an
   const before = forks.length
   forkAnswer.text = 'It ran the tests: they pass. It asks whether to add a TTL test.'
   await report($)
-  expect(await hasText($, '▶ agent:')).toBe(true)
-  expect(await hasText($, 'Done: ran the tests\nRan: npm test -- greet (passed)\nQuestions: add a TTL test?')).toBe(true)
+  // One line for it: the thread's answer says what it did.
+  expect(await hasText($, '▶ agent reported · waiting for you')).toBe(true)
+  expect(await hasText($, 'Done: ran the tests\nRan: npm test -- greet (passed)\nQuestions: add a TTL test?')).toBe(false)
   expect(forks).toHaveLength(before + 1)
   expect(forks.at(-1)).toContain('Its report:\n' + REPORT)
   // That answer sends the agent nothing, even if the fork wrote something.
@@ -157,7 +158,7 @@ test('a first turn that ended before spawn returned is read from its transcript'
   agentRows.push({ role: 'user', text: '<fork-boilerplate>go</fork-boilerplate>', toolUses: [] }, { role: 'assistant', text: REPORT, toolUses: [] })
   forkAnswer.text = STARTING
   await send($, 'yes, start it')
-  expect(await hasText($, '▶ agent:')).toBe(true)
+  expect(await hasText($, '▶ agent reported · waiting for you')).toBe(true)
 })
 
 test("what the person types in the agent's view joins the thread", async ($, on) => {

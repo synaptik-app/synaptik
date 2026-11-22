@@ -23,8 +23,8 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 3. **Do:** press `Esc`, and look at the paragraph's margin
    - **Expect:** ⏳ in place of 💬
 4. **Do:** wait for the agent to finish, then click the hint, click the paragraph, press `d`
-   - **Expect:** the pane shows `▶ agent:` with what it wrote and its report's lines under it (`Done:`, `Ran:`)
-   - **Expect:** under that, the thread's own answer about it, written without your asking
+   - **Expect:** the pane shows one dim `▶ agent reported · done` line, not the agent's reply or its report
+   - **Expect:** under it, the thread's own answer about it, written without your asking
    - **Expect:** the agent list says `· done`, the margin ✅, and the summary's `Subagent:` has `- Done:` and no `- Still on:`
    - **Expect:** the main conversation has no new turn and no new line
 

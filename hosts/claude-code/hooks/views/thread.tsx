@@ -6,7 +6,7 @@ import type { Elements } from 'claude-code'
 
 import { drawnRows } from '../../src/layout'
 import { cells } from '../../src/review'
-import { splitReport } from '../../src/threads'
+import { AGENT_WORDS, reportState } from '../../src/threads'
 import type { Thread } from '../../src/threads'
 
 export type ThreadModel = {
@@ -94,11 +94,11 @@ export function ThreadView(
             <Text color="suggestion">{`› to agent: ${message.text}`}</Text>
           </Box>
         ) : message.role === 'report' ? (
-          // The agent's answer whole: what it wrote, and its report under it.
-          <Box key={`m${n}`} marginBottom={1} paddingX={INSET} flexDirection="column">
-            <Text dimColor>▶ agent:</Text>
-            <Markdown text={splitReport(message.text).prose} />
-            {splitReport(message.text).report ? <Text dimColor>{splitReport(message.text).report}</Text> : null}
+          // One line: the thread's answer under it says what the agent did. The
+          // thread keeps the report whole, for its own reading; the agent's
+          // view has what it wrote.
+          <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
+            <Text dimColor>{`▶ agent reported · ${AGENT_WORDS[reportState(message.text)]}`}</Text>
           </Box>
         ) : (
           <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
