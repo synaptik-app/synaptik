@@ -14,16 +14,6 @@ dark themes. A `Box` background around a block's `Markdown` paints behind the
 text, though `Markdown` itself takes no background. `selectionBg` comes from the
 binary, not the documented API.
 
-**Tried and dropped:**
-- **A gutter column** — bright `▎` on the selected block, dim `▏` on the others.
-  The dim bar on every block was noise, and the single `▎` too faint: the
-  selection and its menu blended into the reply.
-- **A solid accent bar** down the selected block's full height.
-- **Other backgrounds:** `gray` (too strong), `blackBright` (close, still bright),
-  a raw hex (too faint), a background for staged blocks (too much colour in the
-  reply).
-- **Per-block borders** — noisy, and two rows each.
-
 **Revisions**
 - **2026-10-15** — an accent bar on the selected block only, in place of the
   gutter on every block.
@@ -271,52 +261,18 @@ left out until someone needs it.
 ### E5 — Edit and resend a denied command
 **Status:** dead · added by 2026-10-13
 
-The case: Claude proposes a Bash command, you deny it — but you did not want to
-refuse the *command*, only to change a flag. Today that means denying, then
-retyping the whole thing as a prompt.
-
-#### The additive design
-
-Deny normally, through Claude Code's own prompt, untouched. **The mod then sees
-the denied call in the transcript** (`$.session.messages()`) and offers *"edit
-and resend"*: an `Input` pre-filled with the command. Edit it, and it compiles to
-
-```
-run this instead: npm test -- --verbose
-```
-
-No tool hooks. No interception. The permission prompt is never touched, so its
-hard constraint is simply irrelevant.
-
-**It is also better UX than gating.** At a permission prompt you want to say no
-quickly; composing a modified command is a separate activity. Denying first and
-editing after matches what the user is actually doing at each moment.
-
-#### Tried and dropped: gating the approval
-
-Intercept the approval and let the user answer it with an
-instruction. **A mod can restyle most of the interface but not the permission
-prompt** — the docs are unambiguous that "it can't change what a prompt shows
-you."
-
-The workaround was to compose two hooks: `tool.call` can return
-`{ deny: reason }` and the reason reaches Claude (that *is*
-reject-with-a-comment), while `tool.check` fires afterwards and reveals the
-decision the rules and permission mode reached, which would let the mod act only
-on calls that *would* have been asked about.
-
-**The blocker:** `tool.check` returns only a decision, with no documented reason
-field — and the reason lives on `tool.call`, which fires *earlier*, before the
-mod knows whether approval will be asked for at all. The design is ordered
-wrong, with no clean fix visible from the docs.
-
-**Kept as a record of why not to try it again.** The additive version needs none
-of it.
+When Claude proposes a command and the person wants it changed, not refused:
+deny it through Claude Code's own prompt, then edit the denied command and send
+it back as a prompt (`run this instead: …`), read from the transcript (P3).
 
 **Why it died:** Claude Code's permission prompt takes a note on Yes and on No
-(2.1.325): approving with a condition, or denying with what to do instead, is in
-the prompt itself (#154). The gating section stays as the reason not to hook
-the prompt.
+(2.1.325, #154): approving with a condition, or denying with what to do
+instead, is in the prompt itself.
+
+**Not to try again:** gating the approval from a mod. The permission prompt is
+not a mod's to change, and the hooks that come near it are in the wrong order:
+`tool.call` carries the reason but fires before the mod knows whether approval
+will be asked; `tool.check` knows that, but returns only a decision.
 
 **Revisions**
 - **2026-10-13** — rebuilt additively under P3; the gating design is abandoned.

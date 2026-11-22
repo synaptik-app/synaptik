@@ -426,23 +426,10 @@ sits in tension with P1.
 
 Hold the tool call, render questions inline with their options, gate the resume
 on all questions being answered, and fix Discuss so it does not destroy its
-siblings.
-**Why it was cut:** implementation cost, not value. It is the single most
-valuable extension — it fixes a real bug in the current UX.
-**Carries the riskiest unknowns:** Q1 (how long Claude Code tolerates a held
-tool call — **test an intentionally long hold on day one**) and Q2 (the exact
-semantics of `$.ui.ask`, which appears purpose-built for holding a call pending
-a human answer).
-**Reference implementation:** the `blast-radius` sample mod already holds a
-risky shell command and shows proceed/cancel buttons. Read it first.
-**Design notes preserved:** questions render at the end of the message in order
-(D8); the answer-and-forward escape hatch returns partial answers and sends
-typed text as a separate turn, without classifying answers as complete or
-partial (D13).
+siblings. Cut for its cost: a held tool call, and the unknowns of holding one.
 
 **Replaced by D50:** the questions are read from the transcript after the person
 leaves the panel with Esc, and reviewed with the reply; nothing is held.
-
 ---
 
 ### D7 — Structure comes from tool payloads, not prose markup
