@@ -82,6 +82,7 @@ claude --plugin-dir ./hosts/claude-code     # load for one session; reloads on s
 claude plugin validate ./hosts/claude-code  # list hooks and API calls, without running
 claude plugin validate --strict ./hosts/claude-code  # and fail on a type error
 claude plugin test ./hosts/claude-code      # run *.test.ts, no session needed
+node scripts/fixtures.mjs                   # after editing testbench/fixtures: regenerate the tests' copy
 npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code  # types, from a session's
 ```
 
