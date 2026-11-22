@@ -39,7 +39,8 @@ transcript can't scroll to a block (#64). A pane gives typing its own field and
 scroll, and sees Esc.
 
 **The field is a fixed 6 rows.** Claude Code wraps and scrolls it, and `\` then ⏎
-is a new line.
+is a new line. Grown to fit its text, it would have to predict how Claude Code
+wraps it beside its key hint, and a row counted short hides the text (#146).
 
 **Include is a switch**: a button showing its state; no hotkey, since the field
 holds the keyboard and ↓ reaches the button. **The thread's own fork adds a summary
@@ -62,7 +63,9 @@ to the thread's discussion but may name other parts of the reply, since a row is
 often weighed against its neighbours. **It hangs under the switch**, led by `⎿` as
 a tool's result hangs from its call, **and only while the switch is on**: what is
 shown is what goes. Its state is a note beside the switch. Editing it is the prompt
-box's job, as for every other mark.
+box's job, as for every other mark: an editor in the pane would need its height
+from how the summary wraps, which can't be measured, and asking the thread to
+change it does the same with nothing to build.
 
 **The review lets go** when a thread takes the keyboard and when it closes:
 `$.ui.focus` can't move the keyboard back to it, and a review left on named ↑/↓
