@@ -109,10 +109,10 @@ What holds today, and why — rewritten when it changes, never appended to.
 | D49 | The plan is reviewed on request, in Synaptik's own row | [review-model](01-review-model.md#d49--the-plan-is-reviewed-on-request-in-synaptiks-own-row) | settled |
 | D50 | Declined questions are reviewed with the reply | [review-model](01-review-model.md#d50--declined-questions-are-reviewed-with-the-reply) | settled |
 | D51 | A thread's tasks run in its agent | [thread](05-thread.md#d51--a-threads-tasks-run-in-its-agent) | settled |
-| E1 | Branched sub-sessions (was D16, D17) | [thread](05-thread.md#e1--branched-sub-sessions-was-d16-d17) | proposed |
+| E1 | Branched sub-sessions (was D16, D17) | [thread](05-thread.md#e1--branched-sub-sessions-was-d16-d17) | dead |
 | E2 | A thread's tasks run in a subagent | [thread](05-thread.md#e2--a-threads-tasks-run-in-a-subagent-was-promote-a-thread-to-a-branched-session) | superseded → D51 |
-| E3 | Worktree isolation (was D19) | [thread](05-thread.md#e3--worktree-isolation-was-d19) | proposed |
-| E4 | Summary-based merge between sessions (was D18) | [thread](05-thread.md#e4--summary-based-merge-between-sessions-was-d18) | proposed |
+| E3 | Worktree isolation (was D19) | [thread](05-thread.md#e3--worktree-isolation-was-d19) | dead |
+| E4 | Summary-based merge between sessions (was D18) | [thread](05-thread.md#e4--summary-based-merge-between-sessions-was-d18) | dead |
 | E5 | Edit and resend a denied command | [rendering](02-rendering.md#e5--edit-and-resend-a-denied-command) | dead |
 | E6 | Auto-classify thread outcomes | [thread](05-thread.md#e6--auto-classify-thread-outcomes) | superseded → D45 |
 | E7 | Mod-driven Run verb (cut from D2) | [review-model](01-review-model.md#e7--mod-driven-run-verb-cut-from-d2) | proposed |
