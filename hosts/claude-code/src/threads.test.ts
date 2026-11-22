@@ -79,7 +79,7 @@ test('what a message asks after the answer follows the switch', () => {
   const off = ask({ ...talked, included: false, isIncludeSet: true })
   expect(off).not.toContain('<summary>')
   expect(off).not.toContain('<verdict>')
-  expect(off).toContain('and?\n\nIf carrying out the Actions')
+  expect(off).toContain("and?\n\nWhen the person's message asks you to start an agent")
 })
 
 test('an answer with a summary and no verdict leaves the switch as it is', () => {

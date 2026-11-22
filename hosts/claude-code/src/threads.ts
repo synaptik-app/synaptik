@@ -18,6 +18,8 @@ import {
   SWITCH_ON,
   THREAD_PROMPT,
   THREAD_SO_FAR,
+  TOOLS_AGENT,
+  TOOLS_OFFER,
   WITH_NEXT,
   WITH_NOTHING,
   WITH_SUMMARY,
@@ -95,7 +97,8 @@ const fill = (template: string, values: Record<string, string>) =>
 export function threadPrompt(anchor: Anchor, thread: Thread, message: string): string {
   const so = thread.messages.length > 0 ? fill(THREAD_SO_FAR, { thread: transcript(thread.messages) }) : ''
   const after = summaryAfter(thread) + (thread.agent ? WITH_TO_AGENT : WITH_NEXT)
-  return fill(THREAD_PROMPT, { block: anchor.block, part: partOf(anchor), thread: so, message, after })
+  const tools = thread.agent ? TOOLS_AGENT : TOOLS_OFFER
+  return fill(THREAD_PROMPT, { block: anchor.block, part: partOf(anchor), thread: so, message, after, tools })
 }
 
 // What follows the answer about the summary, by the switch, with the agent's
@@ -143,15 +146,17 @@ const TO_AGENT = /<to-agent>([\s\S]*?)<\/to-agent>/
 
 // An answer as the fork wrote it: what the person reads, and after it, each when
 // asked for, the summary, the verdict, whether the person asked for an agent on
-// its tasks, and what to send the agent. The person reads none of the tags.
+// its tasks, and what to send the agent. The person reads none of the tags, and
+// all of the prose: a sentence the fork wrote after them still reads.
 export function parseAnswer(raw: string): Answer {
   const summary = raw.match(SUMMARY)
   const verdict = raw.match(VERDICT)
   const next = raw.match(NEXT)
   const toAgent = raw.match(TO_AGENT)
-  const at = Math.min(...[summary, verdict, next, toAgent].map(m => m?.index ?? raw.length))
+  let text = raw
+  for (const m of [summary, verdict, next, toAgent]) if (m) text = text.replace(m[0], '\n\n')
   return {
-    text: raw.slice(0, at).trim(),
+    text: text.replace(/\n{3,}/g, '\n\n').trim(),
     ...(summary ? { summary: summary[1]!.trim() } : {}),
     ...(summary && verdict ? { verdict: verdict[1] as 'include' | 'exclude' } : {}),
     startsAgent: next !== null,

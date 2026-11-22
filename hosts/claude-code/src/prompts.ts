@@ -3,7 +3,7 @@
 // code files, so it lives here rather than in a .md file.
 //
 // Placeholders, filled by src/threads.ts: {{block}}, {{part}}, {{thread}},
-// {{message}}, {{after}}.
+// {{message}}, {{after}}, {{tools}}.
 
 // What the summary is for, and what goes in it. Shared by the thread prompt and
 // the fallback that asks for the summary alone.
@@ -18,7 +18,7 @@ Write each section's label once, with its colon. A section with one point keeps 
 const VERDICT_GUIDANCE = `The verdict: include when the summary holds a change, work to carry out, or a decision the main conversation doesn't have yet. Exclude when the thread only explained, confirmed or explored, and the summary is empty.`
 
 // One message of the thread: the answer, then its summary and verdict.
-export const THREAD_PROMPT = `The person is reviewing your last reply and opened a side thread about one block of it. The thread branches off the conversation here: you have everything up to now, but nothing in it reaches the main conversation unless the person includes it in their review. Any tool call is refused here, so answer their latest message, about that block, briefly, from what you already know. When something needs doing (a command to run, a file to edit, a test to run), say so, and it will go into the summary for the main conversation to carry out.
+export const THREAD_PROMPT = `The person is reviewing your last reply and opened a side thread about one block of it. The thread branches off the conversation here: you have everything up to now, but nothing in it reaches the main conversation unless the person includes it in their review. Any tool call is refused here, so answer their latest message, about that block, briefly, from what you already know.{{tools}}
 
 The block:
 """
@@ -44,7 +44,7 @@ ${SUMMARY_GUIDANCE}
 
 ${VERDICT_GUIDANCE}
 
-This thread is {{switch}} now, and your verdict sets it. When it changes that, end your answer with one short sentence saying so, as what you did: "I've included this in your review for the main conversation." or "I've left this out of your review: nothing in it to send." Say nothing of it when the verdict leaves it as it is.`
+This thread is {{switch}} now, and your verdict sets it. When it changes that, say so in one short sentence, the last of your answer, before the summary, as what you did: "I've included this in your review for the main conversation." or "I've left this out of your review: nothing in it to send." Say nothing of it when the verdict leaves it as it is.`
 
 // What the switch stands at, for the sentence above.
 export const SWITCH_ON = 'included in their review'
@@ -98,12 +98,16 @@ export const INCLUDED_ANYWAY = `The person chose to include this thread in their
 
 // --- A thread's agent (D51, SPEC §8 *The thread's agent*) -------------------
 
-// After every answer, switch on or off, while the thread has no agent: one is
-// offered when its tasks need tools, and started when the person asks.
+// In the thread's opening, by whether it has an agent: what becomes of work
+// that needs tools. With none, the answer offers one (D51).
+export const TOOLS_OFFER = ` When answering their message, or doing what the thread settled, needs tools (reading or counting files, a search, a command, an edit, a test run), say what would settle it, then end your answer, before the summary, with this sentence, word for word (only a sentence about their review may follow it): "I can start an agent with tools on this; just say so." Leave it out if you offered it before and the person didn't take it up. Whatever needs doing also goes into the summary, for the main conversation to carry out if the person sends it instead.`
+export const TOOLS_AGENT = ` When something needs doing (a command to run, a file to edit, a test to run), an agent with tools is already working on this thread's tasks (below), and the summary carries it to the main conversation.`
+
+// After every answer, switch on or off, while the thread has no agent: it
+// starts when the person asks for it.
 export const WITH_NEXT = `
 
-If carrying out the Actions or answering the Open questions needs tools (a search, a command, an edit, a test run), end your answer with one short sentence offering an agent with tools for them: "I can start an agent with tools on these; just say so."
-When the person's message asks you to start one (in so many words, or a yes to that offer), say in your answer that you're starting it, and add this at the very end, after everything else:
+When the person's message asks you to start an agent with tools (in so many words, or a yes to your offer of one), say in your answer that you're starting it, and add this at the very end, after everything else:
 <next>agent</next>
 It starts at once, with the summary as its tasks. Never add it unless their message asks for the agent.`
 

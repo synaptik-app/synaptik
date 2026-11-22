@@ -56,7 +56,7 @@ const hasText = ($: Dollar, text: string) => inPane($, async pane => Boolean(awa
 const hasButton = ($: Dollar, text: string) => inPane($, async pane => Boolean(await pane.find({ type: 'Button', text })))
 
 const SUMMARY = '<summary>\nActions: Run npm test -- greet.\n</summary>\n<verdict>include</verdict>'
-const NEEDS_TOOLS = `I can't run it from here. I can start an agent with tools on these; just say so.\n${SUMMARY}`
+const NEEDS_TOOLS = `I can't run it from here. I can start an agent with tools on this; just say so.\n${SUMMARY}`
 const STARTING = `Starting an agent on it.\n${SUMMARY}\n<next>agent</next>`
 const REPORT = 'Tests pass. Should I also add one for the TTL?\n\n<report status="needs-you">\nDone: ran the tests\nRan: npm test -- greet (passed)\nQuestions: add a TTL test?\n</report>'
 

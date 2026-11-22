@@ -35,7 +35,8 @@ const working: Thread = { ...talked, agent: { id: 'a1', state: 'working' } }
 test('with no agent, every answer offers one when its tasks need tools, and starts it when asked, the switch on or off', () => {
   for (const t of [NEW_THREAD, talked, { ...talked, isIncludeSet: true, included: false }]) {
     const prompt = threadPrompt({ block: 'B' }, t, 'go')
-    expect(prompt).toContain('I can start an agent with tools on these; just say so.')
+    expect(prompt).toContain('"I can start an agent with tools on this; just say so."')
+    expect(prompt).toContain('reading or counting files')
     expect(prompt).toContain('<next>agent</next>')
     expect(prompt).toContain('Never add it unless their message asks for the agent.')
     expect(prompt).not.toContain('<to-agent>')
@@ -60,6 +61,7 @@ test('with an agent, the answer may carry what to send it, and the summary has i
   expect(prompt).toContain('<to-agent>')
   expect(prompt).toContain('not every message is for it')
   expect(prompt).not.toContain('<next>agent</next>')
+  expect(prompt).not.toContain('I can start an agent')
   expect(prompt).toContain('- Still on:')
 })
 
@@ -68,6 +70,8 @@ test('the tags come off the answer, each read', () => {
   expect(a).toEqual({ text: 'Sure.', summary: 'Actions: X', verdict: 'include', startsAgent: true })
   const b = parseAnswer('Done that.\n<to-agent>\nAlso index by topic.\n</to-agent>')
   expect(b).toEqual({ text: 'Done that.', startsAgent: false, toAgent: 'Also index by topic.' })
+  // A sentence after the tags still reads.
+  expect(parseAnswer('Check it.\n<summary>\nActions: X\n</summary>\n<verdict>include</verdict>\n\nI\'ve included this in your review.').text).toBe("Check it.\n\nI've included this in your review.")
   // The switch off by the person: no summary, the tag alone.
   expect(parseAnswer('Hm.\n<next>agent</next>')).toEqual({ text: 'Hm.', startsAgent: true })
 })
