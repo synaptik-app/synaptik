@@ -6,6 +6,7 @@ import type { Elements } from 'claude-code'
 
 import { drawnRows } from '../../src/layout'
 import { cells } from '../../src/review'
+import { splitReport } from '../../src/threads'
 import type { Thread } from '../../src/threads'
 
 export type ThreadModel = {
@@ -82,6 +83,22 @@ export function ThreadView(
         message.role === 'person' ? (
           <Box key={`m${n}`} marginBottom={1}>
             <Text color="suggestion">{`› ${message.text}`}</Text>
+          </Box>
+        ) : message.role === 'sent' ? (
+          <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
+            <Text dimColor>{`▶ to agent: ${message.text}`}</Text>
+          </Box>
+        ) : message.role === 'direct' ? (
+          // What the person wrote to the agent in its own view.
+          <Box key={`m${n}`} marginBottom={1}>
+            <Text color="suggestion">{`› to agent: ${message.text}`}</Text>
+          </Box>
+        ) : message.role === 'report' ? (
+          // The agent's answer whole: what it wrote, and its report under it.
+          <Box key={`m${n}`} marginBottom={1} paddingX={INSET} flexDirection="column">
+            <Text dimColor>▶ agent:</Text>
+            <Markdown text={splitReport(message.text).prose} />
+            {splitReport(message.text).report ? <Text dimColor>{splitReport(message.text).report}</Text> : null}
           </Box>
         ) : (
           <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>

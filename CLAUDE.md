@@ -92,7 +92,7 @@ takes a login.
 **Testing by hand:** `testbench/` holds fixed replies to mark up. Start a session
 there (`cd testbench && claude --plugin-dir ../hosts/claude-code`) and ask it to
 run a test — `smoke` first on every build, then by area: `render`, `review`,
-`comments`, `code`, `tables`, `threads`, `summaries`, `nesting`, `classic`; and
+`comments`, `code`, `tables`, `threads`, `summaries`, `agents`, `nesting`, `classic`; and
 rarely `split`, `long`, `neighbour`. Each is a flow of **Do:** steps with
 **Expect:** lines to mark. Its own `CLAUDE.md` says how; results go to issues
 #11–#13.

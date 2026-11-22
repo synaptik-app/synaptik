@@ -53,8 +53,10 @@ the same call, rather than a separate classifier call (`$.model.classify`).
 
 **The summary is written for its use**, as the person's instruction to the agent,
 in sections: `Actions:` (changes and work to carry out — both are what the agent
-does next), `Decisions:`, `Open questions:`, and `Context:` for a thread switched
-on with nothing else to send, kept to a sentence or two. Not a recap: a thread
+does next), `Decisions:`, `Open questions:`, and `Context:`: for a thread switched
+on with nothing else to send, kept to a sentence or two, and first, in a line,
+when the Actions rest on something the main conversation never saw (an agent's
+finding, what the person told the agent). Not a recap: a thread
 can't run commands and the main conversation has to (`src/prompts.ts`). It sticks
 to the thread's discussion but may name other parts of the reply, since a row is
 often weighed against its neighbours. **It hangs under the switch**, led by `⎿` as
@@ -113,6 +115,12 @@ threads (tabs come free when docked).
 - **2026-11-21** — with an agent (D51), the summary gains a `Subagent:` section
   (`Done:`, `Changed:`, `Still on:`), and every answer
   carries `<next>agent</next>` when its tasks need tools.
+- **2026-11-22** — while the verdict sets the switch, the answer says in one
+  sentence when it changes it ("I've included this in your review for the main
+  conversation."), so the person knows what the thread's agent did; the summary
+  opens with a `Context:` line when its Actions rest on what the main
+  conversation never saw. `<next>agent</next>` now starts the agent, carried
+  only when the person asks for it (D51).
 
 ---
 
@@ -155,18 +163,26 @@ agent hears every report, steers the agent on the person's word, and its
 summary is the one account that goes into the review. Discuss is not another
 way to start agents: Claude Code has `/btw`, forks and its own agents for that.
 
-**The thread's agent decides, the person starts.** Every answer carries
-`<next>agent</next>` beside the summary's tags when its Actions or Open
-questions need tools (a search, a command, an edit), with the include switch
-on or off. Then, and only then, the pane shows `▶ start agent on tasks`.
-Nothing runs, costs or asks for permission unless the person chose it (D30).
-On the press, a summary is written first if the latest answer came without
-one, as switching on does, and the include switch turns on unless the person
-set it. The agent is not tied to the switch after that.
+**The thread's agent offers, the person asks.** While the thread has no
+agent, an answer whose Actions or Open questions need tools (a search, a
+command, an edit) ends with a one-line offer, with the include switch on or
+off: "I can start an agent with tools on these; just say so." When the
+person's message asks for one, in so many words or as a yes to the offer, the
+answer says it is starting it and carries `<next>agent</next>`, and Synaptik
+starts it at once: the person chose it when they sent the message, as with
+`<to-agent>` (D30). Nothing runs, costs or asks for permission unless they
+asked. A summary is written first if the latest answer came without one, as
+switching on does, and the include switch turns on unless the person set it.
+The agent is not tied to the switch after that.
+
+**The pane has no button for it**, to start it or to open it: the thread is a
+conversation, so the person asks there, and Claude Code's agent list already
+holds the agent, with its state, and opens its view.
 
 **The agent is a fork** (`$.agent.spawn({ subagentType: 'fork' })`): it has the
 main conversation, plus the block, the thread's messages and its summary
-whole, as its tasks. It runs under the session's permission mode. Its prompt
+whole, as its tasks. A fresh agent in its place, whose view would show only
+its own work, is #223. It runs under the session's permission mode. Its prompt
 (`src/prompts.ts`) says what it is for, and who "the coordinator" is: Claude
 Code frames Synaptik's messages to it as the coordinator's, and the agent
 can't know that this is the thread.
@@ -178,7 +194,7 @@ can't know that this is the thread.
 | The person writes in the thread | The thread's agent answers. If the answer changes the agent's work (a new, changed or dropped task, a revert), it carries `<to-agent>…</to-agent>`, which Synaptik sends at once (`$.session.send`): the person chose to send when they pressed ⏎. Otherwise no tag, and the agent is left alone. |
 | The agent reports | The thread's agent answers on its own, in the pane ("it finished X and changed these files; it waits for you to choose A or B"), and rewrites the summary. That answer never carries `<to-agent>`, so a report never starts another agent turn: only the person's next message can. |
 | The person answers the agent in the thread | It reaches the agent through `<to-agent>`. |
-| The person talks to the agent in its view | Untouched. The thread doesn't see it; the agent's next report carries what was settled (`Settled with you:`), and the thread carries on from there. |
+| The person talks to the agent in its view | What they type joins the thread as theirs, to the agent (`› to agent: …`), taken in `session.append` from the agent's rows the person sent; what Synaptik sent comes stamped as the coordinator's, and the thread has it already. The agent's next report says what was settled (`Settled with you:`), and the thread carries on from both. |
 
 **The thread's agent, and what it is sent, are outside the main flow**, as a
 thread's fork is (P1): neither reaches the main conversation, and what the
@@ -215,9 +231,10 @@ written by a shell command has no `Edit` or `Write` call.
 **In its view, the report is cut.** Its rows draw without the tag
 (`AssistantMessage`, the text rewritten: the transcript, and `turn.complete`,
 keep it whole), and a dim `⎿ reported to the thread · <state>` takes its
-place. Only a `<report status="…">` tag, only in the view of one of Synaptik's
-agents: a tag it asked its own agent for, not something read out of the main
-conversation. A closed tag is cut alone; an open one, still streaming, to the
+place. Only a `<report status="…">` tag opening a line, only in the view of
+one of Synaptik's agents: a tag it asked its own agent for, not something read
+out of the main conversation. A `<report` inside a line is text: a fork's view
+shows the main conversation's reply too, and that may mention one. A closed tag is cut alone; an open one, still streaming, to the
 end of the text.
 
 **The summary is the one account.** Only the thread's summary goes into the
@@ -225,15 +242,18 @@ suggestion, written knowing the agent's reports. What the agent did is said
 as the agent's, so the main Claude knows the files changed under it:
 
 ```
+Context: …                     where the Actions come from, when the main conversation never saw it
 Actions: …                     what is left for the main conversation
 Decisions: …
 Open questions: …
 Subagent:
-- Done: …                      what it carried out, checked or ran, and what came of it
+- Done: …                      what it carried out, checked or ran, so it isn't done again
 - Changed: …                   the files
 - Still on: …                  only while it runs
-Context: …
 ```
+
+Without its `Context:` line, an Action that rests on the agent's finding, or
+on what the person told the agent, reads as out of nowhere (D45).
 
 `Subagent:` holds only the sub-points that have something. On the press, the
 summary is rewritten with the tasks moved to `Still on:`; each report's answer
@@ -247,8 +267,8 @@ agent.
 
 | Where | What it shows |
 |---|---|
-| The pane's button, after the press | `▶ open agent · working`, `· waiting for you`, `· done`, which switches to its view (`$.ui.view`); `▶ agent done`, with no press, once Claude Code no longer draws its row |
-| Claude Code's agent list | its row relabelled, `Synaptik · <block> · <state>` (`AgentRow`). Claude Code decides when it hides; Synaptik reads `isHidden` and never sets it |
+| The pane | no button: the agent's reports, what was sent to it and what the person wrote to it, as the thread's entries |
+| Claude Code's agent list | its row relabelled, `Synaptik · <block> · <state>` (`AgentRow`), and the way into its view. Claude Code decides when it hides; Synaptik reads `isHidden` and never sets it |
 | The block's margin | in place of `💬` while the thread has an agent: ⏳ working, ✋ waiting for you, ✅ done; back to `💬` once Claude Code drops it. The suggestion keeps `💬` and the summary's words |
 | The band | nothing of the agent |
 
@@ -288,7 +308,13 @@ view. Fullscreen only.
   The main transcript kept no row of either.
 - A rewrite of `AssistantMessage`'s text takes effect on the agent's own rows
   in its view.
-- What the person said in its view came back under `Settled with you:`.
+- What the person said in its view came back under `Settled with you:`. In
+  the hand test (2026-11-22), a later report folded it into `Done:` instead,
+  and the thread's summary kept the question open: so it also joins the
+  thread. In the agent's stored rows, what the person typed is stamped as
+  theirs and what Synaptik sent as the coordinator's (`plugin: synaptik`);
+  typed while it ran, the words come wrapped ("The user sent a new message
+  while you were working: …").
 - `$.ui.view({ agentId })` works only from the person's own press, and only
   while the agent is in the tasks list. A finished agent keeps its row,
   undrawn, until the engine drops its task.
@@ -303,6 +329,22 @@ view. Fullscreen only.
 - A list of Synaptik's agents, or the band naming one waiting for you: Claude
   Code's agent list already is the list, with its keys and opening, and the
   label says it.
+- `▶ start agent on tasks` and `▶ open agent · <state>` in the pane (built
+  2026-11-21, dropped 2026-11-22): the thread is a conversation, and asking
+  there is how the person starts anything else in it; the agent list opens the
+  view.
+- Reading what the person typed in the agent's view from
+  `$.session.messages({ agentId, after })` on each report: those rows carry no
+  origin, so the person's words and Synaptik's sends can't be told apart.
+- Hiding the main conversation in a fork's view by re-rendering its rows: rows
+  carry no id or position, and ctrl+o shows them anyway. #223 takes a fresh
+  agent instead.
+
+**Revisions**
+- **2026-11-22** — no buttons: the answer offers the agent and starts it when
+  the person asks; what the person types in the agent's view joins the thread;
+  the report is cut only where its tag opens a line; the summary opens with
+  `Context:` when its Actions rest on what the main conversation never saw.
 
 ---
 

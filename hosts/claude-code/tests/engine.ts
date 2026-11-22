@@ -94,6 +94,24 @@ export const reads: (number | undefined)[] = []
 // `engine`.
 export const submitted: string[] = []
 
+// A thread's agent (D51): every spawn's prompt and description, every message
+// sent to an agent, and every row appended, as it passed.
+// `agents` is what $.agent.list() answers, `agentRows` an agent's transcript.
+// Reset by `engine`.
+export const spawned: { prompt: string; description?: string; subagentType?: string }[] = []
+export const sentToAgents: { to: unknown; text: string }[] = []
+export const appended: unknown[] = []
+export const agents: { id: string; description: string; status: string; taskStatus: string; hasRow: boolean; startTime: number }[] = []
+// How the agent spawned stands when spawn returns: `completed` for one whose
+// first turn ended first. Reset by `engine`.
+export const spawnedAgent = { taskStatus: 'running' }
+export const agentRows: Row[] = []
+export const AGENT_ID = 'agent-1'
+// The label of every agent row, and the text of every reply row, Claude Code
+// was asked to draw. Reset by `engine`.
+export const agentLabels: string[] = []
+export const drawnTexts: string[] = []
+
 // Answers every engine call Synaptik makes, with `rows` as the transcript —
 // read live, so a test can change it, as a turn does.
 export function engine(on: On, rows: Row[]) {
@@ -109,16 +127,43 @@ export function engine(on: On, rows: Row[]) {
   reads.length = 0
   session.id = 'session-1'
   forkAnswer.text = 'An answer.'
+  spawned.length = 0
+  sentToAgents.length = 0
+  appended.length = 0
+  agents.length = 0
+  agentRows.length = 0
+  spawnedAgent.taskStatus = 'running'
+  agentLabels.length = 0
+  drawnTexts.length = 0
   const event = (name: string, fn: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => fn(e)) as never)
   const call = (name: string, value: (e: never) => unknown) =>
     on(name as never, ((_$: unknown, e: never) => ({ value: value(e) })) as never)
 
   // The newest `last` rows, as Claude Code cuts them; all of them with none.
-  call('session.messages', (e: { last?: number }) => {
+  call('session.messages', (e: { last?: number; agentId?: string }) => {
+    if (e.agentId) return agentRows
     reads.push(e.last)
     return e.last ? rows.slice(-e.last) : rows
   })
+  // Raised in the Agent tool's own spelling (`subagent_type`).
+  event('agent.spawn', (e: { prompt: string; description?: string; subagent_type?: string }) => {
+    spawned.push({ prompt: e.prompt, description: e.description, subagentType: e.subagent_type })
+    // The kit keeps core's agentId from a hook's answer: the agent is found in
+    // the list by its description, as when core gives none.
+    agents.push({ id: AGENT_ID, description: e.description ?? '', status: 'running', taskStatus: spawnedAgent.taskStatus, hasRow: true, startTime: 1 })
+    return { model: 'claude-opus-5-5', agentId: AGENT_ID }
+  })
+  call('agent.list', () => agents)
+  event('session.send', (e: { to: unknown; text: string }) => {
+    sentToAgents.push({ to: e.to, text: e.text })
+    return { isDelivered: true }
+  })
+  // The kit keeps the row beneath: this only notes what passed down to it.
+  on('session.append' as never, ((_$: unknown, e: { message: unknown }, next: (e: unknown) => unknown) => {
+    appended.push(e.message)
+    return next(e)
+  }) as never)
   call('session.id', () => session.id)
   event('session.end', (e: { sessionId: string }) => ({ sessionId: e.sessionId }))
   call('command.register', (e: { name: string }) => {
@@ -179,7 +224,11 @@ export function engine(on: On, rows: Row[]) {
   event('turn.complete', (e: { answer: string }) => ({ text: e.answer }))
   // Claude Code's own drawing, when a hook passes a component through: a
   // marker, so a test can tell "Synaptik drew it" from "passed it on".
-  event('ui.render', () => ({ type: 'Text', props: {}, children: [ENGINE_DRAWING] }))
+  event('ui.render', (e: { component?: string; props?: { label?: string; text?: string } }) => {
+    if (e.component === 'AgentRow') agentLabels.push(String(e.props?.label))
+    if (e.component === 'AssistantMessage') drawnTexts.push(String(e.props?.text))
+    return { type: 'Text', props: {}, children: [ENGINE_DRAWING] }
+  })
 }
 
 // The text of Claude Code's own drawing in a test (see `engine`).

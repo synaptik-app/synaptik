@@ -23,7 +23,7 @@ hooks (P3).
 | `session.end` | after `/resume` or `/clear`, picks up the reply of the session that follows |
 | `command.run` | answers `/synaptik` only; other commands aren't touched |
 | `turn.start`, `turn.complete` | stops marking during a turn, and picks up the new reply after it; a thread's agent's `turn.complete` (`agentId`) brings its report to the thread (D51) |
-| `session.append` | rewords Claude Code's notice about one of Synaptik's own agents, without its result (D51); every other row passes untouched |
+| `session.append` | rewords Claude Code's notice about one of Synaptik's own agents, without its result, and keeps what the person types in one's view for its thread (D51); every row passes on, the notice reworded |
 | `prompt.submit` | drops that notice's prompt, so it starts no turn (D51); every other prompt passes untouched |
 | `ui.render` | draws the reply while it's under review or carries marks, the band above the prompt, and its own panes: the navigator and discuss threads. It also notes which turn row is the newest, without changing it. |
 | `ui.message` | receives clicks and keys from its own elements |
@@ -47,7 +47,6 @@ and `AgentRow` (a thread's agent's label).
 | `$.model.fork` | a thread's answers, summary and verdict (D14) |
 | `$.agent.spawn`, `$.agent.list` | a thread's agent, and whether it is still running or already done (D51) |
 | `$.session.send` | the thread's `<to-agent>` to its agent (D51) |
-| `$.ui.view` | a thread's agent's view, from the pane's button (D51) |
 | `$.ui.open`, `$.ui.close`, `$.ui.focus` | the navigator and thread panes |
 | `$.ui.scroll` | bringing the reply into view, from the person's own keys |
 | `$.ui.invalidate` | redrawing the reply, band and panes after a change |
@@ -227,6 +226,10 @@ Answered by the spike on Claude Code 2.1.287 (macOS, fullscreen terminal).
       session's transcript, cached; concurrency unknown. Not exercised. ⚠️
 - [x] **Entry key.** `abovePrompt:focus` (`ctrl+x tab` by default); a person can
       bind a single chord. Tested on macOS only; Linux unchecked. ⚠️
+- [ ] **What the person types in an agent's view** reaches `session.append` on
+      the agent's row with `origin.kind` `composer` (or `bridge`), by the types;
+      the stored rows say `human`. Not exercised: the testbench `agents` test,
+      step 9, checks it (D51). ⚠️
 - [x] **Sibling `src/` imports** resolve from a hooks module inside the plugin
       root.
 - [x] **`claude plugin test`** runs `src/*.test.ts` with no session and no mock
