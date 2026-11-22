@@ -140,7 +140,7 @@ button, under the switch:
 ```
 │ [ ✓ include in review ]                           │
 │   ⎿  Actions: Run npm test -- greet …             │
-│ [ ▶ run agent for tasks ]                         │
+│ [ ▶ start agent on tasks ]                        │
 ```
 
 **The press** writes a summary first if the latest answer came without one,

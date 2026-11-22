@@ -158,7 +158,7 @@ way to start agents: Claude Code has `/btw`, forks and its own agents for that.
 **The thread's agent decides, the person starts.** Every answer carries
 `<next>agent</next>` beside the summary's tags when its Actions or Open
 questions need tools (a search, a command, an edit), with the include switch
-on or off. Then, and only then, the pane shows `▶ run agent for tasks`.
+on or off. Then, and only then, the pane shows `▶ start agent on tasks`.
 Nothing runs, costs or asks for permission unless the person chose it (D30).
 On the press, a summary is written first if the latest answer came without
 one, as switching on does, and the include switch turns on unless the person
