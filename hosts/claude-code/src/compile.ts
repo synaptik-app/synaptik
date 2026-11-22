@@ -1,7 +1,7 @@
 // The tray compiled into the prompt (SPEC §9): each marked block quoted, nested
 // under its parent, in reading order.
 
-import { lineKey, partsOf, quote } from './blocks'
+import { lineKey, partsOf, plainInline, quote } from './blocks'
 import { cells } from './review'
 import { lineMarks } from './tray'
 
@@ -30,14 +30,21 @@ export function lineReference(kind: 'code' | 'table', line: number, text: string
   // A row's cells are joined with " · " (src/blocks.ts), so an empty one leaves only
   // its separators; a trailing empty cell leaves one, the quote not being a literal copy.
   if (kind === 'table' && /^[·\s]*$/.test(trimmed)) return `row ${line + 1} (blank)`
-  if (kind === 'table') return `row ${line + 1}: "${trimmedQuote(trimmed)}"`
+  // A row quotes its cells as plain text, as a block's quote does: a cut through
+  // a code span would leave a backtick that pairs with the next row's (#222).
+  if (kind === 'table') return `row ${line + 1}: "${trimmedQuote(plainInline(trimmed))}"`
   if (trimmed === '') return `line ${line + 1} (blank)`
   return `line ${line + 1}: "${trimmedQuote(trimmed)}"`
 }
 
+// Cut to LINE_QUOTE characters. A code line stays literal, so a cut that leaves
+// an odd number of backticks ends before the last one instead.
 function trimmedQuote(text: string): string {
   const chars = [...text]
-  return chars.length <= LINE_QUOTE ? text : chars.slice(0, LINE_QUOTE).join('') + '...'
+  if (chars.length <= LINE_QUOTE) return text
+  let cut = chars.slice(0, LINE_QUOTE).join('')
+  if ((cut.match(/`/g)?.length ?? 0) % 2 === 1) cut = cut.slice(0, cut.lastIndexOf('`')).trimEnd()
+  return cut + '...'
 }
 
 // One line per staged block, in document order, nested under its parent. An unmarked

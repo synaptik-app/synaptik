@@ -52,6 +52,31 @@ test('a marked table row nests under the table, with its cells', async () => {
   expect(compile(table, { '0.1': 'reject' }, {})).toBe(['"table: A · B"', '    ✗ row 2: "three ·"'].join('\n'))
 })
 
+test("a table row quotes its cells as plain text, so a cut leaves no backtick to pair with the next row's (#222)", async () => {
+  const table = segment(
+    [
+      '| Where | What it shows |',
+      '|---|---|',
+      "| The thread pane | That thread's agent: its status, and `open` to switch to its view |",
+      '| **The band** | Nothing, except when an agent of ours needs you |',
+      '| **The navigator** | A mark on threads that have an agent (`▶ working`, `▶ done`) |',
+    ].join('\n'),
+  ).filter(s => s.isBlock)
+  const sent = compile(table, { '0.0': 'accept', '0.1': 'accept', '0.2': 'accept' }, {})
+  expect(sent).not.toContain('`')
+  expect(sent).not.toContain('**')
+  expect(sent).toContain('✓ row 2: "The band · Nothing, except when an agent of ours needs you"')
+  expect(sent).toContain('✓ row 3: "The navigator · A mark on threads that have an agent (▶ work..."')
+})
+
+test('a code line stays literal, but its cut ends before a backtick it would leave open', async () => {
+  const code = segment('```\n' + 'x'.repeat(50) + ' `a code span` after\n```').filter(s => s.isBlock)
+  const sent = compile(code, { '0.0': 'accept' }, {})
+  expect(sent).toContain(`✓ line 1: "${'x'.repeat(50)}..."`)
+  // Whole, it keeps its backticks.
+  expect(compile(segment('```\nrun `ls` now\n```').filter(s => s.isBlock), { '0.0': 'accept' }, {})).toContain('✓ line 1: "run `ls` now"')
+})
+
 test('a table row with no text compiles as blank, with one column or several', async () => {
   const wide = segment('| A | B |\n|---|---|\n| | |').filter(s => s.isBlock)
   expect(compile(wide, { '0.0': 'reject' }, {})).toContain('✗ row 1 (blank)')

@@ -171,18 +171,25 @@ export function quote(text: string, words = 7): string {
   const number = /\d/.test(marker) ? `${marker} ` : ''
   // A code block quotes its code, not its fence and language tag.
   const unfenced = text.replace(/^\s*(```|~~~)[^\n]*\n?/, '').replace(/\n?\s*(```|~~~)\s*$/, '')
-  const plain = unfenced
+  const unmarked = unfenced
     .replace(LIST_ITEM, '')
     .replace(/^\s*(>\s?)+/gm, '')
     .replace(/^#{1,6}\s+/gm, '')
+  const plain = plainInline(unmarked)
+  const parts = plain.split(' ')
+  return number + (parts.length <= words ? plain : parts.slice(0, words).join(' ') + '...')
+}
+
+// Text without its inline Markdown (code spans, bold, emphasis), on one line:
+// a quote cut from it can't leave a mark open that pairs with the next one.
+export function plainInline(text: string): string {
+  return text
     .replace(/`+/g, '')
     .replace(/(\*\*|__)(.+?)\1/g, '$2')
     // Emphasis, but not an underscore inside a word (SESSION_CACHE).
     .replace(/(^|[^\w*])[*_](?=\S)(.+?)(?<=\S)[*_](?![\w*])/g, '$1$2')
     .replace(/\s+/g, ' ')
     .trim()
-  const parts = plain.split(' ')
-  return number + (parts.length <= words ? plain : parts.slice(0, words).join(' ') + '...')
 }
 
 // A table's second row: dashes between pipes, the outer pipes optional.
