@@ -58,12 +58,12 @@ test('a block has a thread once a message was sent', () => {
 const RAW = 'Use a TTL.\n\n<summary>\nAdd a 5-minute TTL.\n</summary>\n<verdict>include</verdict>'
 
 test('an answer splits into what the person reads, the summary and the verdict', () => {
-  expect(parseAnswer(RAW)).toEqual({ text: 'Use a TTL.', summary: 'Add a 5-minute TTL.', verdict: 'include' })
+  expect(parseAnswer(RAW)).toEqual({ text: 'Use a TTL.', summary: 'Add a 5-minute TTL.', verdict: 'include', startsAgent: false })
 })
 
 test('without a summary the answer is all text; a summary needs no verdict', () => {
-  expect(parseAnswer('Just text.')).toEqual({ text: 'Just text.' })
-  expect(parseAnswer('Text.\n<summary>x</summary>')).toEqual({ text: 'Text.', summary: 'x' })
+  expect(parseAnswer('Just text.')).toEqual({ text: 'Just text.', startsAgent: false })
+  expect(parseAnswer('Text.\n<summary>x</summary>')).toEqual({ text: 'Text.', summary: 'x', startsAgent: false })
 })
 
 test('what a message asks after the answer follows the switch', () => {
@@ -75,11 +75,11 @@ test('what a message asks after the answer follows the switch', () => {
   expect(on).toContain('<summary>')
   expect(on).toContain('chose to include this thread')
   expect(on).not.toContain('<verdict>')
-  // Switched off by them: the answer alone.
+  // Switched off by them: no summary, only whether its tasks need an agent (D51).
   const off = ask({ ...talked, included: false, isIncludeSet: true })
   expect(off).not.toContain('<summary>')
   expect(off).not.toContain('<verdict>')
-  expect(off.trimEnd().endsWith('and?')).toBe(true)
+  expect(off).toContain("and?\n\nWhen the person's message asks you to start an agent")
 })
 
 test('an answer with a summary and no verdict leaves the switch as it is', () => {
@@ -93,7 +93,7 @@ test('a summary written for a thread the person switched on sends something', ()
 })
 
 test('an empty summary with exclude is a thread with nothing to send', () => {
-  expect(parseAnswer('It caches.\n<summary>\n</summary>\n<verdict>exclude</verdict>')).toEqual({ text: 'It caches.', summary: '', verdict: 'exclude' })
+  expect(parseAnswer('It caches.\n<summary>\n</summary>\n<verdict>exclude</verdict>')).toEqual({ text: 'It caches.', summary: '', verdict: 'exclude', startsAgent: false })
 })
 
 test("the answer's verdict sets the switch, until the person sets it", () => {

@@ -82,6 +82,7 @@ claude --plugin-dir ./hosts/claude-code     # load for one session; reloads on s
 claude plugin validate ./hosts/claude-code  # list hooks and API calls, without running
 claude plugin validate --strict ./hosts/claude-code  # and fail on a type error
 claude plugin test ./hosts/claude-code      # run *.test.ts, no session needed
+node scripts/fixtures.mjs                   # after editing testbench/fixtures: regenerate the tests' copy
 npx -y -p typescript@7.0.2 tsc --noEmit -p hosts/claude-code  # types, from a session's
 ```
 
@@ -92,7 +93,7 @@ takes a login.
 **Testing by hand:** `testbench/` holds fixed replies to mark up. Start a session
 there (`cd testbench && claude --plugin-dir ../hosts/claude-code`) and ask it to
 run a test — `smoke` first on every build, then by area: `render`, `review`,
-`comments`, `code`, `tables`, `threads`, `summaries`, `nesting`, `classic`; and
+`comments`, `code`, `tables`, `threads`, `summaries`, `agents`, `nesting`, `classic`; and
 rarely `split`, `long`, `neighbour`. Each is a flow of **Do:** steps with
 **Expect:** lines to mark. Its own `CLAUDE.md` says how; results go to issues
 #11–#13.
@@ -123,3 +124,7 @@ supersede it or mark it dead — never work around it.
 Keep the DRs current when a decision changes. DR numbers are never reused or
 renumbered; a superseded DR is marked and says what replaced it. The history is
 the point.
+
+A DR's **Considered** holds the alternatives weighed in the design and why they
+lost. What was built during the work and then dropped, and how the work got
+there, goes in the PR or the issue as a comment, not in the DR.

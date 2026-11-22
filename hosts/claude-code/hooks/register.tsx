@@ -12,7 +12,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Mark } from '../types'
 import { lineKey, partCounts, partsOf, quote, segment } from '../src/blocks'
-import { grows, lastTurn } from '../src/turn'
+import { grows, lastTurn, lastTurnText } from '../src/turn'
 import { compile as compileTray, GLYPH, PARTLY, preview, THREAD_GLYPH } from '../src/compile'
 import { clear as clearMark, clearBlock, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, lineMarks, toggle as toggleMark } from '../src/tray'
 import type { Part, Tray } from '../src/tray'
@@ -22,8 +22,29 @@ import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
 import { decorate } from '../src/decorate'
-import { anchorOf, clearedThreads, hasThread, needsSummary, NEW_THREAD, summaries, summaryPrompt, threadPrompt, withAnswer } from '../src/threads'
-import type { Anchor, Thread } from '../src/threads'
+import {
+  AGENT_GLYPH,
+  AGENT_WORDS,
+  agentPrompt,
+  anchorOf,
+  clearedThreads,
+  hasThread,
+  needsSummary,
+  NEW_THREAD,
+  noticeAbout,
+  parseAnswer,
+  reportPrompt,
+  reportState,
+  reportStatus,
+  rewordedNotice,
+  summaries,
+  summaryPrompt,
+  threadPrompt,
+  typedInView,
+  withAnswer,
+  withoutReport,
+} from '../src/threads'
+import type { AgentState, Anchor, Thread } from '../src/threads'
 import {
   BAND_COMMENT_PREFIX,
   BULLET,
@@ -612,10 +633,36 @@ const openThreads = new Set<string>()
 // Threads whose summary is being written, which the band names.
 const summarizing = new Set<string>()
 
+// Synaptik's own agents (D51), by id: the thread that started each, and its
+// words in the agent list. Kept past a new reply, which discards the thread
+// but not the agent: its notices stay out of the main conversation all the
+// same. A reload keeps the threads, so their agents are claimed again from them.
+const ownAgents = new Map<string, { key: string; reply: string; label: string }>()
+// Threads whose agent is being started: a second answer asking for one, while
+// the summary is written or spawn runs, starts no second agent.
+const startingAgents = new Set<string>()
+// Synaptik's agents whose row Claude Code no longer draws, as AgentRow says:
+// their margin goes back to 💬.
+const undrawnAgents = new Set<string>()
+// The agent whose transcript is on screen, as the band last said; none for
+// the main conversation's.
+let viewedAgent: string | undefined
+
+// A block's margin glyph for its thread: its agent's state while it has one,
+// else 💬; none without a thread.
+function threadGlyph(all: Readonly<Record<string, Thread>>, key: number | string): string | undefined {
+  const t = all[String(key)]
+  if (!t || !hasThread(all, key)) return undefined
+  return t.agent && !undrawnAgents.has(t.agent.id) ? AGENT_GLYPH[t.agent.state] : THREAD_GLYPH
+}
+
 // The margin of a block's lines: a line's mark, or 💬 where it has a thread.
 function lineGlyphs(marked: Readonly<Record<string, Mark>>, all: Readonly<Record<string, Thread>>, block: number): Record<string, string> {
   const glyphs: Record<string, string> = {}
-  for (const line of Object.keys(lineMarks(all, block))) if (hasThread(all, lineKey(block, Number(line)))) glyphs[line] = THREAD_GLYPH
+  for (const line of Object.keys(lineMarks(all, block))) {
+    const glyph = threadGlyph(all, lineKey(block, Number(line)))
+    if (glyph) glyphs[line] = glyph
+  }
   for (const [line, mark] of Object.entries(lineMarks(marked, block))) glyphs[line] = GLYPH[mark]
   return glyphs
 }
@@ -695,6 +742,12 @@ async function sendInThread($: EngineInterface, key: string, text: string) {
     if ((await read($, lastText)) === reply) await changeThread($, key, t => withAnswer(t, answer))
   }
   if ((await read($, lastText)) !== reply) return
+  // What it carries for the agent goes at once, and an agent the person asked
+  // for starts: they chose either when they sent the message it answers (D51).
+  const { toAgent, startsAgent } = parseAnswer(answer)
+  const agent = (await read($, threads))[key]?.agent
+  if (toAgent && agent) await sendToAgent($, agent.id, toAgent)
+  if (startsAgent && !agent) await startAgent($, key).catch(err => observe(`thread ${key} agent failed: ${String(err)}`))
   // The answer brought the summary and the switch's default: the review follows.
   await suggestTray($)
   // Included and the answer came without a summary: closed while it waited (the
@@ -751,6 +804,173 @@ async function toggleInclude($: EngineInterface, key: string) {
   if (t?.included && needsSummary(t)) await summarize($, key)
 }
 
+// --- A thread's agent (D51): its tasks, run by a fork subagent with tools.
+
+// The person asked for an agent, and the answer started it: the summary as it
+// stands is its tasks, written first if the latest answer came without one; the
+// switch turns on unless the person set it; then the summary is rewritten with
+// the tasks under Still on.
+async function startAgent($: EngineInterface, key: string) {
+  if (startingAgents.has(key)) return
+  startingAgents.add(key)
+  try {
+    await spawnFor($, key)
+  } finally {
+    startingAgents.delete(key)
+  }
+}
+
+async function spawnFor($: EngineInterface, key: string) {
+  const anchor = await threadAnchor($, key)
+  const reply = await read($, lastText)
+  const before = (await read($, threads))[key]
+  if (anchor === undefined || !before || before.agent || before.pending > 0) return
+  if (before.summary === undefined || before.summarizedAt < before.messages.length) {
+    const r = await forkThread($, summaryPrompt(anchor, before))
+    observe(`thread ${key} summary before the agent: ${r.isAnswered ? 'written' : r.reason}`)
+    if (!r.isAnswered) return $.ui.toast("couldn't write the thread's tasks: try again")
+    if ((await read($, lastText)) !== reply) return
+    await changeThread($, key, t => ({ ...t, summary: r.text.trim(), summarizedAt: t.messages.length }))
+  }
+  const thread = (await read($, threads))[key]
+  if (!thread?.summary?.trim()) return $.ui.toast('nothing for an agent to do in this thread')
+  const label = agentLabel(anchor)
+  let id: string | undefined
+  try {
+    const spawned = await $.agent.spawn({ prompt: agentPrompt(anchor, thread), description: label, subagentType: 'fork' })
+    observe(`thread ${key} agent: ${JSON.stringify(spawned)}`)
+    if (spawned.deny) return $.ui.toast(`couldn't start the agent: ${spawned.deny}`)
+    // The id is core's to give, and may be missing: then it is the newest agent
+    // listed under this description that isn't one of Synaptik's already.
+    id =
+      spawned.agentId ??
+      (await $.agent.list())
+        .filter(a => a.description === label && !ownAgents.has(a.id))
+        .sort((x, y) => y.startTime - x.startTime)[0]?.id
+    if (!id) return $.ui.toast("couldn't start the agent")
+  } catch (err) {
+    observe(`thread ${key} agent failed: ${String(err)}`)
+    return $.ui.toast(`couldn't start the agent: ${String(err)}`)
+  }
+  ownAgents.set(id, { key, reply, label })
+  if ((await read($, lastText)) !== reply) return
+  await changeThread($, key, t => ({ ...t, agent: { id: id!, state: 'working' }, included: t.isIncludeSet ? t.included : true }))
+  await suggestTray($)
+  void catchUp($, id)
+  void rewriteForAgent($, key, true).catch(err => observe(`thread ${key} summary failed: ${String(err)}`))
+}
+
+const agentLabel = (anchor: Anchor) => `Synaptik · ${quote(anchor.part?.text ?? anchor.block, 6)}`
+
+// After a reload: the threads' agents are Synaptik's again, so their reports
+// reach the thread and their notices stay out of the main conversation.
+async function reclaimAgents($: EngineInterface) {
+  const reply = await read($, lastText)
+  for (const [key, t] of Object.entries(await read($, threads))) {
+    const anchor = t.agent && !ownAgents.has(t.agent.id) ? await threadAnchor($, key) : undefined
+    if (t.agent && anchor) ownAgents.set(t.agent.id, { key, reply, label: agentLabel(anchor) })
+  }
+}
+
+// The agent's first turn can end before spawn returns its id, so its
+// turn.complete went by unclaimed: a finished one is read from its transcript.
+async function catchUp($: EngineInterface, id: string) {
+  try {
+    const info = (await $.agent.list()).find(a => a.id === id)
+    if (info?.taskStatus !== 'completed') return
+    const rows = await $.session.messages({ agentId: id })
+    if (!Array.isArray(rows)) return
+    const key = ownAgents.get(id)?.key
+    const t = key === undefined ? undefined : (await read($, threads))[key]
+    if (t?.agent?.id !== id || t.messages.some(m => m.role === 'report')) return
+    observe(`agent ${id} finished before its id came: caught up`)
+    await onAgentTurn($, id, lastTurnText(rows as Parameters<typeof lastTurnText>[0]))
+  } catch (err) {
+    observe(`agent ${id} catch-up failed: ${String(err)}`)
+  }
+}
+
+// The summary rewritten for the agent, with the tasks under Still on when it
+// starts; one fork.
+async function rewriteForAgent($: EngineInterface, key: string, isStarting: boolean) {
+  const t = (await read($, threads))[key]
+  const anchor = await threadAnchor($, key)
+  if (!t || anchor === undefined) return
+  const at = t.messages.length
+  const reply = await read($, lastText)
+  summarizing.add(key)
+  $.ui.invalidate('ui.render')
+  const r = await forkThread($, summaryPrompt(anchor, t, isStarting)).finally(() => {
+    summarizing.delete(key)
+    $.ui.invalidate('ui.render')
+  })
+  if ((await read($, lastText)) !== reply || !r.isAnswered) return
+  await changeThread($, key, now => (now.summarizedAt > at ? now : { ...now, summary: r.text.trim(), summarizedAt: at }))
+  await suggestTray($)
+}
+
+// One of the agent's turns ended: its answer joins the thread whole, the state
+// follows its report, and the thread answers it on its own, with the summary
+// rewritten. That answer sends the agent nothing (D51).
+async function onAgentTurn($: EngineInterface, id: string, answer: string) {
+  const own = ownAgents.get(id)
+  if (!own || (await read($, lastText)) !== own.reply) return
+  const key = own.key
+  const anchor = await threadAnchor($, key)
+  if (anchor === undefined || (await read($, threads))[key]?.agent?.id !== id) return
+  const state = reportState(answer)
+  observe(`agent ${id} reported: ${state}`)
+  await changeThread($, key, t => ({
+    ...t,
+    agent: { id, state },
+    messages: [...t.messages, { role: 'report', text: answer.trim() }],
+    pending: t.pending + 1,
+  }))
+  const thread = (await read($, threads))[key]!
+  let reply = '(no answer to the report: something went wrong)'
+  try {
+    const r = await forkThread($, reportPrompt(anchor, thread, answer.trim()))
+    observe(`thread ${key} report answer: ${r.isAnswered ? `${r.usage.output_tokens} out` : r.reason}`)
+    reply = r.isAnswered ? r.text : `(${noAnswer(r.reason)})`
+  } finally {
+    if ((await read($, lastText)) === own.reply) await changeThread($, key, t => withAnswer(t, reply, true))
+  }
+  if ((await read($, lastText)) === own.reply) await suggestTray($)
+}
+
+// What the thread sends its agent: Claude Code hands it over at the agent's next
+// tool call, or resumes it if it finished.
+async function sendToAgent($: EngineInterface, id: string, text: string) {
+  try {
+    const sent = await $.session.send({ to: { agentId: id }, text })
+    observe(`agent ${id} sent: ${JSON.stringify(sent)}`)
+    if (!sent.isDelivered) $.ui.toast(`couldn't reach the agent: ${sent.reason}`)
+  } catch (err) {
+    observe(`agent ${id} send failed: ${String(err)}`)
+    $.ui.toast("couldn't reach the agent")
+  }
+}
+
+// What the person typed in one of Synaptik's agents' views joins its thread, so
+// the thread's agent knows what was settled there.
+async function onTypedToAgent($: EngineInterface, id: string, text: string) {
+  const own = ownAgents.get(id)
+  if (!own || !text || (await read($, lastText)) !== own.reply) return
+  if ((await read($, threads))[own.key]?.agent?.id !== id) return
+  observe(`agent ${id}: the person wrote to it in its view`)
+  await changeThread($, own.key, t => ({ ...t, messages: [...t.messages, { role: 'direct', text }] }))
+}
+
+// A turn of one of Synaptik's agents started again: resumed by a send, or by the
+// person in its view.
+async function onAgentStart($: EngineInterface, id: string) {
+  const own = ownAgents.get(id)
+  if (!own || (await read($, lastText)) !== own.reply) return
+  const t = (await read($, threads))[own.key]
+  if (t?.agent?.id !== id || t.agent.state === 'working') return
+  await changeThread($, own.key, now => ({ ...now, agent: { id, state: 'working' as AgentState } }))
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     isHeadless = !e.isInteractive
@@ -764,6 +984,7 @@ export const register: Register = on => {
     })
     // A resumed session (and every reload of this mod) already has a reply.
     await adoptLastReply($)
+    await reclaimAgents($)
     return next(e)
   }).catch(($, e, next) => next(e))
 
@@ -807,7 +1028,10 @@ export const register: Register = on => {
   // told apart by `e.agentId`: only the main loop's turn brings a new reply, so
   // only it switches marking off and on.
   on('turn.start', async ($, e, next) => {
-    if (e.agentId) return next(e)
+    if (e.agentId) {
+      if (ownAgents.has(e.agentId)) await onAgentStart($, e.agentId).catch(err => observe(`agent start failed: ${String(err)}`))
+      return next(e)
+    }
     await letGoForTurn($)
     isSuggested = false
     shortProposed = undefined
@@ -816,10 +1040,70 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('turn.complete', async ($, e, next) => {
-    if (e.agentId) return next(e)
+    // One of Synaptik's agents ended a turn: its answer goes to its thread (D51).
+    if (e.agentId) {
+      const id = e.agentId
+      if (ownAgents.has(id)) await onAgentTurn($, id, e.answer).catch(err => observe(`agent ${id} report failed: ${String(err)}`))
+      return next(e)
+    }
     await adoptLastReply($)
     await update($, isWorking, () => false)
     return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // --- Claude Code's notices about Synaptik's own agents (D51) ---------------
+  // Each time one stops after a resume, Claude Code adds a notice to the main
+  // conversation, its whole answer in it, and submits it, which would start a
+  // main turn. For these notices only, the row is reworded without the answer
+  // and the prompt dropped: what the agent did reaches the main conversation in
+  // the thread's summary, which the person sends (P1). Synaptik on or off: the
+  // agent is its own either way. Every other row and prompt passes untouched.
+  on('session.append', async ($, e, next) => {
+    if (ownAgents.size === 0) return next(e)
+    // In one of them: what the person typed in its view, also kept in its thread.
+    if (e.agentId) {
+      const result = await next(e)
+      const isTyped = e.message.role === 'user' && (e.origin?.kind === 'composer' || e.origin?.kind === 'bridge')
+      if (isTyped && ownAgents.has(e.agentId)) {
+        const text = e.message.content.map(b => (b.type === 'text' && typeof b.text === 'string' ? b.text : '')).join('\n')
+        void onTypedToAgent($, e.agentId, typedInView(text)).catch(err => observe(`agent ${e.agentId} typed failed: ${String(err)}`))
+      }
+      return result
+    }
+    const content = e.message.content
+    const ids = new Set(ownAgents.keys())
+    const isOurs = (b: (typeof content)[number]) => b.type === 'text' && typeof b.text === 'string' && noticeAbout(b.text, ids) !== undefined
+    if (!content.some(isOurs)) return next(e)
+    const reworded = content.map(b => {
+      const id = b.type === 'text' && typeof b.text === 'string' ? noticeAbout(b.text, ids) : undefined
+      return id ? { ...b, text: rewordedNotice(id) } : b
+    })
+    observe('notice about an agent: reworded')
+    return next({ ...e, message: { ...e.message, content: reworded } })
+  }).catch(($, e, next) => next(e))
+
+  on('prompt.submit', async ($, e, next) => {
+    if (e.origin?.kind !== 'task-notification' || ownAgents.size === 0) return next(e)
+    const id = noticeAbout(e.text, new Set(ownAgents.keys()))
+    if (!id) return next(e)
+    observe(`notice about agent ${id}: dropped`)
+    return { drop: 'Synaptik agent notice' }
+  }).catch(($, e, next) => next(e))
+
+  // Its row in Claude Code's agent list: relabelled with its block and state.
+  // When the row hides is Claude Code's; Synaptik notes it, since a view can't
+  // be opened then.
+  on('ui.render', { component: 'AgentRow' }, async ($, e, next) => {
+    const own = ownAgents.get(e.props.id)
+    if (!own) return next(e)
+    if (e.props.isHidden !== undrawnAgents.has(e.props.id)) {
+      if (e.props.isHidden) undrawnAgents.add(e.props.id)
+      else undrawnAgents.delete(e.props.id)
+      $.ui.invalidate('ui.render')
+    }
+    const t = (await read($, lastText)) === own.reply ? (await read($, threads))[own.key] : undefined
+    const state = t?.agent?.id === e.props.id ? t.agent.state : undefined
+    return next({ ...e, props: { ...e.props, label: state ? `${own.label} · ${AGENT_WORDS[state]}` : own.label } })
   }).catch(($, e, next) => next(e))
 
   // The row after a turn, remembered so the reply's end can be scrolled into
@@ -866,8 +1150,23 @@ export const register: Register = on => {
   // --- The reply: the selected block's marker and in-place menu -------------
 
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
-    if (!(await read($, isOn)) || (await read($, isWorking))) return next(e)
     if (e.surface !== 'terminal') return next(e)
+    // One of Synaptik's agents in view: its replies draw without their report,
+    // which is the thread's; the transcript keeps it whole (D51). Its other
+    // rows draw as they would anywhere.
+    const cut = viewedAgent && ownAgents.has(viewedAgent) && (await read($, isOn)) ? withoutReport(e.props.text) : undefined
+    if (cut !== undefined) {
+      const status = reportStatus(e.props.text)
+      const drawn = await next({ ...e, props: { ...e.props, text: cut } })
+      const { Box, Text } = $.ui.resolve(e)
+      return (
+        <Box flexDirection="column">
+          {drawn}
+          <Text dimColor>{`  ⎿ reported to the thread${status ? ` · ${AGENT_WORDS[status]}` : ''}`}</Text>
+        </Box>
+      )
+    }
+    if (!(await read($, isOn)) || (await read($, isWorking))) return next(e)
 
     const text = e.props.text
     const target = await read($, lastText)
@@ -939,7 +1238,7 @@ export const register: Register = on => {
                     index: n,
                     text: seg.text,
                     indent: seg.indent,
-                    ...(mark ? { glyph: GLYPH[mark] } : hasThread(threadsNow, n) ? { glyph: THREAD_GLYPH } : {}),
+                    ...(mark ? { glyph: GLYPH[mark] } : threadGlyph(threadsNow, n) ? { glyph: threadGlyph(threadsNow, n)! } : {}),
                     ...(bullet ? { bullet } : {}),
                     first: 0,
                     last: count - 1,
@@ -985,7 +1284,7 @@ export const register: Register = on => {
             glyph: mark
               ? GLYPH[mark]
               : hasThread(threadsNow, i)
-                ? THREAD_GLYPH
+                ? threadGlyph(threadsNow, i)
                 : Object.keys(lineGlyphs(marked, threadsNow, i)).length > 0
                   ? PARTLY
                   : undefined,
@@ -1142,6 +1441,7 @@ export const register: Register = on => {
     const anchor = await threadAnchor($, key)
     if (anchor === undefined) return next(e)
     const { Box, Text, Button, Input, Markdown } = $.ui.resolve(e)
+    const thread = (await read($, threads))[key] ?? NEW_THREAD
     return ThreadView(
       { Box, Text, Button, Input, Markdown },
       {
@@ -1150,7 +1450,7 @@ export const register: Register = on => {
         isPart: anchor.part !== undefined,
         columns: e.props.bodyColumns,
         isSummarizing: summarizing.has(key),
-        thread: (await read($, threads))[key] ?? NEW_THREAD,
+        thread,
       },
       {
         send: text => sendInThread($, key, text).catch(err => observe(`thread ${key} send failed: ${String(err)}`)),
@@ -1387,6 +1687,11 @@ export const register: Register = on => {
   // band's, not Synaptik's.
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    // Which transcript is on screen, for drawing an agent's replies (D51).
+    if (e.props.view.agentId !== viewedAgent) {
+      viewedAgent = e.props.view.agentId
+      $.ui.invalidate('ui.render')
+    }
     if (!(await read($, isOn)) || e.props.hasSurvey || e.props.isWorking) return next(e)
     if (e.surface !== 'terminal') return next(e)
     // An agent's transcript in view (opened from the tasks list): the reply

@@ -33,6 +33,7 @@ When the person asks to run a test — "run the rendering test", "run split",
 | tables | `fixtures/tables.md` — stepping into tables: rows, wrapped rows, a table drawn as a list; fullscreen |
 | threads | `fixtures/threads.md` — the thread pane: opening, its field, several threads, lines and rows; fullscreen |
 | summaries | `fixtures/summaries.md` — what a thread's summary says, and the include switch; fullscreen |
+| agents | `fixtures/agents.md` — a thread's agent: asking for it, steering it, its reports and its view; fullscreen |
 | nesting | `fixtures/nesting.md` — which Markdown makes which block, and how nested blocks compile |
 | classic | `fixtures/classic.md` — the basics in the default renderer only |
 | split | `fixtures/split.md` — a reply split around a real tool call; fullscreen, run rarely |

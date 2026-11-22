@@ -86,7 +86,10 @@ summary's few output tokens and a second or two on the answer. The prompts are i
 
 **The summary is written for its use**: the person's next prompt to the agent,
 under the block's quote. It comes in sections, each label once and only when it
-has something: `Actions:` (changes to make and work to carry out: commands to run,
+has something: `Context:` first, in a line, only when the Actions or Decisions
+rest on something the main conversation never saw (an agent's finding, what the
+person told the agent: "Context: The agent counted the fixtures: `code.md` is 99
+lines, not 120."), `Actions:` (changes to make and work to carry out: commands to run,
 files to edit, tests to run; a thread can't run them, so they go to the main
 conversation), `Decisions:`, and `Open questions:` only if one is left; with an
 agent, `Subagent:` after them (below). A section
@@ -97,7 +100,9 @@ that only explained has an empty summary and `exclude`; switched on anyway, it
 gets a `Context:` section of a sentence or two.
 
 **The verdict is the switch's default**, until the person sets the switch; it never
-overrides them. Once they set it, no verdict is asked for, since none would change
+overrides them. When a verdict changes the switch, the answer says so in one
+sentence of its own, as the thread's agent's doing: "I put this in your review
+so the main conversation runs the check." Once they set it, no verdict is asked for, since none would change
 it. Switched on by them, each answer brings a summary that always sends something
 (a `Context:` section when nothing is to be done), and switching on writes one at
 once if the last answers came without. Switched off by them, a message asks for the
@@ -132,22 +137,26 @@ A thread can hand its tasks to an agent of its own, a fork subagent with tools
 (D51). The thread's agent says when, the person starts it, and the thread then
 steers it.
 
-**When.** Every answer carries `<next>agent</next>`, stripped with the summary's
-tags, when the thread's Actions or Open questions need tools (a search, a
-command, an edit); the switch on or off. Only then does the pane show the
-button, under the switch:
+**When.** While the thread has no agent, an answer whose Actions or Open
+questions need tools (a search, a command, an edit) ends with a one-line offer
+in its own words, the switch on or off:
 
 ```
-│ [ ✓ include in review ]                           │
-│   ⎿  Actions: Run npm test -- greet …             │
-│ [ ▶ start agent on tasks ]                        │
+› are those numbers right?
+  The 14 is right; I can't measure code.md from here. I can start an agent
+  to run those counts and report the real numbers.
+› yes, start it
+  Starting an agent on the count.
 ```
 
-**The press** writes a summary first if the latest answer came without one,
-turns the switch on unless the person set it, rewrites the summary with the
-tasks under `Subagent:` `Still on:`, and spawns the agent
-(`$.agent.spawn({ prompt, description, subagentType: 'fork' })`, its
-`description` `Synaptik · <block>`). Its prompt (`src/prompts.ts`) holds the
+**When the person asks for one**, in so many words or as a yes to the offer,
+the answer says it is starting it and carries `<next>agent</next>`, stripped
+with the summary's tags. Synaptik then writes a summary first if the latest
+answer came without one, turns the switch on unless the person set it,
+rewrites the summary with the tasks under `Subagent:` `Still on:`, and spawns
+the agent (`$.agent.spawn({ prompt, description, subagentType: 'fork' })`, its
+`description` `Synaptik · <block>`). The pane has no button for it, to start
+it or to open it. Its prompt (`src/prompts.ts`) holds the
 block, the thread's messages and its summary whole as its tasks, says who "the
 coordinator" is (the thread, passing on what the person decided), and asks it
 to write to the person as usual, any question last in its prose, then report:
@@ -163,35 +172,35 @@ Questions: what it needs from the person (only with needs-you)
 </report>
 ```
 
-**The button then follows the agent**, and a press opens its view
-(`$.ui.view({ agentId })`):
-
-| The agent | The button |
-|---|---|
-| running | `▶ open agent · working` |
-| stopped, `needs-you` | `▶ open agent · waiting for you` |
-| stopped, `done` | `▶ open agent · done` |
-| its row no longer drawn | `▶ agent done`, no press |
-
-Claude Code's agent list shows it as `Synaptik · <block> · working` (or
-`waiting for you`, `done`), relabelled in `AgentRow`; when its row hides is
-Claude Code's. While the thread has an agent, the block's margin shows its state
-in place of `💬`: `⏳` working, `✋` waiting for you, `✅` done. The band shows
-nothing of it.
+**Claude Code's agent list** shows it as `Synaptik · <block> · working` (or
+`waiting for you`, `done`), relabelled in `AgentRow`, and opens its view; when
+its row hides is Claude Code's. While the thread has an agent, the block's
+margin shows its state in place of `💬`: `⏳` working, `✋` waiting for you, `✅`
+done, and `💬` again once Claude Code drops its row. The band shows nothing of
+it.
 
 **The person writes in the thread.** The thread's agent answers as before. When
 the answer changes the agent's work (a new, changed or dropped task, a revert),
-it adds `<to-agent>…</to-agent>`, stripped from the answer and shown in the pane
-as `▶ to agent: …`, and Synaptik sends it at once
+it says briefly what it asks the agent and adds `<to-agent>…</to-agent>`,
+stripped from the answer and drawn as one dim line, `▶ sent to agent`, and
+Synaptik sends it at once
 (`$.session.send({ to: { agentId }, text })`). Claude Code hands it to a running
 agent at its next tool call, and resumes a finished one.
 
 **The agent reports.** Each of its turns ends in its `turn.complete`
-(`agentId`). Synaptik adds the answer to the thread as `▶ agent: …`, whole, and
+(`agentId`). Synaptik adds the answer to the thread whole, drawn as one dim line,
+`▶ agent reported · <state>`, and
 asks the thread's fork for an answer of its own: what the agent did, what waits
 for the person, and the summary rewritten. That answer carries no
 `<to-agent>`, so a report never wakes the agent; the person's next message can.
-What the person settled in the agent's own view comes back in the report.
+
+**The person writes to the agent in its view.** What they type joins the
+thread as theirs, `› to agent: …`, before the report that follows it, and the
+thread's agent reads it there. It is taken from the agent's rows in
+`session.append`: those the person sent ⚠️ (`origin.kind` `composer`, or
+`bridge`, assumed from the types: the stored rows say `human`), the words taken
+out of Claude Code's wrapping when they were typed while it ran. What Synaptik
+sent comes stamped as the coordinator's and is the thread's already.
 
 **The summary** gains one section, after `Open questions:`, with a sub-point
 for each that has something:
@@ -206,13 +215,16 @@ Subagent:
 Only the summary goes into the suggestion, never a report.
 
 **In the agent's view**, its replies draw without the report: the
-`AssistantMessage` text is rewritten from `<report` to `</report>` (to the end
-of the text while it streams), and a dim line follows:
+`AssistantMessage` text is rewritten from a line opening `<report status="` to
+`</report>` (to the end of the text while it streams), and a dim line follows:
 
 ```
 Should the index be ordered by title or by topic?
   ⎿ reported to the thread · waiting for you
 ```
+
+A `<report` inside a line is text: a fork's view shows the main conversation's
+reply too, and that may mention one.
 
 The transcript and `turn.complete` keep the whole answer.
 
@@ -225,6 +237,6 @@ Synaptik agent notice` line.
 
 **Its ids are kept with the thread**, in `$.state`. When `spawn` returns,
 `$.agent.list()` is checked: an agent already `completed` is read from
-`$.session.messages({ agentId })` as its `turn.complete`. A module reload loses
-the ids; the agent runs on, out of the pane's reach. A new reply discards the
+`$.session.messages({ agentId })` as its `turn.complete`. After a module reload,
+the threads' agents are claimed again from them. A new reply discards the
 thread, and an agent still running joins no review (#194). Fullscreen only.

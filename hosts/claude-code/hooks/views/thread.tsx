@@ -6,6 +6,7 @@ import type { Elements } from 'claude-code'
 
 import { drawnRows } from '../../src/layout'
 import { cells } from '../../src/review'
+import { AGENT_WORDS, reportState } from '../../src/threads'
 import type { Thread } from '../../src/threads'
 
 export type ThreadModel = {
@@ -82,6 +83,24 @@ export function ThreadView(
         message.role === 'person' ? (
           <Box key={`m${n}`} marginBottom={1}>
             <Text color="suggestion">{`› ${message.text}`}</Text>
+          </Box>
+        ) : message.role === 'sent' ? (
+          // One line: the answer above it says what it asked. The thread keeps
+          // the words, for its own reading; the agent's view has them too.
+          <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
+            <Text dimColor>▶ sent to agent</Text>
+          </Box>
+        ) : message.role === 'direct' ? (
+          // What the person wrote to the agent in its own view.
+          <Box key={`m${n}`} marginBottom={1}>
+            <Text color="suggestion">{`› to agent: ${message.text}`}</Text>
+          </Box>
+        ) : message.role === 'report' ? (
+          // One line: the thread's answer under it says what the agent did. The
+          // thread keeps the report whole, for its own reading; the agent's
+          // view has what it wrote.
+          <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
+            <Text dimColor>{`▶ agent reported · ${AGENT_WORDS[reportState(message.text)]}`}</Text>
           </Box>
         ) : (
           <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
