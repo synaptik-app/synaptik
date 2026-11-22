@@ -13,8 +13,8 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: â
 **Starting it**
 
 1. **Do:** click the hint, click the fixtures paragraph, press `d`, send `are those numbers right?`
-   - **Expect:** the answer says it can't check from the thread, and ends offering an agent with tools; the pane has no button for it, only the switch
-   - **Expect:** if the switch turned on, the answer says so in one sentence (`I've included this in your reviewâ€¦`)
+   - **Expect:** the answer says it can't check from the thread, and ends offering, in its own words, an agent to do the counting; the pane has no button for it, only the switch
+   - **Expect:** if the switch turned on, the answer says so in one sentence of its own (that it put this in your review)
    - **Expect:** no tag (`<next>`, `<summary>`) shows in the answer
 2. **Do:** send `yes, start it`
    - **Expect:** the answer says it is starting an agent, and the switch is on

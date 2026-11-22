@@ -101,9 +101,8 @@ gets a `Context:` section of a sentence or two.
 
 **The verdict is the switch's default**, until the person sets the switch; it never
 overrides them. When a verdict changes the switch, the answer says so in one
-sentence, as the thread's agent's doing: "I've included this in your review for
-the main conversation." or "I've left this out of your review: nothing in it to
-send." Once they set it, no verdict is asked for, since none would change
+sentence of its own, as the thread's agent's doing: "I put this in your review
+so the main conversation runs the check." Once they set it, no verdict is asked for, since none would change
 it. Switched on by them, each answer brings a summary that always sends something
 (a `Context:` section when nothing is to be done), and switching on writes one at
 once if the last answers came without. Switched off by them, a message asks for the
@@ -139,13 +138,13 @@ A thread can hand its tasks to an agent of its own, a fork subagent with tools
 steers it.
 
 **When.** While the thread has no agent, an answer whose Actions or Open
-questions need tools (a search, a command, an edit) ends with a one-line offer,
-the switch on or off:
+questions need tools (a search, a command, an edit) ends with a one-line offer
+in its own words, the switch on or off:
 
 ```
 › are those numbers right?
   The 14 is right; I can't measure code.md from here. I can start an agent
-  with tools on these; just say so.
+  to run those counts and report the real numbers.
 › yes, start it
   Starting an agent on the count.
 ```

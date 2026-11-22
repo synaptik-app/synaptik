@@ -35,7 +35,7 @@ const working: Thread = { ...talked, agent: { id: 'a1', state: 'working' } }
 test('with no agent, every answer offers one when its tasks need tools, and starts it when asked, the switch on or off', () => {
   for (const t of [NEW_THREAD, talked, { ...talked, isIncludeSet: true, included: false }]) {
     const prompt = threadPrompt({ block: 'B' }, t, 'go')
-    expect(prompt).toContain('"I can start an agent with tools on this; just say so."')
+    expect(prompt).toContain('offering, in one sentence of your own fitted to what needs doing, to start an agent with tools on it')
     expect(prompt).toContain('reading or counting files')
     expect(prompt).toContain('<next>agent</next>')
     expect(prompt).toContain('Never add it unless their message asks for the agent.')
@@ -46,7 +46,7 @@ test('with no agent, every answer offers one when its tasks need tools, and star
 test('while the verdict sets the switch, the answer says when it changes it', () => {
   expect(threadPrompt({ block: 'B' }, NEW_THREAD, 'go')).toContain('This thread is left out of their review now')
   expect(threadPrompt({ block: 'B' }, talked, 'go')).toContain('This thread is included in their review now')
-  expect(threadPrompt({ block: 'B' }, talked, 'go')).toContain('"I\'ve included this in your review for the main conversation."')
+  expect(threadPrompt({ block: 'B' }, talked, 'go')).toContain('that you put it in their review for the main conversation, or left it out and why')
   // Set by the person: no verdict, nothing to say of it.
   expect(threadPrompt({ block: 'B' }, { ...talked, isIncludeSet: true }, 'go')).not.toContain('This thread is')
 })

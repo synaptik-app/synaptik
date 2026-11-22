@@ -44,7 +44,7 @@ ${SUMMARY_GUIDANCE}
 
 ${VERDICT_GUIDANCE}
 
-This thread is {{switch}} now, and your verdict sets it. When it changes that, say so in one short sentence, the last of your answer, before the summary, as what you did: "I've included this in your review for the main conversation." or "I've left this out of your review: nothing in it to send." Say nothing of it when the verdict leaves it as it is.`
+This thread is {{switch}} now, and your verdict sets it. When it changes that, say so in one short sentence of your own, the last of your answer, before the summary, as what you did: that you put it in their review for the main conversation, or left it out and why. Say nothing of it when the verdict leaves it as it is.`
 
 // What the switch stands at, for the sentence above.
 export const SWITCH_ON = 'included in their review'
@@ -100,7 +100,7 @@ export const INCLUDED_ANYWAY = `The person chose to include this thread in their
 
 // In the thread's opening, by whether it has an agent: what becomes of work
 // that needs tools. With none, the answer offers one (D51).
-export const TOOLS_OFFER = ` When answering their message, or doing what the thread settled, needs tools (reading or counting files, a search, a command, an edit, a test run), say what would settle it, then end your answer, before the summary, with this sentence, word for word (only a sentence about their review may follow it): "I can start an agent with tools on this; just say so." Leave it out if you offered it before and the person didn't take it up. Whatever needs doing also goes into the summary, for the main conversation to carry out if the person sends it instead.`
+export const TOOLS_OFFER = ` When answering their message, or doing what the thread settled, needs tools (reading or counting files, a search, a command, an edit, a test run), say what would settle it, then end your answer, before the summary, by offering, in one sentence of your own fitted to what needs doing, to start an agent with tools on it; the person takes it up by saying so (only a sentence about their review may follow it). Leave it out if you offered it before and the person didn't take it up. Whatever needs doing also goes into the summary, for the main conversation to carry out if the person sends it instead.`
 export const TOOLS_AGENT = ` When something needs doing (a command to run, a file to edit, a test to run), an agent with tools is already working on this thread's tasks (below), and the summary carries it to the main conversation.`
 
 // After every answer, switch on or off, while the thread has no agent: it

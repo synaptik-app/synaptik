@@ -116,8 +116,8 @@ threads (tabs come free when docked).
   (`Done:`, `Changed:`, `Still on:`), and every answer
   carries `<next>agent</next>` when its tasks need tools.
 - **2026-11-22** — while the verdict sets the switch, the answer says in one
-  sentence when it changes it ("I've included this in your review for the main
-  conversation."), so the person knows what the thread's agent did; the summary
+  sentence of its own when it changes it ("I put this in your review so the
+  main conversation runs the check."), so the person knows what the thread's agent did; the summary
   opens with a `Context:` line when its Actions rest on what the main
   conversation never saw. `<next>agent</next>` now starts the agent, carried
   only when the person asks for it (D51).
@@ -165,8 +165,9 @@ way to start agents: Claude Code has `/btw`, forks and its own agents for that.
 
 **The thread's agent offers, the person asks.** While the thread has no
 agent, an answer whose Actions or Open questions need tools (a search, a
-command, an edit) ends with a one-line offer, with the include switch on or
-off: "I can start an agent with tools on these; just say so." When the
+command, an edit) ends with a one-line offer in its own words, fitted to the
+work, with the include switch on or off: "I can start an agent to run those
+two counts and report the real numbers." When the
 person's message asks for one, in so many words or as a yes to the offer, the
 answer says it is starting it and carries `<next>agent</next>`, and Synaptik
 starts it at once: the person chose it when they sent the message, as with
@@ -340,6 +341,10 @@ view. Fullscreen only.
 - The report drawn whole in the pane, its prose and its lines (built
   2026-11-21, dropped 2026-11-22): the thread's answer under it says the same,
   and the agent's view has what it wrote.
+- The offer and the switch sentence word for word, or with an example to
+  follow: the model copied the example every time, and a fixed line repeated
+  in every thread reads as boilerplate. Described, not quoted, it fits each
+  thread, and still came every time it was due in the runs on 2.1.328.
 - Hiding the main conversation in a fork's view by re-rendering its rows: rows
   carry no id or position, and ctrl+o shows them anyway. #223 takes a fresh
   agent instead.
