@@ -135,7 +135,7 @@ test("the person's message that changes the agent's work is sent to it at once",
   expect(sentToAgents).toEqual([{ to: AGENT_ID, text: 'Add a test for the TTL too.' }])
   // One line for it: the answer says what it asked.
   expect(await hasText($, '▶ sent to agent')).toBe(true)
-  expect(await hasText($, 'Add a test for the TTL too.')).toBe(false)
+  expect(await hasText($, '▶ to agent: Add a test for the TTL too.')).toBe(false)
   // A message that doesn't change its work leaves it alone.
   forkAnswer.text = 'A TTL bounds how long an entry lives.'
   await send($, 'what is a TTL again?')
