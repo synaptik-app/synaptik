@@ -636,8 +636,11 @@ const summarizing = new Set<string>()
 // Synaptik's own agents (D51), by id: the thread that started each, and its
 // words in the agent list. Kept past a new reply, which discards the thread
 // but not the agent: its notices stay out of the main conversation all the
-// same. Lost on reload.
+// same. A reload keeps the threads, so their agents are claimed again from them.
 const ownAgents = new Map<string, { key: string; reply: string; label: string }>()
+// Threads whose agent is being started: a second answer asking for one, while
+// the summary is written or spawn runs, starts no second agent.
+const startingAgents = new Set<string>()
 // Synaptik's agents whose row Claude Code no longer draws, as AgentRow says:
 // their margin goes back to 💬.
 const undrawnAgents = new Set<string>()
@@ -808,6 +811,16 @@ async function toggleInclude($: EngineInterface, key: string) {
 // switch turns on unless the person set it; then the summary is rewritten with
 // the tasks under Still on.
 async function startAgent($: EngineInterface, key: string) {
+  if (startingAgents.has(key)) return
+  startingAgents.add(key)
+  try {
+    await spawnFor($, key)
+  } finally {
+    startingAgents.delete(key)
+  }
+}
+
+async function spawnFor($: EngineInterface, key: string) {
   const anchor = await threadAnchor($, key)
   const reply = await read($, lastText)
   const before = (await read($, threads))[key]
@@ -821,7 +834,7 @@ async function startAgent($: EngineInterface, key: string) {
   }
   const thread = (await read($, threads))[key]
   if (!thread?.summary?.trim()) return $.ui.toast('nothing for an agent to do in this thread')
-  const label = `Synaptik · ${quote(anchor.part?.text ?? anchor.block, 6)}`
+  const label = agentLabel(anchor)
   let id: string | undefined
   try {
     const spawned = await $.agent.spawn({ prompt: agentPrompt(anchor, thread), description: label, subagentType: 'fork' })
@@ -845,6 +858,18 @@ async function startAgent($: EngineInterface, key: string) {
   await suggestTray($)
   void catchUp($, id)
   void rewriteForAgent($, key, true).catch(err => observe(`thread ${key} summary failed: ${String(err)}`))
+}
+
+const agentLabel = (anchor: Anchor) => `Synaptik · ${quote(anchor.part?.text ?? anchor.block, 6)}`
+
+// After a reload: the threads' agents are Synaptik's again, so their reports
+// reach the thread and their notices stay out of the main conversation.
+async function reclaimAgents($: EngineInterface) {
+  const reply = await read($, lastText)
+  for (const [key, t] of Object.entries(await read($, threads))) {
+    const anchor = t.agent && !ownAgents.has(t.agent.id) ? await threadAnchor($, key) : undefined
+    if (t.agent && anchor) ownAgents.set(t.agent.id, { key, reply, label: agentLabel(anchor) })
+  }
 }
 
 // The agent's first turn can end before spawn returns its id, so its
@@ -959,6 +984,7 @@ export const register: Register = on => {
     })
     // A resumed session (and every reload of this mod) already has a reply.
     await adoptLastReply($)
+    await reclaimAgents($)
     return next(e)
   }).catch(($, e, next) => next(e))
 

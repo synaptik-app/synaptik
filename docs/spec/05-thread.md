@@ -237,6 +237,6 @@ Synaptik agent notice` line.
 
 **Its ids are kept with the thread**, in `$.state`. When `spawn` returns,
 `$.agent.list()` is checked: an agent already `completed` is read from
-`$.session.messages({ agentId })` as its `turn.complete`. A module reload loses
-the ids; the agent runs on, out of the pane's reach. A new reply discards the
+`$.session.messages({ agentId })` as its `turn.complete`. After a module reload,
+the threads' agents are claimed again from them. A new reply discards the
 thread, and an agent still running joins no review (#194). Fullscreen only.

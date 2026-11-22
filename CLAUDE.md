@@ -123,3 +123,7 @@ supersede it or mark it dead — never work around it.
 Keep the DRs current when a decision changes. DR numbers are never reused or
 renumbered; a superseded DR is marked and says what replaced it. The history is
 the point.
+
+A DR's **Considered** holds the alternatives weighed in the design and why they
+lost. What was built during the work and then dropped, and how the work got
+there, goes in the PR or the issue as a comment, not in the DR.

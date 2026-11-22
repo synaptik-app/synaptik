@@ -286,8 +286,8 @@ row, one yellow "Prompt
 dropped by a hook" line. This is the one exception to P1 and to D24's "no
 interception of `prompt.submit`", and it holds only for these notices.
 
-**State:** the agent ids are kept with the threads in `$.state`; a module
-reload loses them, and the pane loses track of a running agent (accepted). An
+**State:** the agent ids are kept with the threads in `$.state`; after a
+module reload, Synaptik claims the threads' agents again from them. An
 agent's first `turn.start` comes before `spawn` returns its id, so when it
 returns, `$.agent.list()` is checked: an agent already `completed` is read from
 `$.session.messages({ agentId })` and handled as its `turn.complete`.
@@ -311,13 +311,7 @@ view. Fullscreen only.
   The main transcript kept no row of either.
 - A rewrite of `AssistantMessage`'s text takes effect on the agent's own rows
   in its view.
-- What the person said in its view came back under `Settled with you:`. In
-  the hand test (2026-11-22), a later report folded it into `Done:` instead,
-  and the thread's summary kept the question open: so it also joins the
-  thread. In the agent's stored rows, what the person typed is stamped as
-  theirs and what Synaptik sent as the coordinator's (`plugin: synaptik`);
-  typed while it ran, the words come wrapped ("The user sent a new message
-  while you were working: …").
+- What the person said in its view came back under `Settled with you:`.
 - `$.ui.view({ agentId })` works only from the person's own press, and only
   while the agent is in the tasks list. A finished agent keeps its row,
   undrawn, until the engine drops its task.
@@ -332,26 +326,6 @@ view. Fullscreen only.
 - A list of Synaptik's agents, or the band naming one waiting for you: Claude
   Code's agent list already is the list, with its keys and opening, and the
   label says it.
-- `▶ start agent on tasks` and `▶ open agent · <state>` in the pane (built
-  2026-11-21, dropped 2026-11-22): the thread is a conversation, and asking
-  there is how the person starts anything else in it; the agent list opens the
-  view.
-- Reading what the person typed in the agent's view from
-  `$.session.messages({ agentId, after })` on each report: those rows carry no
-  origin, so the person's words and Synaptik's sends can't be told apart.
-- The message sent drawn whole in the pane, `▶ to agent: …` (built 2026-11-21,
-  dropped 2026-11-22): the answer above it says what it asked, and the agent's
-  view has the words.
-- The report drawn whole in the pane, its prose and its lines (built
-  2026-11-21, dropped 2026-11-22): the thread's answer under it says the same,
-  and the agent's view has what it wrote.
-- The offer and the switch sentence word for word, or with an example to
-  follow: the model copied the example every time, and a fixed line repeated
-  in every thread reads as boilerplate. Described, not quoted, it fits each
-  thread, and still came every time it was due in the runs on 2.1.328.
-- Hiding the main conversation in a fork's view by re-rendering its rows: rows
-  carry no id or position, and ctrl+o shows them anyway. #223 takes a fresh
-  agent instead.
 
 **Revisions**
 - **2026-11-22** — no buttons: the answer offers the agent and starts it when
