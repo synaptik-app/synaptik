@@ -303,28 +303,19 @@ view. Fullscreen only.
 ## Extensions
 
 ### E1 — Branched sub-sessions (was D16, D17)
-**Status:** proposed · added by 2026-10-14
+**Status:** dead · added by 2026-10-14
 
-A full Claude Code session **with the mod loaded**, so its responses carry the
-same gutter, verb bar and threads — the mod running recursively, not a read-only
-subagent view.
-**Needs:** depth cap (was 2), lineage in `$.store` (shared machine-wide, 4 MiB).
-**Open:** whether a mod can trigger `/branch` via `$.command.run`, or must start
-the session another way *(was Q4)*. `session.end` fires on `/branch` with reason
-`resume`, so a branch must not be treated as a real session end.
-**The case is context isolation**, not tool access: a thread already hands tool
-work to the main agent through its summary (D45). Isolation is a real need: one session exploring the database, the cloud setup,
-or the front and back ends deserves its own context each. Branching goes through
-Claude Code's own `/branch`, from a thread (E2, #106). **Not pursued:** a
-Synaptik-owned session tree, and hiding branches from the resume list.
+A full Claude Code session split off from a thread with Synaptik loaded, for
+work that deserves a context of its own (#158).
+
+**Why it died:** Claude Code's own `/branch` already gives a session of its
+own, and a thread's tasks run in its agent, with tools, inside the session
+(D51). Synaptik has nothing to add to either.
 
 **Revisions**
-- **2026-10-24** — the case is **stronger**, not weaker: it was "reconsider only
-  after living with D15's delegate loop".
-- **2026-11-20** — a thread no longer leads here: E2 runs a thread's tasks in a
-  fork subagent, inside the session. A session of its own stays this idea's.
-- **2026-11-21** — E2 is superseded by D51, which keeps the thread's agent a
-  subagent inside the session.
+- **2026-11-20** — a thread no longer leads here: its tasks run in a subagent
+  inside the session.
+- **2026-11-23** — dead: `/branch` covers it, and D51 the thread's tools.
 
 ---
 
@@ -352,42 +343,34 @@ the suggestion, with what the agent did in sections of its own; one
 ---
 
 ### E3 — Worktree isolation (was D19)
-**Status:** proposed · added by 2026-10-14
+**Status:** dead · added by 2026-10-14
 
-Branches share the working directory by default; the moment one edits files, the
-main session's picture is stale and it does not know. Isolated git worktrees are
-the correct answer. **Hooks:** `$.session.cwd`, `$.session.repo`.
+Branched sessions (E1) in git worktrees of their own, so one editing files
+wouldn't leave the main session's picture of them stale.
+
+**Why it died:** with E1. A thread's agent works in the session's own
+directory, and the files it changes reach the main conversation in the
+thread's summary (D51).
+
+**Revisions**
+- **2026-11-23** — dead, with E1.
 
 ---
 
 ### E4 — Summary-based merge between sessions (was D18)
-**Status:** proposed · added by 2026-10-14
+**Status:** dead · added by 2026-10-14
 
-`$.session.send` from branch to parent → `session.receive` hook returns
-`{ consumed }` so Claude does not read it immediately. **The branch merges back as
-a commit**, as D3 does for a thread, one level up. The branch's result lands in the parent's tray as an editable
-include/exclude row, in two parts:
-- **Decisions**, a summary the model writes.
-- **A change manifest**, which is read, not summarized (P3): files from
-  `git diff --stat` against the state recorded when the branch started, and the
-  commands run, with their status, from the branch's own transcript. The
-  branch's mod instance builds it and sends it with `$.session.send`.
+A branched session's result (E1) brought back into the parent's review as an
+editable include/exclude row: a summary of its decisions, and a change
+manifest read from `git diff --stat` and its transcript (#159).
 
-Excluding a branch that changed files raises a loud band warning (as D24 does):
-that is exactly the surprise to avoid. With worktrees (E3), the manifest says
-where the changes are, and moving them is a git merge. Explicitly lossy for
-discussion; applied file changes need a real git merge, not a conversation merge.
+**Why it died:** with E1. What a thread's agent did reaches the review in the
+thread's summary, under `Subagent:` (D51).
 
 **Revisions**
-- **2026-10-24** — merge back as a commit, into the parent's tray. Before: the
-  summary surfaced in a pane with a Merge button, then `$.prompt.fill`.
-- **2026-11-20** — for E2's subagent, the result is its report, placed whole in
-  the review in place of the thread's summary; the files it changed are the
-  report's own `Changed:` line (#159). No `$.session.send`, no `git diff`:
-  the subagent is in the same session. This entry stays for E1's sessions.
-- **2026-11-21** — under D51 no report goes into the review: the thread's
-  summary carries what the agent did, in its `Subagent:` section, written
-  knowing its reports.
+- **2026-10-24** — merge back as a commit, into the parent's tray.
+- **2026-11-21** — under D51, the thread's summary carries what its agent did.
+- **2026-11-23** — dead, with E1.
 
 ---
 
