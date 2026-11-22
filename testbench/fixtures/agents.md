@@ -31,10 +31,10 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 **Steering it**
 
 5. **Do:** send `also count the lines of fixtures/tables.md`
-   - **Expect:** the answer, then `▶ to agent: …` under it, and the agent list back at `· working`
+   - **Expect:** the answer says what it asked the agent, then one dim `▶ sent to agent` line under it, and the agent list back at `· working`
    - **Expect:** after its report, one yellow `Prompt dropped by a hook: Synaptik agent notice` line in the main conversation, and no turn there
 6. **Do:** send `what does a line count include?`
-   - **Expect:** an answer, and nothing sent to the agent: no `▶ to agent:`, the agent list stays `· done`
+   - **Expect:** an answer, and nothing sent to the agent: no `▶ sent to agent`, the agent list stays `· done`
 
 **Its view**
 

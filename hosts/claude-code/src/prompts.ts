@@ -118,7 +118,7 @@ An agent with tools is working on this thread's tasks: its reports, and what you
 <to-agent>
 what it should do now, standing on its own
 </to-agent>
-It is sent at once. Leave it out when the message doesn't change the agent's work: not every message is for it.`
+It is sent at once, and the person sees only that it went: say in your answer, briefly, what you asked it. Leave it out when the message doesn't change the agent's work: not every message is for it.`
 
 // Added to the summary's guidance once the thread has an agent.
 export const SUBAGENT_GUIDANCE = `An agent with tools works on this thread's tasks, so the summary has one more section, after Open questions, with what it did as its reports say, in sub-points, each only when it has something:

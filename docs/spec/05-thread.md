@@ -181,8 +181,9 @@ it.
 
 **The person writes in the thread.** The thread's agent answers as before. When
 the answer changes the agent's work (a new, changed or dropped task, a revert),
-it adds `<to-agent>…</to-agent>`, stripped from the answer and shown in the pane
-as `▶ to agent: …`, and Synaptik sends it at once
+it says briefly what it asks the agent and adds `<to-agent>…</to-agent>`,
+stripped from the answer and drawn as one dim line, `▶ sent to agent`, and
+Synaptik sends it at once
 (`$.session.send({ to: { agentId }, text })`). Claude Code hands it to a running
 agent at its next tool call, and resumes a finished one.
 

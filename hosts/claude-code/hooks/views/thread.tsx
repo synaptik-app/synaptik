@@ -85,8 +85,10 @@ export function ThreadView(
             <Text color="suggestion">{`› ${message.text}`}</Text>
           </Box>
         ) : message.role === 'sent' ? (
+          // One line: the answer above it says what it asked. The thread keeps
+          // the words, for its own reading; the agent's view has them too.
           <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
-            <Text dimColor>{`▶ to agent: ${message.text}`}</Text>
+            <Text dimColor>▶ sent to agent</Text>
           </Box>
         ) : message.role === 'direct' ? (
           // What the person wrote to the agent in its own view.

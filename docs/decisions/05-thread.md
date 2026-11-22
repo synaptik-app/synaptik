@@ -201,7 +201,8 @@ can't know that this is the thread.
 thread's fork is (P1): neither reaches the main conversation, and what the
 agent did reaches it only in the thread's summary, which the person sends
 (D30). So `<to-agent>` needs no press of its own, and it is no exception to
-P1: the pane shows what was sent.
+P1: the answer says what it asked the agent, a dim `▶ sent to agent` line
+under it shows that it went, and the words are in the agent's view.
 
 Nothing is queued on Synaptik's side: Claude Code hands a message for a
 running agent over at its next tool call, inside its turn, and a message for
@@ -323,7 +324,7 @@ view. Fullscreen only.
 
 **Considered:**
 - A press to send `<to-agent>`: friction, since the person just sent the
-  message it answers. The pane shows what was sent.
+  message it answers. The answer says what it asked.
 - Automatic rounds, the thread answering a report with `<to-agent>`: a loop
   with nobody watching. Left for later, once this has matured.
 - The agent's report in the suggestion beside the summary, or in its place: two
@@ -338,6 +339,9 @@ view. Fullscreen only.
 - Reading what the person typed in the agent's view from
   `$.session.messages({ agentId, after })` on each report: those rows carry no
   origin, so the person's words and Synaptik's sends can't be told apart.
+- The message sent drawn whole in the pane, `▶ to agent: …` (built 2026-11-21,
+  dropped 2026-11-22): the answer above it says what it asked, and the agent's
+  view has the words.
 - The report drawn whole in the pane, its prose and its lines (built
   2026-11-21, dropped 2026-11-22): the thread's answer under it says the same,
   and the agent's view has what it wrote.
@@ -354,7 +358,8 @@ view. Fullscreen only.
   the person asks; what the person types in the agent's view joins the thread;
   the report is cut only where its tag opens a line; the summary opens with
   `Context:` when its Actions rest on what the main conversation never saw;
-  a report draws as one line in the pane.
+  a report, and a message sent to the agent, each draw as one line in the
+  pane.
 
 ---
 
