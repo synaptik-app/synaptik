@@ -57,14 +57,44 @@ code.
 5. **Tests.** A change to `src/` without a test that would have failed before
    it. A test that cannot fail.
 6. **Docs.** Behavior changed but `docs/spec/` did not; a decision changed
-   but `docs/decisions/` did not, or a decision was renumbered or reused.
+   but `docs/decisions/` did not. A change to the docs themselves is reviewed
+   as below.
 7. **TypeScript that hides a bug**: `any`, `!` or `as` that silences a real
    `undefined`, a promise that is neither awaited nor caught, mutating data the
    caller still holds.
 
+## A change to the docs
+
+The DRs and the spec are reviewed as carefully as the code: the code is built
+from them. Their rules are in `docs/decisions/README.md` (the DR format, the
+statuses) and `docs/spec/README.md`; this list says what to check against them,
+in order.
+
+1. **The spec and the DRs agree.** A DR changed and the spec says otherwise, or
+   the reverse; the spec describing something no settled DR allows. If the two
+   disagree, the spec is wrong (`CLAUDE.md`): say which line to fix.
+2. **A DR is cited for what it says.** Every D, E or P number named exists, has
+   the status implied (a superseded DR cited as if it still held is a
+   finding), and says what the citing text claims. A settled DR cites no E (proposal).
+3. **The DR format holds.** Numbers never reused or renumbered; a superseded or
+   dead DR says what replaced it or why it died, and its index row says the
+   same; the body reads as what holds today, and each change is one dated line
+   under *Revisions*. What was tried and dropped, and how the work got there,
+   belongs on the issue or PR (D48): a DR that grows a log of attempts is a
+   finding.
+4. **Nothing a decision rests on was lost.** When text is cut or shortened, the
+   reason a rule holds must still be in the body, and a spike's findings in
+   spec 08. Name the rule left without its reason.
+5. **The spec is buildable.** Present tense, with examples; every claim about
+   the mods API either checked in spec 08 or marked ⚠️. An example that
+   contradicts its own rule, or a behaviour stated only in a DR, is a finding.
+6. **The prompts** in `hosts/claude-code/src/prompts.ts` are docs too: they must
+   ask for what the spec says the model writes (tags, sections, wording rules).
+
 ## What not to flag
 
-- Style, naming or formatting the surrounding code already uses.
+- Style, naming or formatting the surrounding code already uses; in the docs,
+  wording the surrounding text already uses, unless it is unclear or wrong.
 - Ideas `docs/decisions/` already considered and cut — check before
   proposing a feature, a setting or an abstraction.
 - "Add a comment", "extract a helper", "consider renaming" — unless the current
