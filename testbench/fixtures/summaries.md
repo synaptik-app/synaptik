@@ -28,7 +28,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 1. **Do:** on the Redis paragraph, ask `should the TTL be longer for admins?`, then `ok, 30 minutes for admins`
    - **Expect:** the answer says what to do, and doesn't claim to have done it
    - **Expect:** under the switch, `⎿  Actions: Use a 30-minute TTL for admin sessions.` or close to it: an instruction, not a recap
-   - **Expect:** the switch turned itself on, and the suggestion has the summary under `💬 "For the session store…"`
+   - **Expect:** the switch turned itself on, and the suggestion has the summary under `❝ "For the session store…"`
 2. **Do:** on the code block, ask `this retries with no delay, can you add a backoff?`, then `yes, exponential, starting at 100 ms`
    - **Expect:** `Actions:` names the work: what to edit and how, e.g. "Edit retry: add exponential backoff starting at 100 ms"
 3. **Do:** on the table, ask `which one for sessions?`, then `Redis then, durability isn't needed`
@@ -63,6 +63,6 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
     - **Expect:** the next summary leaves it out, and the suggestion follows
 13. **Do:** close the panes, press `q`, look at the suggestion and the band
     - **Expect:** only the threads switched on are in it, in the reply's order
-    - **Expect:** the band counts them, e.g. `💬3`
+    - **Expect:** the band counts them, e.g. `❝3`
 
 When you're done: close any thread pane, click the first **Expect:**, mark every expectation, press `q`, `Tab`, then `⏎`. The test session answers with a table of your results.

@@ -33,7 +33,7 @@ redraws all of it.
   keyboard cursor (§10) draws as the primary button, the others dim. Outside a
   review, nothing is highlighted. Where the items don't fit on one row (a narrow
   terminal, a deep indent), they are drawn as their glyphs alone —
-  `[ ✓ ][ ✗ ][ ✎ ][ 💬 ]`, and `[ ↳ ]` / `[ ↰ ]` — so the menu stays one row.
+  `[ ✓ ][ ✗ ][ ✎ ][ ❝ ]`, and `[ ↳ ]` / `[ ↰ ]` — so the menu stays one row.
 
 The reply carries no accent colour. ⚠️ `selectionBg` was found in the Claude Code
 binary, not the documented API; an unknown key would make the reply fall back to
@@ -61,7 +61,7 @@ lines. There is no option to show them only while reviewing.
   Here's what I'd suggest:
 
   ✓ Use Redis for the session cache          ← on the selection background
-  └ [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
+  └ [✓ accept] [✗ reject] [✎ comment] [❝ discuss]
       per-user key prefix
   ✗   5 minute TTL
   ✎ Add a rate limiter
@@ -100,7 +100,7 @@ selects nothing inside one.
   1. Cache sessions in Redis
 ✓    - key each entry by user
      - expire after 5 minutes          ← selected (selection background)
-     └ [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
+     └ [✓ accept] [✗ reject] [✎ comment] [❝ discuss]
 ✎ 2. Rate-limit the login endpoint
     → make it 5 per minute per account
 ```
@@ -210,7 +210,7 @@ itself** (#31):
 │
 │ ↑ 1. Choose a cache for sessions
 │ ✎ 2. Decide the key format, and how it is versioned across deploys
-│ [ ✓ accept ][ ✗ reject ][ ✎ comment ][ 💬 discuss ]
+│ [ ✓ accept ][ ✗ reject ][ ✎ comment ][ ❝ discuss ]
 │ → keep it short
 │ ↓ 3. Set an expiry policy
 │

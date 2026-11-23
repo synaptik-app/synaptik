@@ -22,8 +22,9 @@ import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
 import { decorate } from '../src/decorate'
+import { agentLine, thinkingLine, toolStep } from '../src/waiting'
+import type { AgentNow } from '../src/waiting'
 import {
-  AGENT_GLYPH,
   AGENT_WORDS,
   agentPrompt,
   anchorOf,
@@ -641,22 +642,17 @@ const ownAgents = new Map<string, { key: string; reply: string; label: string }>
 // Threads whose agent is being started: a second answer asking for one, while
 // the summary is written or spawn runs, starts no second agent.
 const startingAgents = new Set<string>()
-// Synaptik's agents whose row Claude Code no longer draws, as AgentRow says:
-// their margin goes back to 💬.
-const undrawnAgents = new Set<string>()
 // The agent whose transcript is on screen, as the band last said; none for
 // the main conversation's.
 let viewedAgent: string | undefined
 
-// A block's margin glyph for its thread: its agent's state while it has one,
-// else 💬; none without a thread.
+// A block's margin glyph for its thread: ❝, an agent or not, since the agent
+// is the discussion's tool, not a mark of its own (D51); none without a thread.
 function threadGlyph(all: Readonly<Record<string, Thread>>, key: number | string): string | undefined {
-  const t = all[String(key)]
-  if (!t || !hasThread(all, key)) return undefined
-  return t.agent && !undrawnAgents.has(t.agent.id) ? AGENT_GLYPH[t.agent.state] : THREAD_GLYPH
+  return hasThread(all, key) ? THREAD_GLYPH : undefined
 }
 
-// The margin of a block's lines: a line's mark, or 💬 where it has a thread.
+// The margin of a block's lines: a line's mark, or ❝ where it has a thread.
 function lineGlyphs(marked: Readonly<Record<string, Mark>>, all: Readonly<Record<string, Thread>>, block: number): Record<string, string> {
   const glyphs: Record<string, string> = {}
   for (const line of Object.keys(lineMarks(all, block))) {
@@ -675,8 +671,78 @@ async function threadAnchor($: EngineInterface, key: string): Promise<Anchor | u
 
 async function changeThread($: EngineInterface, key: string, change: (t: Thread) => Thread) {
   await update($, threads, all => ({ ...all, [key]: change(all[key] ?? NEW_THREAD) }))
+  const t = (await read($, threads))[key]
+  if (t && t.pending > 0) {
+    if (!pendingSince.has(key)) pendingSince.set(key, Date.now())
+  } else pendingSince.delete(key)
+  if (t && (t.pending > 0 || t.agent?.state === 'working')) startWaiting($)
   $.ui.invalidate('ui.render')
   void toThreadEnd($, key)
+}
+
+// --- The pane's waiting line (#234): a spinner while a thread waits for its
+// answer, or while its agent works, with what the agent is doing.
+
+// When each thread's answer was asked for, by thread.
+const pendingSince = new Map<string, number>()
+// Each working agent as Claude Code's agent list last had it: what it is doing,
+// since when, its tokens.
+const agentsNow = new Map<string, AgentNow>()
+// When each agent's current run began: its spawn, or its resume. Claude Code's
+// `startTime` is when the agent first started, which a resumed run isn't.
+const runSince = new Map<string, number>()
+let waitingTimer: { cancel: () => void } | undefined
+// An answer still pending after this long stops keeping the timer going: one
+// that never resolves would otherwise redraw everything for the session (D33).
+const WAITING_GIVES_UP_MS = 10 * 60_000
+let agentsReadAt = 0
+const WAITING_TICK_MS = 200
+const AGENTS_READ_MS = 1000
+
+// One timer for every pane: it redraws while anything waits, and stops when
+// nothing does, so an idle session redraws nothing.
+function startWaiting($: EngineInterface) {
+  if (waitingTimer) return
+  try {
+    waitingTimer = $.clock.every(WAITING_TICK_MS, () => void tickWaiting($).catch(err => observe(`waiting tick failed: ${String(err)}`)))
+  } catch (err) {
+    observe(`waiting timer not started: ${String(err)}`)
+  }
+}
+
+// An agent's latest tool call, from the newest rows of its transcript.
+async function latestStep($: EngineInterface, id: string): Promise<string | undefined> {
+  const rows = await $.session.messages({ agentId: id, last: 8 }).catch(() => undefined)
+  if (!Array.isArray(rows)) return undefined
+  const call = rows.flatMap(r => r.toolUses).at(-1)
+  return call ? toolStep(call.tool, call.input) : undefined
+}
+
+async function tickWaiting($: EngineInterface) {
+  const entries = Object.entries(await read($, threads))
+  const now = Date.now()
+  const working = entries.filter(([, t]) => t.agent?.state === 'working')
+  // The agents Claude Code lists as running, read again about once a second:
+  // one that stopped, or is gone, drops out with its old step.
+  if (working.length > 0 && now - agentsReadAt >= AGENTS_READ_MS) {
+    agentsReadAt = now
+    const running = (await $.agent.list()).filter(a => ownAgents.has(a.id) && a.taskStatus === 'running')
+    agentsNow.clear()
+    for (const a of running) {
+      agentsNow.set(a.id, { label: a.label, description: a.description, startTime: runSince.get(a.id) ?? a.startTime, tokenCount: a.tokenCount, step: await latestStep($, a.id) })
+    }
+  }
+  // Only a real wait keeps the timer: an answer pending for less than its
+  // limit, or an agent Claude Code lists as running.
+  const isWaiting =
+    entries.some(([key, t]) => t.pending > 0 && now - (pendingSince.get(key) ?? now) < WAITING_GIVES_UP_MS) ||
+    working.some(([, t]) => agentsNow.has(t.agent!.id) || now - (runSince.get(t.agent!.id) ?? 0) < AGENTS_READ_MS * 2)
+  if (!isWaiting) {
+    waitingTimer?.cancel()
+    waitingTimer = undefined
+    return
+  }
+  $.ui.invalidate('ui.render')
 }
 
 // The pane's window to its end: a pane keeps its offset as the thread grows, so
@@ -693,7 +759,7 @@ async function toThreadEnd($: EngineInterface, key: string) {
   }
 }
 
-// d or 💬 discuss on a block: its pane, with the keyboard in the field. The
+// d or ❝ discuss on a block: its pane, with the keyboard in the field. The
 // review lets go, since the keyboard can't come back to it (D45).
 async function openThread($: EngineInterface, index: number | string) {
   const key = String(index)
@@ -853,6 +919,7 @@ async function spawnFor($: EngineInterface, key: string) {
     return $.ui.toast(`couldn't start the agent: ${String(err)}`)
   }
   ownAgents.set(id, { key, reply, label })
+  runSince.set(id, Date.now())
   if ((await read($, lastText)) !== reply) return
   await changeThread($, key, t => ({ ...t, agent: { id: id!, state: 'working' }, included: t.isIncludeSet ? t.included : true }))
   await suggestTray($)
@@ -912,18 +979,20 @@ async function rewriteForAgent($: EngineInterface, key: string, isStarting: bool
 // One of the agent's turns ended: its answer joins the thread whole, the state
 // follows its report, and the thread answers it on its own, with the summary
 // rewritten. That answer sends the agent nothing (D51).
-async function onAgentTurn($: EngineInterface, id: string, answer: string) {
+async function onAgentTurn($: EngineInterface, id: string, answer: string, ms?: number) {
   const own = ownAgents.get(id)
   if (!own || (await read($, lastText)) !== own.reply) return
   const key = own.key
   const anchor = await threadAnchor($, key)
   if (anchor === undefined || (await read($, threads))[key]?.agent?.id !== id) return
+  // Its run is over: its line, step and time go with it.
+  agentsNow.delete(id)
   const state = reportState(answer)
   observe(`agent ${id} reported: ${state}`)
   await changeThread($, key, t => ({
     ...t,
     agent: { id, state },
-    messages: [...t.messages, { role: 'report', text: answer.trim() }],
+    messages: [...t.messages, { role: 'report', text: answer.trim(), ...(ms === undefined ? {} : { ms }) }],
     pending: t.pending + 1,
   }))
   const thread = (await read($, threads))[key]!
@@ -968,6 +1037,9 @@ async function onAgentStart($: EngineInterface, id: string) {
   if (!own || (await read($, lastText)) !== own.reply) return
   const t = (await read($, threads))[own.key]
   if (t?.agent?.id !== id || t.agent.state === 'working') return
+  // A new run: timed from now, with nothing of the last one's.
+  runSince.set(id, Date.now())
+  agentsNow.delete(id)
   await changeThread($, own.key, now => ({ ...now, agent: { id, state: 'working' as AgentState } }))
 }
 
@@ -1043,7 +1115,7 @@ export const register: Register = on => {
     // One of Synaptik's agents ended a turn: its answer goes to its thread (D51).
     if (e.agentId) {
       const id = e.agentId
-      if (ownAgents.has(id)) await onAgentTurn($, id, e.answer).catch(err => observe(`agent ${id} report failed: ${String(err)}`))
+      if (ownAgents.has(id)) await onAgentTurn($, id, e.answer, e.durationMs).catch(err => observe(`agent ${id} report failed: ${String(err)}`))
       return next(e)
     }
     await adoptLastReply($)
@@ -1091,16 +1163,10 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   // Its row in Claude Code's agent list: relabelled with its block and state.
-  // When the row hides is Claude Code's; Synaptik notes it, since a view can't
-  // be opened then.
+  // When the row hides is Claude Code's.
   on('ui.render', { component: 'AgentRow' }, async ($, e, next) => {
     const own = ownAgents.get(e.props.id)
     if (!own) return next(e)
-    if (e.props.isHidden !== undrawnAgents.has(e.props.id)) {
-      if (e.props.isHidden) undrawnAgents.add(e.props.id)
-      else undrawnAgents.delete(e.props.id)
-      $.ui.invalidate('ui.render')
-    }
     const t = (await read($, lastText)) === own.reply ? (await read($, threads))[own.key] : undefined
     const state = t?.agent?.id === e.props.id ? t.agent.state : undefined
     return next({ ...e, props: { ...e.props, label: state ? `${own.label} · ${AGENT_WORDS[state]}` : own.label } })
@@ -1450,6 +1516,8 @@ export const register: Register = on => {
         isPart: anchor.part !== undefined,
         columns: e.props.bodyColumns,
         isSummarizing: summarizing.has(key),
+        thinking: thread.pending > 0 ? thinkingLine(Date.now(), pendingSince.get(key)) : undefined,
+        agentWorking: thread.agent?.state === 'working' ? agentLine(Date.now(), agentsNow.get(thread.agent.id)) : undefined,
         thread,
       },
       {

@@ -79,7 +79,7 @@ async function withAgent($: Dollar, on: Parameters<typeof start>[1]) {
 }
 
 const report = ($: Dollar, answer = REPORT) =>
-  $.turn.complete({ turnId: 'agent-turn', agentId: AGENT_ID, answer, durationMs: 1, isAborted: false, reason: 'answer' })
+  $.turn.complete({ turnId: 'agent-turn', agentId: AGENT_ID, answer, durationMs: 15_000, isAborted: false, reason: 'answer' })
 
 test('an agent starts only when the answer to the person carries the tag, and the pane has no button for it', async ($, on) => {
   await threadWithTools($, on)
@@ -113,7 +113,7 @@ test("a report joins the thread whole, sets the agent's state, and the thread an
   forkAnswer.text = 'It ran the tests: they pass. It asks whether to add a TTL test.'
   await report($)
   // One line for it: the thread's answer says what it did.
-  expect(await hasText($, '▶ agent reported · waiting for you')).toBe(true)
+  expect(await hasText($, '○ Agent waiting for you · 15s')).toBe(true)
   expect(await hasText($, 'Done: ran the tests\nRan: npm test -- greet (passed)\nQuestions: add a TTL test?')).toBe(false)
   expect(forks).toHaveLength(before + 1)
   expect(forks.at(-1)).toContain('Its report:\n' + REPORT)
@@ -134,7 +134,7 @@ test("the person's message that changes the agent's work is sent to it at once",
   await send($, 'yes, add the TTL test')
   expect(sentToAgents).toEqual([{ to: AGENT_ID, text: 'Add a test for the TTL too.' }])
   // One line for it: the answer says what it asked.
-  expect(await hasText($, '▶ sent to agent')).toBe(true)
+  expect(await hasText($, '▶ Sent to agent')).toBe(true)
   expect(await hasText($, '▶ to agent: Add a test for the TTL too.')).toBe(false)
   // A message that doesn't change its work leaves it alone.
   forkAnswer.text = 'A TTL bounds how long an entry lives.'
@@ -142,16 +142,15 @@ test("the person's message that changes the agent's work is sent to it at once",
   expect(sentToAgents).toHaveLength(1)
 })
 
-test('the block shows its agent\'s state in the margin, in place of 💬', async ($, on) => {
+test('a block whose thread has an agent keeps ❝ in the margin: the agent is the discussion\'s tool', async ($, on) => {
   await withAgent($, on)
   await report($)
   await review($)
   const ui = await fullscreen($, F)
   const clients = await ui.findAll({ type: 'Client' })
   const cache = clients.find((c: FoundElement) => (c.props.props as { index: number }).index === CACHE)!
-  expect((cache.props.props as { glyph?: string }).glyph).toBe('✋')
-  // The suggestion keeps 💬.
-  expect(suggested()).toContain('💬')
+  expect((cache.props.props as { glyph?: string }).glyph).toBe('❝')
+  expect(suggested()).toContain('❝')
 })
 
 test('a first turn that ended before spawn returned is read from its transcript', async ($, on) => {
@@ -160,7 +159,7 @@ test('a first turn that ended before spawn returned is read from its transcript'
   agentRows.push({ role: 'user', text: '<fork-boilerplate>go</fork-boilerplate>', toolUses: [] }, { role: 'assistant', text: REPORT, toolUses: [] })
   forkAnswer.text = STARTING
   await send($, 'yes, start it')
-  expect(await hasText($, '▶ agent reported · waiting for you')).toBe(true)
+  expect(await hasText($, '○ Agent waiting for you')).toBe(true)
 })
 
 test("what the person types in the agent's view joins the thread", async ($, on) => {

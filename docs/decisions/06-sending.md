@@ -65,7 +65,7 @@ scaffolding: no "the user approved step 3", no "the user asked to explain…".
     ✓ "per-user key prefix"
     ✗ "write-through on logout"
 ✎ "Add a rate limiter" → make it 5 req/sec
-💬 "Shard by tenant id" → defer sharding until >10k tenants
+❝ "Shard by tenant id" → defer sharding until >10k tenants
 ```
 
 Symbol, short quote, optional text, nesting preserved (D4). Quotes run to roughly
@@ -82,6 +82,7 @@ thing to text a person would type (P1).
 - **2026-10-15** — the `Re your last message:` header is dropped: it read like an
   email reply, and the quotes alone locate everything. Cut quotes end in `...`.
 - **2026-11-08** — a DR of its own; it was the part of D6 that survived.
+- **2026-11-23** — a thread's summary is led by `❝`, not `💬` (D2).
 
 ---
 

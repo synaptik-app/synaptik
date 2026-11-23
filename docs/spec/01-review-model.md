@@ -70,7 +70,7 @@ Blocks:
 | Accept | `✓` | stages a mark |
 | Reject | `✗` | stages a mark |
 | Comment | `✎` | opens an inline input; stages mark + text |
-| Discuss | `💬` | opens a thread pane (see §8) |
+| Discuss | `❝` | opens a thread pane (see §8) |
 
 **Verbs are idempotent entry points.** Pressing one again resumes rather than
 duplicating:

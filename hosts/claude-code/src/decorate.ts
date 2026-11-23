@@ -7,7 +7,7 @@
 
 export type Paint = { start: number; end: number; color: 'success' | 'error' | 'suggestion'; bold: true }
 
-const COLOR = { '✓': 'success', '✗': 'error', '✎': 'suggestion' } as const
+const COLOR = { '✓': 'success', '✗': 'error', '✎': 'suggestion', '❝': 'suggestion' } as const
 
 // The glyph leading each line, indented ones too: ✓ green, ✗ red, ✎ in the
 // suggestion colour. A line led by anything else is left alone, so a prompt the
@@ -18,7 +18,7 @@ export function decorate(text: string): Paint[] {
   for (const line of text.split('\n')) {
     const lead = line.length - line.trimStart().length
     const glyph = line[lead]
-    if (glyph === '✓' || glyph === '✗' || glyph === '✎') {
+    if (glyph === '✓' || glyph === '✗' || glyph === '✎' || glyph === '❝') {
       paints.push({ start: at + lead, end: at + lead + 1, color: COLOR[glyph], bold: true })
     }
     at += line.length + 1

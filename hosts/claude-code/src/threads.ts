@@ -30,7 +30,8 @@ import {
 // Who said it: the person, the thread's own answers ('agent'), and, once the
 // thread has an agent with tools (D51), its reports, what the thread sent it,
 // and what the person wrote to it in its own view ('direct').
-export type ThreadMessage = { role: 'person' | 'agent' | 'report' | 'sent' | 'direct'; text: string }
+// A report keeps how long the agent's run took (`ms`), when Claude Code said.
+export type ThreadMessage = { role: 'person' | 'agent' | 'report' | 'sent' | 'direct'; text: string; ms?: number }
 
 // A thread's agent with tools (D51): its id in `$.agent.list()`, and where its
 // tasks stand, by its last report (`working` until the first, and while it runs).
@@ -252,9 +253,6 @@ export function reportStatus(text: string): AgentState | undefined {
 
 // The agent's state in words, as the pane, the agent list and the cut line say it.
 export const AGENT_WORDS: Record<AgentState, string> = { working: 'working', 'needs-you': 'waiting for you', done: 'done' }
-
-// A block's margin while its thread has an agent, in place of 💬.
-export const AGENT_GLYPH: Record<AgentState, string> = { working: '⏳', 'needs-you': '✋', done: '✅' }
 
 // Which of `ids` a notice of Claude Code's is about: a `<task-notification>`
 // with its task id. Undefined for any other text.

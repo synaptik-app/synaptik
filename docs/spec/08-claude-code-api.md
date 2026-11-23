@@ -77,6 +77,7 @@ to block user-installed mods.
 | A paste of 4 lines or more | Claude Code keeps it aside, with a `[Pasted text #N +M lines]` reference in the prompt box; its text never reaches a hook, so it can't be moved into a comment. Claude Code's own behaviour, not a bug |
 | `onScreen` | fullscreen only; per reply piece, not per element |
 | `$.ui.view({ agentId })` | only from the person's own input, and only while the agent is in the tasks list |
+| `$.model.fork` | resolves once, with the reply's `text` and `usage`: no partial text or thinking along the way, and no way to stop it (2.1.330 types) |
 | A thread's agent | its first `turn.start` comes before `spawn` returns its id; a finished one keeps its row, undrawn, until the engine drops its task |
 | `$.session.messages()` | the newest 4,096 entries; `{ last }` fewer, and a ranged read can be refused (`SessionMessagesDeny`), which falls back to the plain read |
 | `autoFocus` | accepts only `true`, so focus is managed per render rather than by flipping a prop off |

@@ -12,7 +12,7 @@ row moves with the selection, so only one block's controls are on screen.
   1. Cache sessions in Redis
 ✓    - key each entry by user
      - expire after 5 minutes          ← selected (selection background)
-     └ [✓ accept] [✗ reject] [✎ comment] [💬 discuss]
+     └ [✓ accept] [✗ reject] [✎ comment] [❝ discuss]
 ✎ 2. Rate-limit the login endpoint
     → make it 5 per minute per account
 ```

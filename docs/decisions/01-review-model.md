@@ -49,7 +49,7 @@ pane, and marking is a shortcut for the trivial case. Better if the real pain is
 | ✓ Accept | `a` | staged mark |
 | ✗ Reject | `x` | staged mark |
 | ✎ Comment | `c` | staged mark + text |
-| 💬 Discuss | `d` | a thread: a fork conversation, private until included |
+| ❝ Discuss | `d` | a thread: a fork conversation, private until included |
 
 The verbs act on a block, or, stepped into a code block or table, on a line or
 row. **A code block or table has a fifth action, step in (`s`)**: it moves rather
@@ -78,6 +78,9 @@ a round trip, since the agent re-emits it before running it.
   "Thread"); `?` removed: a pre-seeded thread is not worth a second key.
 - **2026-11-01** — step in, a fifth action on code blocks, then tables (D43, D44).
 - **2026-11-10** — rewritten to stand on its own; the branch proposal dropped.
+- **2026-11-23** — discuss's glyph is `❝`, plain text that takes the theme's
+  colour like ✓ ✗ ✎, not the `💬` emoji, which brought its own colours and two
+  columns.
 
 ---
 

@@ -32,7 +32,7 @@ export type BlockProps = {
   comments: Record<string, string>
   // How many parts each steppable block in the reply has: a block's keys steer them all.
   partCounts: Record<string, number>
-  // The margin of this block's own lines, by line: a mark's glyph, or 💬.
+  // The margin of this block's own lines, by line: a mark's glyph, or ❝.
   lineGlyphs: Record<string, string>
   // The marks on them, by line: a comment is drawn under its line.
   lineMarks: Record<string, Mark>
@@ -43,7 +43,7 @@ const LABELS: Record<(typeof MENU)[number], string> = {
   accept: '✓ accept',
   reject: '✗ reject',
   comment: '✎ comment',
-  discuss: '💬 discuss',
+  discuss: '❝ discuss',
 }
 // The menu's items as drawn, in order: what a click is matched against. A code block or table
 // adds step in, a part inside one step out. Where they don't fit on one row, the
