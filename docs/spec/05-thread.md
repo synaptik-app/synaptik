@@ -80,7 +80,9 @@ task never gets, its latest tool call, from the newest rows of its transcript
 (the call's own description, else the tool and its command or path: `Bash: wc
 -l fixtures/*.md`); else `agent working`. One timer,
 every 200 ms, redraws while any thread waits or has an agent working, and stops
-when none does.
+when none does: an answer still pending after 10 minutes, or an agent Claude
+Code no longer lists as running, no longer keeps it going. An agent's time
+counts from its current run's start, its spawn or its resume.
 
 **The summary hangs under the switch** (`⎿`), while it is on, with no heading:
 its sections' labels say what each line is, and the field keeps it apart from the

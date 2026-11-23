@@ -688,7 +688,13 @@ const pendingSince = new Map<string, number>()
 // Each working agent as Claude Code's agent list last had it: what it is doing,
 // since when, its tokens.
 const agentsNow = new Map<string, AgentNow>()
+// When each agent's current run began: its spawn, or its resume. Claude Code's
+// `startTime` is when the agent first started, which a resumed run isn't.
+const runSince = new Map<string, number>()
 let waitingTimer: { cancel: () => void } | undefined
+// An answer still pending after this long stops keeping the timer going: one
+// that never resolves would otherwise redraw everything for the session (D33).
+const WAITING_GIVES_UP_MS = 10 * 60_000
 let agentsReadAt = 0
 const WAITING_TICK_MS = 200
 const AGENTS_READ_MS = 1000
@@ -713,19 +719,28 @@ async function latestStep($: EngineInterface, id: string): Promise<string | unde
 }
 
 async function tickWaiting($: EngineInterface) {
-  const all = Object.values(await read($, threads))
-  const working = all.filter(t => t.agent?.state === 'working')
-  if (!all.some(t => t.pending > 0) && working.length === 0) {
+  const entries = Object.entries(await read($, threads))
+  const now = Date.now()
+  const working = entries.filter(([, t]) => t.agent?.state === 'working')
+  // The agents Claude Code lists as running, read again about once a second:
+  // one that stopped, or is gone, drops out with its old step.
+  if (working.length > 0 && now - agentsReadAt >= AGENTS_READ_MS) {
+    agentsReadAt = now
+    const running = (await $.agent.list()).filter(a => ownAgents.has(a.id) && a.taskStatus === 'running')
+    agentsNow.clear()
+    for (const a of running) {
+      agentsNow.set(a.id, { label: a.label, description: a.description, startTime: runSince.get(a.id) ?? a.startTime, tokenCount: a.tokenCount, step: await latestStep($, a.id) })
+    }
+  }
+  // Only a real wait keeps the timer: an answer pending for less than its
+  // limit, or an agent Claude Code lists as running.
+  const isWaiting =
+    entries.some(([key, t]) => t.pending > 0 && now - (pendingSince.get(key) ?? now) < WAITING_GIVES_UP_MS) ||
+    working.some(([, t]) => agentsNow.has(t.agent!.id) || now - (runSince.get(t.agent!.id) ?? 0) < AGENTS_READ_MS * 2)
+  if (!isWaiting) {
     waitingTimer?.cancel()
     waitingTimer = undefined
     return
-  }
-  if (working.length > 0 && Date.now() - agentsReadAt >= AGENTS_READ_MS) {
-    agentsReadAt = Date.now()
-    for (const a of await $.agent.list()) {
-      if (!ownAgents.has(a.id) || a.taskStatus !== 'running') continue
-      agentsNow.set(a.id, { label: a.label, description: a.description, startTime: a.startTime, tokenCount: a.tokenCount, step: await latestStep($, a.id) })
-    }
   }
   $.ui.invalidate('ui.render')
 }
@@ -904,6 +919,7 @@ async function spawnFor($: EngineInterface, key: string) {
     return $.ui.toast(`couldn't start the agent: ${String(err)}`)
   }
   ownAgents.set(id, { key, reply, label })
+  runSince.set(id, Date.now())
   if ((await read($, lastText)) !== reply) return
   await changeThread($, key, t => ({ ...t, agent: { id: id!, state: 'working' }, included: t.isIncludeSet ? t.included : true }))
   await suggestTray($)
@@ -969,6 +985,8 @@ async function onAgentTurn($: EngineInterface, id: string, answer: string, ms?: 
   const key = own.key
   const anchor = await threadAnchor($, key)
   if (anchor === undefined || (await read($, threads))[key]?.agent?.id !== id) return
+  // Its run is over: its line, step and time go with it.
+  agentsNow.delete(id)
   const state = reportState(answer)
   observe(`agent ${id} reported: ${state}`)
   await changeThread($, key, t => ({
@@ -1019,6 +1037,9 @@ async function onAgentStart($: EngineInterface, id: string) {
   if (!own || (await read($, lastText)) !== own.reply) return
   const t = (await read($, threads))[own.key]
   if (t?.agent?.id !== id || t.agent.state === 'working') return
+  // A new run: timed from now, with nothing of the last one's.
+  runSince.set(id, Date.now())
+  agentsNow.delete(id)
   await changeThread($, own.key, now => ({ ...now, agent: { id, state: 'working' as AgentState } }))
 }
 
