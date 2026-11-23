@@ -84,21 +84,21 @@ test('the switch includes the thread, and shows it', async ($, on) => {
   // The answer came with no summary: switched on, it is written at once.
   expect(forks).toHaveLength(2)
   expect(forks[1]).toContain('chose to include this thread')
-  expect(suggested()).toContain('💬 "1. Cache sessions in Redis"')
+  expect(suggested()).toContain('❝ "1. Cache sessions in Redis"')
 })
 
-test('a block with a thread shows 💬 in the margin, in a review and outside one', async ($, on) => {
+test('a block with a thread shows ❝ in the margin, in a review and outside one', async ($, on) => {
   await openThread($, on)
   await send($, 'why Redis?')
   // The thread took the keyboard, so the review let go: the reply is drawn plain.
   const plain = await fullscreen($, F)
-  expect(await plain.find({ type: 'Text', text: '💬' })).toBeDefined()
+  expect(await plain.find({ type: 'Text', text: '❝' })).toBeDefined()
   await plain.unmount()
   await review($)
   const ui = await fullscreen($, F)
   const clients = await ui.findAll({ type: 'Client' })
   const cache = clients.find((c: FoundElement) => (c.props.props as { index: number }).index === CACHE)!
-  expect((cache.props.props as { glyph?: string }).glyph).toBe('💬')
+  expect((cache.props.props as { glyph?: string }).glyph).toBe('❝')
 })
 
 test('Backspace on the block takes its thread out of the review, and keeps it', async ($, on) => {
@@ -115,7 +115,7 @@ test("an answer's summary and include verdict reach the review at once", async (
   await openThread($, on)
   forkAnswer.text = 'Use a TTL.\n\n<summary>\nAdd a 5-minute TTL.\n</summary>\n<verdict>include</verdict>'
   await send($, 'and the TTL?')
-  expect(suggested()).toBe(['💬 "1. Cache sessions in Redis"', '    Add a 5-minute TTL.'].join('\n'))
+  expect(suggested()).toBe(['❝ "1. Cache sessions in Redis"', '    Add a 5-minute TTL.'].join('\n'))
   // The person reads the answer without the summary's tags.
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Markdown', text: 'Use a TTL.' })))).toBe(true)
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '✓ include in review' })))).toBe(true)
@@ -125,7 +125,7 @@ test('an exclude verdict sends nothing, and the switch set by hand stays as set'
   await openThread($, on)
   forkAnswer.text = 'It caches.\n<summary>\n</summary>\n<verdict>exclude</verdict>'
   await send($, 'what does it do?')
-  expect(suggested()).not.toContain('💬')
+  expect(suggested()).not.toContain('❝')
   await include($)
   forkAnswer.text = 'Fine.\n<summary>\nKeep it.\n</summary>\n<verdict>exclude</verdict>'
   await send($, 'keep it then')
@@ -154,7 +154,7 @@ test('switched off by hand, a message asks for the answer alone', async ($, on) 
   await include($)
   await send($, 'thanks')
   expect(forks.at(-1)).not.toContain('<summary>')
-  expect(suggested()).not.toContain('💬')
+  expect(suggested()).not.toContain('❝')
 })
 
 test('/synaptik off closes the open threads', async ($, on) => {
@@ -203,8 +203,8 @@ test('d on a code line opens its own thread, about that line of the block', asyn
   }
   // The fork reads the whole block and which line.
   expect(forks[0]).toContain('The thread is about line 2: "step onto this line, and the next."')
-  expect(suggested()).toContain('    💬 line 2: "step onto this line, and the next."\n        Shorten line 2.')
-  // The line's margin has the 💬; the block's has none of its own.
+  expect(suggested()).toContain('    ❝ line 2: "step onto this line, and the next."\n        Shorten line 2.')
+  // The line's margin has the ❝; the block's has none of its own.
   await review($)
   const ui = await fullscreen($, 'code')
   const clients = await ui.findAll({ type: 'Client' })
@@ -213,7 +213,7 @@ test('d on a code line opens its own thread, about that line of the block', asyn
     lineGlyphs: Record<string, string>
   }
   expect(ts.glyph).toBeUndefined()
-  expect(ts.lineGlyphs).toEqual({ '1': '💬' })
+  expect(ts.lineGlyphs).toEqual({ '1': '❝' })
 })
 
 test('clearing a code block takes its included line threads out of the review', async ($, on) => {
@@ -228,8 +228,8 @@ test('clearing a code block takes its included line threads out of the review', 
   } finally {
     await pane.unmount()
   }
-  expect(suggested()).toContain('💬 line 2')
+  expect(suggested()).toContain('❝ line 2')
   await review($)
   await clickAndPress(await fullscreen($, 'code'), TS, ['backspace'])
-  expect(suggested()).not.toContain('💬')
+  expect(suggested()).not.toContain('❝')
 })

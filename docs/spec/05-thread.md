@@ -10,9 +10,9 @@ row in it. **It never touches the main conversation.**
 - Nothing from a thread reaches the main conversation except its summary, when
   included: compiled into the suggestion and sent by the person (D3, D14).
 - Threads are flat. A thread cannot spawn a thread.
-- `d` or `💬 discuss` on a block opens its thread; on a threaded block it reopens
-  that thread with its history. A block's thread shows `💬` in the margin; while
-  the thread has an agent, its state in that place (`⏳`, `✋`, `✅`, below).
+- `d` or `❝ discuss` on a block opens its thread; on a threaded block it reopens
+  that thread with its history. A block's thread shows `❝` in the margin, with an
+  agent or without: the agent is the discussion's tool, not a mark of its own.
 - **Stepped into a code block or table** (`s`, `03-navigation.md`), `d` opens a thread on the
   selected line or row, its own and apart from the block's. The pane shows the
   part alone: a code line in its block's fences, a row as a record, each header
@@ -20,7 +20,7 @@ row in it. **It never touches the main conversation.**
   empty header, or a cell past the last, is `Column N`; an empty cell is left
   out; a row with nothing in it shows `(empty row)`.
   The fork gets the whole block and which part (`The thread is about line 2:
-  "…" of this block`). The line's margin shows `💬`, the block's `✸`.
+  "…" of this block`). The line's margin shows `❝`, the block's `✸`.
 
 ### The pane
 
@@ -30,7 +30,7 @@ keyboard in its field and closed by Esc. Docked beside the transcript, several
 threads are tabs; inline above the prompt (narrow terminals), one shows at a time.
 
 ```
-┌ 💬 "Use Redis for the session cache" ─────────────┐
+┌ ❝ "Use Redis for the session cache" ─────────────┐
 │                                                   │
 │   Use Redis for the session cache, keyed by…      │  the block as the reply draws it, dim, 3 rows at most
 │                                                   │
@@ -62,6 +62,25 @@ width (less its inset) is drawn as records: each row's cells as `Header:
 value`, a line each, a blank line between rows. A table that fits is drawn as a
 grid, by Claude Code. Inside a code fence, a table is code and stays as written.
 Display only: the fork, the summary and the review get the table as written.
+
+**While it waits**, the pane shows a dim line under the thread, inset as the
+answers are, its spinner turning (Claude Code's frames) and its time counting:
+
+```
+⠋ Thinking… · 4s                                       an answer on its way
+⠹ Counting the fixture files · 1m 12s · 3.4k tokens    the thread's agent at work
+```
+
+A thread's answer is one fork, which resolves once: it shows no text or
+thinking along the way, and can't be stopped, so its line is the spinner and the
+time. An agent at work says what it is doing, read about once a second: its
+latest progress summary's first line (`label` in `$.agent.list()`, as Claude
+Code's agent list has it); before Claude Code has written one, which a short
+task never gets, its latest tool call, from the newest rows of its transcript
+(the call's own description, else the tool and its command or path: `Bash: wc
+-l fixtures/*.md`); else `agent working`. One timer,
+every 200 ms, redraws while any thread waits or has an agent working, and stops
+when none does.
 
 **The summary hangs under the switch** (`⎿`), while it is on, with no heading:
 its sections' labels say what each line is, and the field keeps it apart from the
@@ -130,7 +149,7 @@ answer rewrites it; or they edit it in the prompt box like anything else before
 sending. There is no editor in the pane.
 
 **If an answer comes without its tags**, the summary is written when the pane
-closes, with one more fork, as before; the band says `💬 summarising…` meanwhile.
+closes, with one more fork, as before; the band says `❝ summarising…` meanwhile.
 
 `/synaptik off` closes the open threads and proposes nothing; the threads are kept,
 and `d` opens them again once Synaptik is on.
@@ -188,22 +207,23 @@ Questions: what it needs from the person (only with needs-you)
 
 **Claude Code's agent list** shows it as `Synaptik · <block> · working` (or
 `waiting for you`, `done`), relabelled in `AgentRow`, and opens its view; when
-its row hides is Claude Code's. While the thread has an agent, the block's
-margin shows its state in place of `💬`: `⏳` working, `✋` waiting for you, `✅`
-done, and `💬` again once Claude Code drops its row. The band shows nothing of
-it.
+its row hides is Claude Code's. The block's margin keeps `❝`, and the band
+shows nothing of it.
 
 **The person writes in the thread.** The thread's agent answers as before. When
 the answer changes the agent's work (a new, changed or dropped task, a revert),
 it says briefly what it asks the agent and adds `<to-agent>…</to-agent>`,
-stripped from the answer and drawn as one dim line, `▶ sent to agent`, and
+stripped from the answer and drawn as one dim line, `▶ Sent to agent`, and
 Synaptik sends it at once
 (`$.session.send({ to: { agentId }, text })`). Claude Code hands it to a running
 agent at its next tool call, and resumes a finished one.
 
 **The agent reports.** Each of its turns ends in its `turn.complete`
-(`agentId`). Synaptik adds the answer to the thread whole, drawn as one dim line,
-`▶ agent reported · <state>`, and
+(`agentId`). Synaptik adds the answer to the thread whole, drawn as one dim line
+saying how the run ended, and how long it took (`turn.complete`'s
+`durationMs`; none for a run caught up from the transcript): `⏺ Agent
+finished · 15s`, an open `○ Agent waiting for you · 42s`, or `⏺ Agent reported` when
+the report's status can't be read. Then it
 asks the thread's fork for an answer of its own: what the agent did, what waits
 for the person, and the summary rewritten. That answer carries no
 `<to-agent>`, so a report never wakes the agent; the person's next message can.

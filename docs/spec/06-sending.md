@@ -166,7 +166,7 @@ message one turn ago; a short quote locates anything.
     ✓ "per-user key prefix"
     ✗ "5 minute TTL"
 ✎ "Add a rate limiter" → make it 5 req/sec
-💬 "Run the migration" → do it after the backfill, not before
+❝ "Run the migration" → do it after the backfill, not before
 ```
 
 A comment with no text is never emitted.
@@ -187,10 +187,10 @@ Marks and thread summaries **interleave by position**, never grouped by type —
 document order is the order you read it in and the order the agent wrote it.
 
 A thread contributes **only its summary**. No mention that a discussion
-happened, no transcript. Its lines nest under the block's quote, after the 💬:
+happened, no transcript. Its lines nest under the block's quote, after the ❝:
 
 ```
-💬 "Use Redis for the session cache"
+❝ "Use Redis for the session cache"
     Actions:
     - Add a 5-minute TTL to each entry.
     - Drop the memcached fallback.
@@ -204,7 +204,7 @@ quoted first for context:
 
 ```
 "const routes = [ { path: '/api/v1/users'," (code block)
-    💬 line 4: "{ path: '/api/v1/resource/004', method: 'GET' },"
+    ❝ line 4: "{ path: '/api/v1/resource/004', method: 'GET' },"
         Actions: Drop this route; nothing calls it.
 ```
 

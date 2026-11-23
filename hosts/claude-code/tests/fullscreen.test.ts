@@ -564,7 +564,7 @@ test('on a narrow terminal the menu is its glyphs alone, one row, and a click st
     '[ ✓ ]',
     '[ ✗ ]',
     '[ ✎ ]',
-    '[ 💬 ]',
+    '[ ❝ ]',
   ])
   // "└ " at 2 cells in, then "[ ✓ ]" (5 cells): 10 is inside "[ ✗ ]".
   await ui.pointer({ type: 'down', x: 10, y: 1, button: 'left', in: into })
@@ -701,16 +701,16 @@ test('stepped in, the menu turns to glyphs where its items stop fitting, and a c
   const ui = await fullscreen($, C)
   const into = await clickAndPress(ui, TS, ['s'])
   // Stepped in, the menu starts where the whole block's does: after the margin
-  // and "└ ", 4 cells in. Its items are 65 cells: 69 columns hold them, 68 don't.
-  await ui.resize({ columns: 69, rows: 20, in: into })
-  expect(await draws(ui, TS, /↰ step out/)).toBe(true)
+  // and "└ ", 4 cells in. Its items are 64 cells: 68 columns hold them, 67 don't.
   await ui.resize({ columns: 68, rows: 20, in: into })
+  expect(await draws(ui, TS, /↰ step out/)).toBe(true)
+  await ui.resize({ columns: 67, rows: 20, in: into })
   expect(await draws(ui, TS, /↰ step out/)).toBe(false)
   expect(await ui.find({ type: 'Text', text: /^\[ ↰ \]$/, in: into })).toBeDefined()
-  // Line 1 is one row, the menu the row under it: 4 + 5 × 3 + 6 = 25 is "[ ↰ ]".
+  // Line 1 is one row, the menu the row under it: 4 + 5 × 4 = 24 is "[ ↰ ]".
   await ui.pointer({ type: 'down', x: 26, y: 1, button: 'left', in: into })
   expect((await hintLines(await band($)))[0]).toMatch(/^Block \d+ of \d+/)
-  // Stepped out, the items are 64 cells (step in, not step out): they fit again.
+  // Stepped out, the items are 63 cells (step in, not step out): they fit again.
   expect(await draws(ui, TS, /↳ step in/)).toBe(true)
 })
 

@@ -7,7 +7,8 @@ import type { Elements } from 'claude-code'
 import { drawnRows } from '../../src/layout'
 import { forPane, rowRecord } from '../../src/pane'
 import { cells } from '../../src/review'
-import { AGENT_WORDS, reportState } from '../../src/threads'
+import { reportState } from '../../src/threads'
+import { reportLine } from '../../src/waiting'
 import type { Thread } from '../../src/threads'
 
 export type ThreadModel = {
@@ -19,6 +20,9 @@ export type ThreadModel = {
   columns: number
   isSummarizing: boolean
   thread: Thread
+  // The waiting lines, drawn as given: the answer on its way, the agent at work.
+  thinking?: string
+  agentWorking?: string
 }
 
 export type ThreadActions = {
@@ -94,7 +98,7 @@ export function ThreadView(
           // One line: the answer above it says what it asked. The thread keeps
           // the words, for its own reading; the agent's view has them too.
           <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
-            <Text dimColor>▶ sent to agent</Text>
+            <Text dimColor>▶ Sent to agent</Text>
           </Box>
         ) : message.role === 'direct' ? (
           // What the person wrote to the agent in its own view.
@@ -106,7 +110,7 @@ export function ThreadView(
           // thread keeps the report whole, for its own reading; the agent's
           // view has what it wrote.
           <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
-            <Text dimColor>{`▶ agent reported · ${AGENT_WORDS[reportState(message.text)]}`}</Text>
+            <Text dimColor>{reportLine(reportState(message.text), message.ms)}</Text>
           </Box>
         ) : (
           <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
@@ -114,7 +118,16 @@ export function ThreadView(
           </Box>
         ),
       )}
-      {t.pending > 0 ? <Text dimColor>thinking…</Text> : null}
+      {m.agentWorking ? (
+        <Box paddingX={INSET} marginBottom={1}>
+          <Text dimColor wrap="truncate-end">{m.agentWorking}</Text>
+        </Box>
+      ) : null}
+      {m.thinking ? (
+        <Box paddingX={INSET} marginBottom={1}>
+          <Text dimColor>{m.thinking}</Text>
+        </Box>
+      ) : null}
       {/* The field as Claude Code draws its own prompt: a rule above and below,
           and ❯ before it. */}
       {rule}

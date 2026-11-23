@@ -5,7 +5,7 @@
 
 **The selected block takes Claude Code's text-selection colour as its
 background** (theme key `selectionBg`). Unselected blocks carry no highlight,
-only their mark glyph (`✓ ✗ ✎ 💬`). The menu hangs under the selected block from
+only their mark glyph (`✓ ✗ ✎ ❝`). The menu hangs under the selected block from
 a dim `└`; the verb under the cursor is the primary button, the rest dim. A
 comment shows under its block as `→ text`, not a second ✎.
 

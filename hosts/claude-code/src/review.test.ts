@@ -157,9 +157,10 @@ test('closed() leaves the key out instead of setting it undefined', async () => 
   expect(Object.keys(closed({ ...active, editing: { index: 1, text: '', cursor: 0 } }))).not.toContain('editing')
 })
 
-test('the menu, clicked: each item by its cells, 💬 taking two', async () => {
-  const items = ['[ ✓ accept ]', '[ ✗ reject ]', '[ ✎ comment ]', '[ 💬 discuss ]']
-  expect(cells('[ 💬 discuss ]')).toBe(14)
+test('the menu, clicked: each item by its cells', async () => {
+  const items = ['[ ✓ accept ]', '[ ✗ reject ]', '[ ✎ comment ]', '[ ❝ discuss ]']
+  expect(cells('[ ❝ discuss ]')).toBe(13)
+  expect(cells('💬')).toBe(2)
   // Wide characters take two columns: CJK, Hangul, fullwidth, emoji; ✓ and Latin one.
   expect(cells('名前')).toBe(4)
   expect(cells('한국')).toBe(4)
@@ -171,8 +172,8 @@ test('the menu, clicked: each item by its cells, 💬 taking two', async () => {
   expect(itemAt(12, items)).toBe(1)
   expect(itemAt(24, items)).toBe(2)
   expect(itemAt(37, items)).toBe(3)
-  expect(itemAt(50, items)).toBe(3)
-  expect(itemAt(51, items)).toBe(-1)
+  expect(itemAt(49, items)).toBe(3)
+  expect(itemAt(50, items)).toBe(-1)
   expect(itemAt(-1, items)).toBe(-1)
 })
 

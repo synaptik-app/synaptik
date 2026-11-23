@@ -113,8 +113,8 @@ don't, offline review in the terminal stays a clear Synaptik case.
 
 **Testing:** the terminal varies by keys (IDE terminals grab shortcuts), mouse
 support, glyph widths, renderer (fullscreen, classic) and width — the matrix on
-#13. The glyphs are plain Unicode (`✓ ✗ ✎ 💬 ⏺ ▲ ▼ █ ┃ │ ⎿ ▸ ‹`), no Nerd Font
-needed; emoji width (`💬`) is the one to watch.
+#13. The glyphs are plain Unicode (`✓ ✗ ✎ ❝ ⏺ ▲ ▼ █ ┃ │ ⎿ ▸ ‹`), one column
+each, no emoji and no Nerd Font needed.
 
 **Revisions**
 - **2026-10-29** — non-interactive sessions (#127): the command and reply

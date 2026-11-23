@@ -27,7 +27,7 @@ export function summary(marks: Marks, comments: Comments): string {
 }
 
 // The navigator's heading: "✓2 ✗1 ✎1", zero counts left out.
-// Threads sent with the review count after the marks: "✓2 💬1".
+// Threads sent with the review count after the marks: "✓2 ❝1".
 export function glyphCounts(marks: Marks, threads = 0): string {
   const marked = Object.values(marks)
   return [

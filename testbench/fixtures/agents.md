@@ -20,21 +20,22 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
    - **Expect:** the answer says it is starting an agent, and the switch is on
    - **Expect:** the summary under the switch has a `Subagent:` section with `- Still on:`
    - **Expect:** Claude Code's agent list under the prompt shows `Synaptik · "The fixtures folder…" · working`
+   - **Expect:** while it works, the pane shows a dim line with a turning spinner, what the agent is doing (or `agent working`), its time and its tokens; the line goes when it reports
 3. **Do:** press `Esc`, and look at the paragraph's margin
-   - **Expect:** ⏳ in place of 💬
+   - **Expect:** ❝, as for any thread
 4. **Do:** wait for the agent to finish, then click the hint, click the paragraph, press `d`
-   - **Expect:** the pane shows one dim `▶ agent reported · done` line, not the agent's reply or its report
+   - **Expect:** the pane shows one dim `⏺ Agent finished · <time>` line, not the agent's reply or its report
    - **Expect:** under it, the thread's own answer about it, written without your asking
-   - **Expect:** the agent list says `· done`, the margin ✅, and the summary's `Subagent:` has `- Done:` and no `- Still on:`
+   - **Expect:** the agent list says `· done`, and the summary's `Subagent:` has `- Done:` and no `- Still on:`
    - **Expect:** the main conversation has no new turn and no new line
 
 **Steering it**
 
 5. **Do:** send `also count the lines of fixtures/tables.md`
-   - **Expect:** the answer says what it asked the agent, then one dim `▶ sent to agent` line under it, and the agent list back at `· working`
+   - **Expect:** the answer says what it asked the agent, then one dim `▶ Sent to agent` line under it, and the agent list back at `· working`
    - **Expect:** after its report, one yellow `Prompt dropped by a hook: Synaptik agent notice` line in the main conversation, and no turn there
 6. **Do:** send `what does a line count include?`
-   - **Expect:** an answer, and nothing sent to the agent: no `▶ sent to agent`, the agent list stays `· done`
+   - **Expect:** an answer, and nothing sent to the agent: no `▶ Sent to agent`, the agent list stays `· done`
 
 **Its view**
 
@@ -45,14 +46,14 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 8. **Do:** type `count fixtures/smoke.md too, but ask me first whether blank lines count`, `⏎`
    - **Expect:** its reply ends its prose with the question, asked plainly, then `⎿ reported to the thread · waiting for you`
 9. **Do:** answer `leave blank lines out`, `⏎`, then go back to the main conversation and open the thread
-   - **Expect:** the margin shows ✋ while it waited, ✅ once it answered
+   - **Expect:** while it waited, the agent list said `· waiting for you`, and the pane `○ Agent waiting for you`
    - **Expect:** the thread shows `› to agent: count fixtures/smoke.md too…` and `› to agent: leave blank lines out`, each before the report that followed it
    - **Expect:** the summary says blank lines are left out, and asks no question about them
 
 **Sending**
 
 10. **Do:** close the pane, press `q`, look at the suggestion
-    - **Expect:** under the paragraph's quote, `💬` and the thread's summary with its `Subagent:` section; no report, no report tag
+    - **Expect:** under the paragraph's quote, `❝` and the thread's summary with its `Subagent:` section; no report, no report tag
     - **Expect:** the summary opens with a `Context:` line saying where its Actions come from (what the agent found)
 
 When you're done: close any thread pane, click the first **Expect:**, mark every expectation, press `q`, `Tab`, then `⏎`. The test session answers with a table of your results.

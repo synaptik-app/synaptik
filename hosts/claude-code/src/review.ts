@@ -314,7 +314,7 @@ export function queue(local: Local | undefined, acked: number, s: Step): { local
 // --- The menu, clicked -------------------------------------------------------
 
 // Cells a string takes in the terminal: one per character, two for a wide one:
-// CJK, Hangul, fullwidth forms, an emoji (💬).
+// CJK, Hangul, fullwidth forms, an emoji.
 export function cells(text: string): number {
   let n = 0
   for (const ch of text) n += isWide(ch.codePointAt(0) ?? 0) ? 2 : 1

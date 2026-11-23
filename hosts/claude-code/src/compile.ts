@@ -13,7 +13,7 @@ export const GLYPH: Record<Mark, string> = { accept: '✓', reject: '✗', comme
 export const PARTLY = '✸'
 
 // A block with a thread: its margin, and its summary's lead in the prompt.
-export const THREAD_GLYPH = '💬'
+export const THREAD_GLYPH = '❝'
 
 // A block as the segmenter gives it: its parent is its enclosing list item's
 // index, or -1.
@@ -52,7 +52,7 @@ function trimmedQuote(text: string): string {
 // so a marked child arrives under the parent it belongs to. Marked code lines nest
 // under their block the same way. A comment with no text is never sent. An
 // included thread's summary (src/threads.ts) nests under its block's or line's
-// quote, after the 💬, or under its mark when it has one.
+// quote, after the ❝, or under its mark when it has one.
 export function compile(
   blocks: readonly Block[],
   marks: Readonly<Record<string, Mark>>,
@@ -88,7 +88,7 @@ export function compile(
   }
 
   // A block or line as staged: its mark, then its thread's summary under it, led
-  // by the 💬 and the rest lined up after it; with no mark, the 💬 leads the quote.
+  // by the ❝ and the rest lined up after it; with no mark, the ❝ leads the quote.
   const staged = (key: number | string, indent: string, reference: string) => {
     const summary = summaries[key]?.split('\n').map(line => line.trim()).filter(Boolean) ?? []
     if (isMarked(key)) {

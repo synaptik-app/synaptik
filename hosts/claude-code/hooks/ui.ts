@@ -7,7 +7,7 @@ export const VERBS = [
   { key: 'verb-accept', glyph: '✓', label: '✓ accept', hotkey: 'a' },
   { key: 'verb-reject', glyph: '✗', label: '✗ reject', hotkey: 'x' },
   { key: 'verb-comment', glyph: '✎', label: '✎ comment', hotkey: 'c' },
-  { key: 'verb-discuss', glyph: '💬', label: '💬 discuss', hotkey: 'd' },
+  { key: 'verb-discuss', glyph: '❝', label: '❝ discuss', hotkey: 'd' },
 ] as const
 // Each opening of the comment field gets a fresh key: a field drawn again
 // under the same key and the same value keeps what was typed last time.

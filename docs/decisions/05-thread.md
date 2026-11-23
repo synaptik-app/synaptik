@@ -183,7 +183,7 @@ can't know that this is the thread.
 thread's fork is (P1): neither reaches the main conversation, and what the
 agent did reaches it only in the thread's summary, which the person sends
 (D30). So `<to-agent>` needs no press of its own, and it is no exception to
-P1: the answer says what it asked the agent, a dim `▶ sent to agent` line
+P1: the answer says what it asked the agent, a dim `▶ Sent to agent` line
 under it shows that it went, and the words are in the agent's view.
 
 Nothing is queued on Synaptik's side: Claude Code hands a message for a
@@ -242,9 +242,9 @@ on what the person told the agent, reads as out of nowhere (D45).
 `Subagent:` holds only the sub-points that have something. When the agent
 starts, the summary is rewritten with the tasks moved to `Still on:`; each
 report's answer moves them on. Each report is a thread entry, which the
-thread's agent reads whole; the pane draws it as one dim line, `▶ agent
-reported · <state>`, since the thread's answer under it already says what the
-agent did. None goes into the suggestion.
+thread's agent reads whole; the pane draws it as one dim line, how the run
+ended and how long it took (`⏺ Agent finished · 15s`), since the thread's
+answer under it already says what the agent did. None goes into the suggestion.
 
 **In the UI it is "agent"**, as Claude Code says, and a stopped one is
 "waiting for you". In the tag it stays `needs-you`, which is clearer for the
@@ -254,7 +254,7 @@ agent.
 |---|---|
 | The pane | no button: a line for each report, what was sent to the agent and what the person wrote to it, as the thread's entries |
 | Claude Code's agent list | its row relabelled, `Synaptik · <block> · <state>` (`AgentRow`), and the way into its view. Claude Code decides when it hides; Synaptik reads `isHidden` and never sets it |
-| The block's margin | in place of `💬` while the thread has an agent: ⏳ working, ✋ waiting for you, ✅ done; back to `💬` once Claude Code drops it. The suggestion keeps `💬` and the summary's words |
+| The block's margin | `❝`, with an agent or without: the agent is the discussion's tool, not a mark of its own |
 | The band | nothing of the agent |
 
 **Its results stay out of the main conversation.** The first time it stops,
@@ -296,6 +296,9 @@ view. Fullscreen only.
   main conversation, where it starts a turn.
 
 **Revisions**
+- **2026-11-23** — the margin keeps `❝`: the agent's state glyphs read as a
+  mark of their own. A report draws as `⏺ Agent finished · 15s`, or
+  `○ Agent waiting for you`, with its run's time.
 - **2026-11-22** — no buttons: the answer offers the agent and starts it when
   the person asks; what the person types in the agent's view joins the thread;
   the report is cut only where its tag opens a line; the summary opens with
