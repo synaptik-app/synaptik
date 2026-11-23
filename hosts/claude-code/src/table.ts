@@ -75,6 +75,17 @@ function columnWidths(table: string[][], room: number): { widths: number[]; hard
   return { widths: least.map(n => Math.max(Math.floor((n * room) / sum(least)), MIN_COLUMN)), hard: true }
 }
 
+// Whether a table's grid, every column at its natural width, fits `width`
+// columns. Claude Code lays a table out by the terminal's width: in a pane
+// narrower than that, only a grid this narrow is drawn whole within it.
+export function gridFits(text: string, width: number): boolean {
+  const lines = text.trim().split('\n')
+  const header = tableCells(lines[0]!).map(plain)
+  const rows = lines.slice(2, 2 + MAX_ROWS).map(line => tableCells(line).map(plain))
+  const ideal = header.map((_, column) => Math.max(...[header, ...rows].map(row => cells(row[column] ?? '')), MIN_COLUMN))
+  return 1 + header.length * 3 + ideal.reduce((a, b) => a + b, 0) <= width
+}
+
 // The list a table falls back to: each row's cells, a rule between rows.
 function asList(header: string[], rows: string[][], width: number): TableLayout {
   const spans: TableLayout['spans'] = []

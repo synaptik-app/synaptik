@@ -5,6 +5,7 @@
 import type { Elements } from 'claude-code'
 
 import { drawnRows } from '../../src/layout'
+import { forPane, rowRecord } from '../../src/pane'
 import { cells } from '../../src/review'
 import { AGENT_WORDS, reportState } from '../../src/threads'
 import type { Thread } from '../../src/threads'
@@ -63,6 +64,9 @@ export function ThreadView(
           : t.included && t.summary === ''
             ? 'nothing to send from this thread'
             : undefined
+  // Laid out for the pane, not the terminal, whose width Markdown goes by (#233).
+  const width = Math.max(1, m.columns - 2 * INSET)
+  const anchor = m.isPart ? rowRecord(m.anchor) : forPane(m.anchor, width)
   const rule = <Text dimColor wrap="truncate">{'─'.repeat(Math.max(1, m.columns))}</Text>
   return (
     // A blank row first: docked panes sit under a row of tabs, and the block
@@ -71,14 +75,16 @@ export function ThreadView(
       {/* The whole block drawn as the reply draws it, its first rows shown: a cut
           block would lose its fence and its colours. */}
       <Box
-        height={Math.min(m.isPart ? Infinity : ANCHOR_ROWS, drawnRows(m.anchor, Math.max(1, m.columns - 2 * INSET)))}
+        height={Math.min(m.isPart ? Infinity : ANCHOR_ROWS, drawnRows(anchor, width))}
         overflow="hidden"
         flexShrink={0}
-        marginBottom={1}
         paddingX={INSET}
       >
-        <Markdown text={m.anchor} dimColor />
+        <Markdown text={anchor} dimColor />
       </Box>
+      {/* A rule under the block once the thread has begun, so it doesn't read as
+          part of the block. Before that, the field's own rule follows. */}
+      {t.messages.length > 0 ? <Box marginTop={1} marginBottom={1}>{rule}</Box> : <Box marginBottom={1} />}
       {t.messages.map((message, n) =>
         message.role === 'person' ? (
           <Box key={`m${n}`} marginBottom={1}>
@@ -104,7 +110,7 @@ export function ThreadView(
           </Box>
         ) : (
           <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
-            <Markdown text={message.text} />
+            <Markdown text={forPane(message.text, width)} />
           </Box>
         ),
       )}

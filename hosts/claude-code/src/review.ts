@@ -313,12 +313,27 @@ export function queue(local: Local | undefined, acked: number, s: Step): { local
 
 // --- The menu, clicked -------------------------------------------------------
 
-// Cells a string takes in the terminal: one per character, two for an emoji
-// (💬) and other wide pictographs.
+// Cells a string takes in the terminal: one per character, two for a wide one:
+// CJK, Hangul, fullwidth forms, an emoji (💬).
 export function cells(text: string): number {
   let n = 0
-  for (const ch of text) n += (ch.codePointAt(0) ?? 0) >= 0x1f000 ? 2 : 1
+  for (const ch of text) n += isWide(ch.codePointAt(0) ?? 0) ? 2 : 1
   return n
+}
+
+// East Asian wide and fullwidth characters, and emoji: two columns in a terminal.
+function isWide(c: number): boolean {
+  return (
+    c >= 0x1f000 ||
+    (c >= 0x1100 && c <= 0x115f) ||
+    (c >= 0x2e80 && c <= 0xa4cf && c !== 0x303f) ||
+    (c >= 0xac00 && c <= 0xd7a3) ||
+    (c >= 0xf900 && c <= 0xfaff) ||
+    (c >= 0xfe30 && c <= 0xfe4f) ||
+    (c >= 0xff00 && c <= 0xff60) ||
+    (c >= 0xffe0 && c <= 0xffe6) ||
+    (c >= 0x20000 && c <= 0x3fffd)
+  )
 }
 
 // Which menu item a click `x` cells into the menu row lands on, given each

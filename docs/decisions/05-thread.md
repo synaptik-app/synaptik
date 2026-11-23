@@ -113,8 +113,11 @@ each with its own summary and switch.
 **The fork reads the whole block, and which part.** A line alone loses what it is
 in, so the prompt quotes the block and names the part as the review would
 (`line 4: "…"`). **The pane shows the part alone**, as Markdown that draws on its
-own: a code line in its block's fences (keeping its colours), a row under its
-table's header, drawn whole rather than cut at three rows.
+own: a code line in its block's fences (keeping its colours), a row as a record
+of its header's names and its cells (`**Option:** Redis`, one a line), drawn
+whole rather than cut at three rows. A one-row table drawn as a grid is laid
+out by the terminal's width, not the pane's, and wraps in a narrow pane; a
+record reads the same at any width (#233).
 
 **In the review** the summary nests under the line's reference, as a mark on the
 line does, and its block is quoted first for context (`spec/06-sending.md` §9). Clearing follows
@@ -128,6 +131,8 @@ stepping in already said, and the margin couldn't show where it is).
 **Revisions**
 - **2026-11-05** — before, `d` on a line or row toasted "discuss works on whole
   blocks for now".
+- **2026-11-23** — a row shows as a record, not a one-row table under its
+  header (#233).
 
 ---
 

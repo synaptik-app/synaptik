@@ -15,7 +15,9 @@ row in it. **It never touches the main conversation.**
   the thread has an agent, its state in that place (`⏳`, `✋`, `✅`, below).
 - **Stepped into a code block or table** (`s`, `03-navigation.md`), `d` opens a thread on the
   selected line or row, its own and apart from the block's. The pane shows the
-  part alone: a code line in its block's fences, a row under its table's header.
+  part alone: a code line in its block's fences, a row as a record, each header
+  with its cell on a line of its own (`**Option:** Redis`, `**Latency:** low`); an
+  empty header is `Column N`, an empty cell left out.
   The fork gets the whole block and which part (`The thread is about line 2:
   "…" of this block`). The line's margin shows `💬`, the block's `✸`.
 
@@ -30,6 +32,8 @@ threads are tabs; inline above the prompt (narrow terminals), one shows at a tim
 ┌ 💬 "Use Redis for the session cache" ─────────────┐
 │                                                   │
 │   Use Redis for the session cache, keyed by…      │  the block as the reply draws it, dim, 3 rows at most
+│                                                   │
+│ ───────────────────────────────────────────────── │  a rule under it, once a message is sent
 │                                                   │
 │ › why not memcached?                              │  the person's messages at the edge
 │                                                   │
@@ -48,6 +52,15 @@ threads are tabs; inline above the prompt (narrow terminals), one shows at a tim
 A field that grew with its text had to predict how Claude Code wraps it beside its
 key hint; counted a row short, the text hid, and some wraps hid it whatever the
 count (2026-11-06). A fixed height leaves wrapping and scrolling to Claude Code.
+
+**Tables are laid out for the pane.** `Markdown` lays a table out by the
+terminal's width, not the pane's: in a pane narrower than the terminal, a grid
+drawn whole for the terminal wraps. So in the block shown and in the answers, a
+table whose grid, every column at its natural width, doesn't fit the pane's
+width (less its inset) is drawn as records: each row's cells as `**Header:**
+value`, a line each, a blank line between rows. A table that fits is drawn as a
+grid, by Claude Code. Inside a code fence, a table is code and stays as written.
+Display only: the fork, the summary and the review get the table as written.
 
 **The summary hangs under the switch** (`⎿`), while it is on, with no heading:
 its sections' labels say what each line is, and the field keeps it apart from the
