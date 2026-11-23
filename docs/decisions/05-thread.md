@@ -114,7 +114,7 @@ each with its own summary and switch.
 in, so the prompt quotes the block and names the part as the review would
 (`line 4: "…"`). **The pane shows the part alone**, as Markdown that draws on its
 own: a code line in its block's fences (keeping its colours), a row as a record
-of its header's names and its cells (`**Option:** Redis`, one a line), drawn
+of its header's names and its cells (`Option: Redis`, one a line), drawn
 whole rather than cut at three rows. A one-row table drawn as a grid is laid
 out by the terminal's width, not the pane's, and wraps in a narrow pane; a
 record reads the same at any width (#233).

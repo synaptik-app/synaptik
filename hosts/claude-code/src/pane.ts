@@ -9,18 +9,21 @@ import { gridFits } from './table'
 
 const FENCE = /^\s*(```|~~~)/
 
-// A table as records: each row's cells as `**Header:** value`, one a line, a
-// blank line between rows. Inline Markdown in a cell is kept; an empty header
-// is `Column N`, an empty cell is left out.
+// A table as records: each row's cells as `Header: value`, as Claude Code's own
+// fallback draws them, one a line, a blank line between rows. Inline Markdown in
+// a cell or header is kept; a header that is empty, or missing for a cell past
+// the last, is `Column N`; an empty cell is left out.
 function records(lines: readonly string[], indent: string): string[] {
   const header = tableCells(lines[0]!)
   const out: string[] = []
   for (const line of lines.slice(2)) {
     const row = tableCells(line)
-    const fields = header
-      .map((name, column) => ({ name: name || `Column ${column + 1}`, value: row[column] ?? '' }))
+    const fields = Array.from({ length: Math.max(header.length, row.length) }, (_, column) => ({
+      name: header[column] || `Column ${column + 1}`,
+      value: row[column] ?? '',
+    }))
       .filter(f => f.value !== '')
-      .map(f => `${indent}**${f.name}:** ${f.value}`)
+      .map(f => `${indent}${f.name}: ${f.value}`)
     if (fields.length === 0) continue
     if (out.length > 0) out.push('')
     // Two spaces at a line's end keep the fields on lines of their own.
@@ -57,5 +60,6 @@ export function forPane(markdown: string, width: number): string {
 // is resized.
 export function rowRecord(source: string): string {
   const lines = source.trim().split('\n')
-  return lines.length >= 3 && isTableDelimiter(lines[1]!) ? records(lines, '').join('\n') : source
+  if (lines.length < 3 || !isTableDelimiter(lines[1]!)) return source
+  return records(lines, '').join('\n') || '(empty row)'
 }

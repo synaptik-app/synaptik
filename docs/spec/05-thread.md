@@ -16,8 +16,9 @@ row in it. **It never touches the main conversation.**
 - **Stepped into a code block or table** (`s`, `03-navigation.md`), `d` opens a thread on the
   selected line or row, its own and apart from the block's. The pane shows the
   part alone: a code line in its block's fences, a row as a record, each header
-  with its cell on a line of its own (`**Option:** Redis`, `**Latency:** low`); an
-  empty header is `Column N`, an empty cell left out.
+  with its cell on a line of its own (`Option: Redis`, `Latency: low`); an
+  empty header, or a cell past the last, is `Column N`; an empty cell is left
+  out; a row with nothing in it shows `(empty row)`.
   The fork gets the whole block and which part (`The thread is about line 2:
   "…" of this block`). The line's margin shows `💬`, the block's `✸`.
 
@@ -57,7 +58,7 @@ count (2026-11-06). A fixed height leaves wrapping and scrolling to Claude Code.
 terminal's width, not the pane's: in a pane narrower than the terminal, a grid
 drawn whole for the terminal wraps. So in the block shown and in the answers, a
 table whose grid, every column at its natural width, doesn't fit the pane's
-width (less its inset) is drawn as records: each row's cells as `**Header:**
+width (less its inset) is drawn as records: each row's cells as `Header:
 value`, a line each, a blank line between rows. A table that fits is drawn as a
 grid, by Claude Code. Inside a code fence, a table is code and stays as written.
 Display only: the fork, the summary and the review get the table as written.
