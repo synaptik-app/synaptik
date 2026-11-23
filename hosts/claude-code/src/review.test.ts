@@ -160,6 +160,12 @@ test('closed() leaves the key out instead of setting it undefined', async () => 
 test('the menu, clicked: each item by its cells, 💬 taking two', async () => {
   const items = ['[ ✓ accept ]', '[ ✗ reject ]', '[ ✎ comment ]', '[ 💬 discuss ]']
   expect(cells('[ 💬 discuss ]')).toBe(14)
+  // Wide characters take two columns: CJK, Hangul, fullwidth, emoji; ✓ and Latin one.
+  expect(cells('名前')).toBe(4)
+  expect(cells('한국')).toBe(4)
+  expect(cells('Ａ')).toBe(2)
+  expect(cells('✓ ✗ ✎')).toBe(5)
+  expect(cells('abc')).toBe(3)
   expect(itemAt(0, items)).toBe(0)
   expect(itemAt(11, items)).toBe(0)
   expect(itemAt(12, items)).toBe(1)

@@ -194,6 +194,7 @@ export function plainInline(text: string): string {
 
 // A table's second row: dashes between pipes, the outer pipes optional.
 const TABLE_DELIMITER = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$|^\s*\|\s*:?-+:?\s*\|\s*$/
+export const isTableDelimiter = (line: string) => TABLE_DELIMITER.test(line)
 
 // A fenced code block's fences and lines; undefined for any other block.
 export function codeOf(text: string): { open: string; close: string; lines: string[] } | undefined {
