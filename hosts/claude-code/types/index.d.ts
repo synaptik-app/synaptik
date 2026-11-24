@@ -4,7 +4,7 @@ export type Mark = 'accept' | 'reject' | 'comment'
 
 // A thread (src/threads.ts keeps the same shape; this contract may import nothing).
 export type Thread = {
-  messages: { role: 'person' | 'agent' | 'report' | 'sent' | 'direct'; text: string; ms?: number }[]
+  messages: { role: 'person' | 'agent' | 'report' | 'sent' | 'direct' | 'status'; text: string; ms?: number }[]
   pending: number
   included: boolean
   isIncludeSet: boolean
@@ -12,7 +12,7 @@ export type Thread = {
   summarizedAt: number
   inputSeq: number
   // Its agent with tools (D51): the id, and where its tasks stand.
-  agent?: { id: string; state: 'working' | 'needs-you' | 'done' }
+  agent?: { id: string; state: 'working' | 'needs-you' | 'done' | 'stopped' }
 }
 
 declare module 'claude-code' {

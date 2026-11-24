@@ -100,6 +100,13 @@ export function ThreadView(
           <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
             <Text dimColor>▶ Sent to agent</Text>
           </Box>
+        ) : message.role === 'status' ? (
+          // Synaptik's own line about the agent: a failure's ✗ in the error colour.
+          <Box key={`m${n}`} marginBottom={1} paddingX={INSET}>
+            <Text dimColor color={message.text.startsWith('✗') ? 'error' : undefined}>
+              {message.text}
+            </Text>
+          </Box>
         ) : message.role === 'direct' ? (
           // What the person wrote to the agent in its own view.
           <Box key={`m${n}`} marginBottom={1}>

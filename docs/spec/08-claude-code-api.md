@@ -78,6 +78,7 @@ to block user-installed mods.
 | `onScreen` | fullscreen only; per reply piece, not per element |
 | `$.ui.view({ agentId })` | only from the person's own input, and only while the agent is in the tasks list |
 | `$.model.fork` | resolves once, with the reply's `text` and `usage`: no partial text or thinking along the way, and no way to stop it (2.1.330 types) |
+| `$.agent.spawn` after a long idle | refused: `the session was stopped and nobody has sent input since`, seen after about 12 hours with no prompt in a session left running; a fork still answered then. What clears it (a prompt in the main chat, presumably) and where the rule lives are unverified ⚠️ (#237) |
 | A thread's agent | its first `turn.start` comes before `spawn` returns its id; a finished one keeps its row, undrawn, until the engine drops its task |
 | `$.session.messages()` | the newest 4,096 entries; `{ last }` fewer, and a ranged read can be refused (`SessionMessagesDeny`), which falls back to the plain read |
 | `autoFocus` | accepts only `true`, so focus is managed per render rather than by flipping a prop off |

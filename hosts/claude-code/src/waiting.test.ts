@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { agentLine, elapsed, reportLine, spinnerFrame, thinkingLine, tokensText, toolStep } from './waiting'
+import { agentLine, elapsed, endedLine, notStartedLine, refusalWords, reportLine, spinnerFrame, thinkingLine, tokensText, toolStep } from './waiting'
 
 test("a report says how the agent's run ended, and how long it took", () => {
   expect(reportLine('done', 15_200)).toBe('⏺ Agent finished · 15s')
@@ -46,4 +46,17 @@ test("a tool call reads as its description, else the tool and its main argument"
   expect(toolStep('Read', { file_path: 'fixtures/code.md' })).toBe('Read: fixtures/code.md')
   expect(toolStep('TodoWrite', { todos: [] })).toBe('TodoWrite')
   expect(tokensText(850)).toBe('850 tokens')
+})
+
+test('a refused start reads in plain words when the reason is known, verbatim otherwise (#237)', () => {
+  expect(refusalWords('the session was stopped and nobody has sent input since')).toBe("Claude Code won't start an agent until you send something in the main chat")
+  expect(refusalWords('agents are off for this session')).toBe('agents are off for this session')
+  expect(notStartedLine('Claude Code didn\'t report it')).toBe("✗ Agent not started · Claude Code didn't report it")
+})
+
+test('a run that ended without a report says how', () => {
+  expect(endedLine('aborted')).toBe('◼ Agent stopped')
+  expect(endedLine('refusal', 'It declined to run the command.')).toBe('✗ Agent failed · It declined to run the command.')
+  expect(endedLine('refusal', null)).toBe('✗ Agent failed · the model refused')
+  expect(endedLine('error')).toBe('✗ Agent failed · an API error ended its run')
 })

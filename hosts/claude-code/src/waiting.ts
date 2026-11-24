@@ -2,6 +2,8 @@
 // work. A thread's fork resolves once, with no text or thinking along the way,
 // so its line is a spinner and the time; an agent says what it is doing.
 
+import type { AgentState } from './threads'
+
 // Claude Code's own spinner frames, one every 100 ms.
 const FRAMES = [...'⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏']
 
@@ -21,16 +23,38 @@ export const tokensText = (n: number) => (n < 1000 ? `${n} tokens` : `${(n / 100
 // One of the agent's reports, in the pane: how its run ended, and how long it
 // took, in the words Claude Code's agent list uses for it. ⏺ as Claude Code
 // marks a reply; an open ○ when it waits for the person.
-const ENDED: Record<'working' | 'needs-you' | 'done', { glyph: string; words: string }> = {
+const ENDED: Record<AgentState, { glyph: string; words: string }> = {
+  stopped: { glyph: '◼', words: 'Agent stopped' },
   done: { glyph: '⏺', words: 'Agent finished' },
   'needs-you': { glyph: '○', words: 'Agent waiting for you' },
   // A report Synaptik can't read the status of.
   working: { glyph: '⏺', words: 'Agent reported' },
 }
 
-export function reportLine(state: 'working' | 'needs-you' | 'done', ms: number | undefined): string {
+export function reportLine(state: AgentState, ms: number | undefined): string {
   const { glyph, words } = ENDED[state]
   return `${glyph} ${words}${ms === undefined ? '' : ` · ${elapsed(ms)}`}`
+}
+
+// Why Claude Code refused to start the agent, in the person's words when the
+// reason is a known one (#237); any other as Claude Code gave it.
+const REFUSALS: [RegExp, string][] = [
+  [/session was stopped and nobody has sent input since/i, "Claude Code won't start an agent until you send something in the main chat"],
+]
+
+export function refusalWords(deny: string): string {
+  return REFUSALS.find(([pattern]) => pattern.test(deny))?.[1] ?? deny
+}
+
+// The agent didn't start, and why.
+export const notStartedLine = (why: string) => `✗ Agent not started · ${why}`
+
+// A run that ended without a report: interrupted, refused by the model, or cut
+// by an API error (`turn.complete`'s reason).
+export function endedLine(reason: 'aborted' | 'refusal' | 'error', explanation?: string | null): string {
+  if (reason === 'aborted') return '◼ Agent stopped'
+  const why = reason === 'refusal' ? explanation?.trim() || 'the model refused' : 'an API error ended its run'
+  return `✗ Agent failed · ${why}`
 }
 
 // A thread waiting for its answer.

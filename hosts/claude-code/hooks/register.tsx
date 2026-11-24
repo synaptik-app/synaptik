@@ -22,7 +22,7 @@ import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
 import { decorate } from '../src/decorate'
-import { agentLine, thinkingLine, toolStep } from '../src/waiting'
+import { agentLine, endedLine, notStartedLine, refusalWords, thinkingLine, toolStep } from '../src/waiting'
 import type { AgentNow } from '../src/waiting'
 import {
   AGENT_WORDS,
@@ -873,9 +873,9 @@ async function toggleInclude($: EngineInterface, key: string) {
 // --- A thread's agent (D51): its tasks, run by a fork subagent with tools.
 
 // The person asked for an agent, and the answer started it: the summary as it
-// stands is its tasks, written first if the latest answer came without one; the
-// switch turns on unless the person set it; then the summary is rewritten with
-// the tasks under Still on.
+// stands is its tasks, or the thread itself without one; the switch turns on
+// unless the person set it; then the summary is rewritten with the tasks under
+// Still on.
 async function startAgent($: EngineInterface, key: string) {
   if (startingAgents.has(key)) return
   startingAgents.add(key)
@@ -891,21 +891,17 @@ async function spawnFor($: EngineInterface, key: string) {
   const reply = await read($, lastText)
   const before = (await read($, threads))[key]
   if (anchor === undefined || !before || before.agent || before.pending > 0) return
-  if (before.summary === undefined || before.summarizedAt < before.messages.length) {
-    const r = await forkThread($, summaryPrompt(anchor, before))
-    observe(`thread ${key} summary before the agent: ${r.isAnswered ? 'written' : r.reason}`)
-    if (!r.isAnswered) return $.ui.toast("couldn't write the thread's tasks: try again")
-    if ((await read($, lastText)) !== reply) return
-    await changeThread($, key, t => ({ ...t, summary: r.text.trim(), summarizedAt: t.messages.length }))
-  }
-  const thread = (await read($, threads))[key]
-  if (!thread?.summary?.trim()) return $.ui.toast('nothing for an agent to do in this thread')
+  // It starts at once, on the person's word: with the summary as it stands as
+  // its tasks, or the thread itself when there is none. Whether it should run is
+  // the thread's agent's call, made in its answer; Synaptik doesn't second-guess
+  // it (P2).
+  const thread = before
   const label = agentLabel(anchor)
   let id: string | undefined
   try {
     const spawned = await $.agent.spawn({ prompt: agentPrompt(anchor, thread), description: label, subagentType: 'fork' })
     observe(`thread ${key} agent: ${JSON.stringify(spawned)}`)
-    if (spawned.deny) return $.ui.toast(`couldn't start the agent: ${spawned.deny}`)
+    if (spawned.deny) return noteAgent($, key, notStartedLine(refusalWords(spawned.deny)))
     // The id is core's to give, and may be missing: then it is the newest agent
     // listed under this description that isn't one of Synaptik's already.
     id =
@@ -913,10 +909,10 @@ async function spawnFor($: EngineInterface, key: string) {
       (await $.agent.list())
         .filter(a => a.description === label && !ownAgents.has(a.id))
         .sort((x, y) => y.startTime - x.startTime)[0]?.id
-    if (!id) return $.ui.toast("couldn't start the agent")
+    if (!id) return noteAgent($, key, notStartedLine("Claude Code didn't report it"))
   } catch (err) {
     observe(`thread ${key} agent failed: ${String(err)}`)
-    return $.ui.toast(`couldn't start the agent: ${String(err)}`)
+    return noteAgent($, key, notStartedLine(String(err)))
   }
   ownAgents.set(id, { key, reply, label })
   runSince.set(id, Date.now())
@@ -925,6 +921,15 @@ async function spawnFor($: EngineInterface, key: string) {
   await suggestTray($)
   void catchUp($, id)
   void rewriteForAgent($, key, true).catch(err => observe(`thread ${key} summary failed: ${String(err)}`))
+}
+
+// A line about the agent, in its thread's history: it couldn't start, or a run
+// ended without a report (#239). A toast too when the thread's pane is closed,
+// so it isn't missed.
+async function noteAgent($: EngineInterface, key: string, line: string) {
+  observe(`thread ${key} agent: ${line}`)
+  await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'status', text: line }] }))
+  if (!openThreads.has(key)) $.ui.toast(line)
 }
 
 const agentLabel = (anchor: Anchor) => `Synaptik · ${quote(anchor.part?.text ?? anchor.block, 6)}`
@@ -1005,6 +1010,17 @@ async function onAgentTurn($: EngineInterface, id: string, answer: string, ms?: 
     if ((await read($, lastText)) === own.reply) await changeThread($, key, t => withAnswer(t, reply, true))
   }
   if ((await read($, lastText)) === own.reply) await suggestTray($)
+}
+
+// A run that ended without a report: interrupted or failed. The thread says so,
+// and has nothing to answer: there is no report.
+async function onAgentEnded($: EngineInterface, id: string, line: string) {
+  const own = ownAgents.get(id)
+  if (!own || (await read($, lastText)) !== own.reply) return
+  if ((await read($, threads))[own.key]?.agent?.id !== id) return
+  agentsNow.delete(id)
+  await changeThread($, own.key, t => ({ ...t, agent: { id, state: 'stopped' as AgentState } }))
+  await noteAgent($, own.key, line)
 }
 
 // What the thread sends its agent: Claude Code hands it over at the agent's next
@@ -1115,7 +1131,10 @@ export const register: Register = on => {
     // One of Synaptik's agents ended a turn: its answer goes to its thread (D51).
     if (e.agentId) {
       const id = e.agentId
-      if (ownAgents.has(id)) await onAgentTurn($, id, e.answer, e.durationMs).catch(err => observe(`agent ${id} report failed: ${String(err)}`))
+      if (ownAgents.has(id)) {
+        const ended = e.reason === 'answer' ? undefined : endedLine(e.reason, e.reason === 'refusal' ? e.refusal.explanation : null)
+        await (ended ? onAgentEnded($, id, ended) : onAgentTurn($, id, e.answer, e.durationMs)).catch(err => observe(`agent ${id} report failed: ${String(err)}`))
+      }
       return next(e)
     }
     await adoptLastReply($)
