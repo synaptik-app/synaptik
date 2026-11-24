@@ -254,7 +254,7 @@ test("a refused start is a line in the thread, in plain words, and the switch st
   // The thread's fork reads it, so its next answer doesn't assume the agent ran.
   forkAnswer.text = 'Send anything in the main chat first.'
   await send($, 'why not?')
-  expect(forks.at(-1)).toContain("Synaptik, about your agent: ✗ Agent not started · Claude Code won't start")
+  expect(forks.at(-1)).toContain("Synaptik: ✗ Agent not started · Claude Code won't start")
 })
 
 test('a run interrupted before it reported is a line in the thread, and the agent is stopped', async ($, on) => {

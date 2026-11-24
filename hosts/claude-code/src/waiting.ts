@@ -57,6 +57,13 @@ export function endedLine(reason: 'aborted' | 'refusal' | 'error', explanation?:
   return `✗ Agent failed · ${why}`
 }
 
+// An answer the person stopped: the fork can't be, so its answer is thrown away
+// when it lands (#240).
+export const CANCELLED_LINE = '◼ Answer cancelled'
+// The cancel button's label, beside the waiting line: cancel, not stop, since
+// the fork runs on; only its answer is dropped.
+export const STOP_LABEL = '◼ cancel'
+
 // A thread waiting for its answer.
 export function thinkingLine(now: number, since: number | undefined): string {
   return `${spinnerFrame(now)} Thinking…${since === undefined ? '' : ` · ${elapsed(now - since)}`}`

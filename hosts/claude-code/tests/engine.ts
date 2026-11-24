@@ -77,6 +77,8 @@ export const opened: { focus: boolean }[] = []
 // a reason it has none). Reset by `engine`.
 export const forks: string[] = []
 export const forkAnswer = { text: 'An answer.' as string | undefined }
+// Set, a fork waits for it before it answers: an answer pending, to cancel.
+export const forkHold = { until: undefined as Promise<void> | undefined }
 
 // The session's id, as $.session.id answers it: a test changes it, as /resume
 // and /clear do. Reset by `engine`.
@@ -128,6 +130,7 @@ export function engine(on: On, rows: Row[]) {
   reads.length = 0
   session.id = 'session-1'
   forkAnswer.text = 'An answer.'
+  forkHold.until = undefined
   spawned.length = 0
   sentToAgents.length = 0
   appended.length = 0
@@ -177,11 +180,14 @@ export function engine(on: On, rows: Row[]) {
     opened.push({ focus: e.focus === true })
     return { isPlaced: placement.isPlaced }
   })
-  call('model.fork', (e: { prompt: string }) => {
+  // A hook of its own, not call(): held, it answers once the hold resolves.
+  on('model.fork' as never, (async (_$: unknown, e: { prompt: string }) => {
     forks.push(e.prompt)
     const usage = { input_tokens: 16, output_tokens: 3, cache_read_input_tokens: 50_000, cache_creation_input_tokens: 0 }
-    return forkAnswer.text === undefined ? { isAnswered: false, reason: 'empty-reply', usage } : { isAnswered: true, text: forkAnswer.text, usage }
-  })
+    if (forkHold.until) await forkHold.until
+    const value = forkAnswer.text === undefined ? { isAnswered: false, reason: 'empty-reply', usage } : { isAnswered: true, text: forkAnswer.text, usage }
+    return { value }
+  }) as never)
   call('ui.invalidate', () => undefined)
   call('ui.toast', () => undefined)
   event('ui.message', () => ({}))
