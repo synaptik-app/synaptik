@@ -165,3 +165,8 @@ test('with no summary, the agent works from the thread itself', () => {
   expect(prompt).toContain('The tasks:\n\nNo summary was written for this thread. Carry out what the thread above settled needs doing')
   expect(prompt).toContain('Person: are the counts right?')
 })
+
+test("the switch sentence comes before the summary's instructions, as part of the answer", () => {
+  const prompt = threadPrompt({ block: 'B' }, NEW_THREAD, 'go')
+  expect(prompt.indexOf('This thread is left out of their review now')).toBeLessThan(prompt.indexOf('<summary>'))
+})

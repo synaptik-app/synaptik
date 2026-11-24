@@ -284,3 +284,21 @@ test("a thread switched off starts its agent at once: no summary written first, 
   expect(forks.length - before).toBe(2)
   expect(spawned[0]!.prompt).toContain('No summary was written for this thread')
 })
+
+test("a refused start leaves a current summary current; a run that ended without a report doesn't", async ($, on) => {
+  await threadWithTools($, on)
+  spawnedAgent.deny = 'refused'
+  forkAnswer.text = STARTING
+  await send($, 'yes, start it')
+  expect(await hasText($, '✗ Agent not started · refused')).toBe(true)
+  // The answer brought a summary; the line after it doesn't make it stale.
+  expect(await hasText($, ' · rewritten when you close this')).toBe(false)
+})
+
+test('a run that ended without a report marks the summary due a rewrite: its tasks are undone', async ($, on) => {
+  await withAgent($, on)
+  forkAnswer.text = 'Counted.\n<summary>\nActions: none\n</summary>'
+  await send($, 'and the summary?')
+  await $.turn.complete({ turnId: 'agent-turn', agentId: AGENT_ID, answer: 'Count', durationMs: 3000, isAborted: true, reason: 'aborted' })
+  expect(await hasText($, ' · rewritten when you close this')).toBe(true)
+})

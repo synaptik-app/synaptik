@@ -104,7 +104,9 @@ const fill = (template: string, values: Record<string, string>) =>
 export function threadPrompt(anchor: Anchor, thread: Thread, message: string): string {
   const so = thread.messages.length > 0 ? fill(THREAD_SO_FAR, { thread: transcript(thread.messages) }) : ''
   const sentence = thread.isIncludeSet ? '' : WITH_SWITCH_SENTENCE.replace('{{switch}}', thread.included ? SWITCH_ON : SWITCH_OFF)
-  const after = summaryAfter(thread) + sentence + (thread.agent ? WITH_TO_AGENT : WITH_NEXT)
+  // The sentence before the summary's instructions: it belongs to the answer,
+  // ahead of the tags.
+  const after = sentence + summaryAfter(thread) + (thread.agent ? WITH_TO_AGENT : WITH_NEXT)
   const tools = thread.agent ? TOOLS_AGENT : TOOLS_OFFER
   return fill(THREAD_PROMPT, { block: anchor.block, part: partOf(anchor), thread: so, message, after, tools })
 }

@@ -925,10 +925,16 @@ async function spawnFor($: EngineInterface, key: string) {
 
 // A line about the agent, in its thread's history: it couldn't start, or a run
 // ended without a report (#239). A toast too when the thread's pane is closed,
-// so it isn't missed.
-async function noteAgent($: EngineInterface, key: string, line: string) {
+// so it isn't missed. A start that didn't happen changes nothing the summary
+// says, so a summary that was current stays so; a run that ended without a
+// report leaves its tasks undone, and the summary is due a rewrite.
+async function noteAgent($: EngineInterface, key: string, line: string, isSummaryKept = true) {
   observe(`thread ${key} agent: ${line}`)
-  await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'status', text: line }] }))
+  await changeThread($, key, t => {
+    const isCurrent = t.summarizedAt >= t.messages.length
+    const messages = [...t.messages, { role: 'status' as const, text: line }]
+    return { ...t, messages, summarizedAt: isSummaryKept && isCurrent ? messages.length : t.summarizedAt }
+  })
   if (!openThreads.has(key)) $.ui.toast(line)
 }
 
@@ -1020,7 +1026,7 @@ async function onAgentEnded($: EngineInterface, id: string, line: string) {
   if ((await read($, threads))[own.key]?.agent?.id !== id) return
   agentsNow.delete(id)
   await changeThread($, own.key, t => ({ ...t, agent: { id, state: 'stopped' as AgentState } }))
-  await noteAgent($, own.key, line)
+  await noteAgent($, own.key, line, false)
 }
 
 // What the thread sends its agent: Claude Code hands it over at the agent's next
