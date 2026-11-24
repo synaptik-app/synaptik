@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { anchorOf, clearedThreads, hasThread, needsSummary, NEW_THREAD, parseAnswer, summaries, summaryPrompt, threadPrompt, withAnswer } from './threads'
+import { anchorOf, clearedThreads, hasThread, markFirst, needsSummary, NEW_THREAD, parseAnswer, summaries, summaryPrompt, threadPrompt, withAnswer } from './threads'
 import type { Thread } from './threads'
 
 const talked: Thread = {
@@ -158,4 +158,12 @@ test("a clear takes out a line's own thread, or a block's, or else its lines'", 
   expect(clearedThreads({ '3.1': on }, true, 3)).toEqual([])
   // Nothing of its own: every included thread on its lines.
   expect(clearedThreads({ '3.1': on, '3.2': on, '3.4': talked, '4.1': on }, false, 3)).toEqual(['3.1', '3.2'])
+})
+
+test("a marked part's thread stays out unless the person switched it on themselves (#238)", () => {
+  const byVerdict = { ...talked, included: true, isIncludeSet: false }
+  expect(markFirst(byVerdict, true).included).toBe(false)
+  expect(markFirst(byVerdict, false).included).toBe(true)
+  // The person's own press stands.
+  expect(markFirst({ ...talked, included: true, isIncludeSet: true }, true).included).toBe(true)
 })

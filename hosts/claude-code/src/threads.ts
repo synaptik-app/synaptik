@@ -285,3 +285,10 @@ export function typedInView(text: string): string {
   return (text.match(MID_TURN)?.[1] ?? text).trim()
 }
 
+
+// A marked part's thread stays out of the review unless the person switched it
+// on themselves: a verdict, or an agent starting, only sets the switch's
+// default, and never overrides a mark (#238).
+export function markFirst(thread: Thread, isMarked: boolean): Thread {
+  return isMarked && thread.included && !thread.isIncludeSet ? { ...thread, included: false } : thread
+}

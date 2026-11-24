@@ -197,7 +197,7 @@ happened, no transcript. Its lines nest under the block's quote, after the ❝:
     Decisions: Keep Redis; durability isn't needed.
 ```
 
-A block with a mark and an included thread gets both lines, the mark first.
+A block sends one line: its mark or its included thread, never both (D2).
 
 A line's or row's thread nests under its block as a marked line does, the block
 quoted first for context:

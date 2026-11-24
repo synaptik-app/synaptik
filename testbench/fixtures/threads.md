@@ -35,7 +35,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 4. **Do:** press `↓`, then `↑`
    - **Expect:** `↓` moves to the include switch, `↑` back to the field
 5. **Do:** press `Esc`
-   - **Expect:** the pane closes, and the paragraph has ❝ in its margin
+   - **Expect:** the pane closes, and the paragraph has ❝ in its margin if the switch was on; none if it was off
 6. **Do:** click the band's "click here to review the reply"
    - **Expect:** the review resumes: the band says "Block N of M" again
 7. **Do:** click the Redis paragraph, press `d`
@@ -52,7 +52,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 
 10. **Do:** press `Esc`, click the hint, click the code block, press `s`, `↓` to the `return` line, press `d`
     - **Expect:** the pane's title and the anchor at its top are that line alone, coloured as code
-    - **Expect:** after `Esc`, the line's margin shows ❝, and the block's ✸
+    - **Expect:** after `Esc`, with the switch on, the line's margin shows ❝ and the block's ✸; with it off, neither
 11. **Do:** press `Esc`, click the hint, click the code block, then `d` on the whole block
     - **Expect:** a different thread opens, about the whole block
 12. **Do:** press `Esc`, click the hint, click the table, `s`, `↓` to the Postgres row, press `d`
@@ -68,5 +68,15 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
     - **Expect:** a toast says to use the band; `ctrl+x tab`, then `d`, opens the thread above the prompt
 16. **Do:** widen it again, and send any prompt to the agent
     - **Expect:** with the new reply, the old threads' panes close, and its blocks have no ❝
+
+**One thing per block** (#238)
+
+17. **Do:** open a thread on the Redis paragraph, send `why Redis?`, switch it on, press `Esc`; click the hint, click the paragraph, press `c`, type `fine as is`, press `⏎`
+    - **Expect:** the paragraph's margin shows ✎, not ❝, and the suggestion has the comment alone
+    - **Expect:** pressing `d` reopens the thread with its messages, its switch now off
+18. **Do:** in that thread, switch it on
+    - **Expect:** the ✎ goes, ❝ shows, and the suggestion has the thread's summary alone; `c` on the paragraph still starts from `fine as is`
+19. **Do:** on another block, press `a`, then `d`, and ask something whose answer would include the thread
+    - **Expect:** the switch stays off: the answer's verdict doesn't override your ✓
 
 When you're done: close any thread pane, click the first **Expect:**, mark every expectation, press `q`, `Tab`, then `⏎`. The test session answers with a table of your results.

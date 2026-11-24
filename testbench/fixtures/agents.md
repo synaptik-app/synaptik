@@ -22,7 +22,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
    - **Expect:** Claude Code's agent list under the prompt shows `Synaptik · "The fixtures folder…" · working`
    - **Expect:** while it works, the pane shows a dim line with a turning spinner, what the agent is doing (or `agent working`), its time and its tokens; the line goes when it reports
 3. **Do:** press `Esc`, and look at the paragraph's margin
-   - **Expect:** ❝, as for any thread
+   - **Expect:** ❝, as for any thread in the review
 4. **Do:** wait for the agent to finish, then click the hint, click the paragraph, press `d`
    - **Expect:** the pane shows one dim `⏺ Agent finished · <time>` line, not the agent's reply or its report
    - **Expect:** under it, the thread's own answer about it, written without your asking

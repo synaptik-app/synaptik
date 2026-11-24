@@ -58,8 +58,19 @@ row, and `q` steps out before it ends the review (D43, D44).
 
 **Verbs are idempotent entry points.** Pressing one again never duplicates:
 accept or reject again unmarks; `c` reopens the comment pre-filled; `d` reopens
-the block's thread with its history. **One mark and one thread per block,
-maximum.**
+the block's thread with its history.
+
+**One thing in the review per block, or per line or row: a mark or an
+included thread, and the last thing the person did wins.** A mark (✓ ✗ ✎)
+switches the part's thread off: it is kept, and `d` reopens it. Switching a
+thread on clears the part's mark, a comment's text kept for `c`. A thread's
+verdict, or its agent starting, only sets the switch's default, so it never
+overrides a mark; only the person's own press does. Opening a thread alone
+changes nothing. A block and its lines or rows are separate parts. **Why:** a
+mark and a thread's summary on one block were two instructions about the same
+thing, and the review sent both (#238); the person's latest choice is the one
+they mean. This is the person's choice applied as they make it, not the mod
+resolving what they marked (P2).
 
 **The mod executes nothing — no Run verb.** If Claude proposes a command in
 prose, the person comments *"run this with --verbose"*; the agent runs it next
@@ -81,6 +92,8 @@ a round trip, since the agent re-emits it before running it.
 - **2026-11-23** — discuss's glyph is `❝`, plain text that takes the theme's
   colour like ✓ ✗ ✎, not the `💬` emoji, which brought its own colours and two
   columns.
+- **2026-11-24** — one thing in the review per part, the last action winning
+  (#238). Before: one mark and one thread per block, both sent.
 
 ---
 
