@@ -175,6 +175,13 @@ whole, as its tasks. It runs under the session's permission mode. Its prompt
 Code frames Synaptik's messages to it as the coordinator's, and the agent
 can't know that this is the thread.
 
+**Its own replies aren't reviewed.** It is the thread's tool, not something the
+person reviews on its own: what it did reaches the review through the thread,
+in its reports, the thread's answers to them, and the summary's `Subagent:`
+section. Reviewing its replies in its view would take a review per view,
+sending by `$.prompt.fill` (a D30 revision), and telling apart the rows it
+inherited from the main reply's, which share their ids (#219).
+
 **The loop:**
 
 | Event | What happens |
@@ -281,9 +288,7 @@ returns, `$.agent.list()` is checked: an agent already `completed` is read from
 
 **Limits:** a thread is discarded with its reply (D24), so the person waits for
 the agent before taking the review onward; one still running when a new reply
-arrives keeps running, and its result joins no review (#194). Its own replies
-aren't reviewed in its view: it is the thread's tool, and what it did reaches
-the review through the thread (#219). Fullscreen only.
+arrives keeps running, and its result joins no review (#194). Fullscreen only.
 
 **Rests on the spike on 2.1.328** (#158); what it answered is in spec 08.
 
@@ -315,6 +320,8 @@ the review through the thread (#219). Fullscreen only.
   leaves the agent `stopped` (#239).
 - **2026-11-24** — no summary written before the start, and no start refused for
   an empty one: the agent works from the summary as it stands, or the thread.
+- **2026-11-25** — its own replies are not reviewed, a decision rather than a
+  limit to lift (#219, closed): its work reaches the review through the thread.
 
 ---
 
