@@ -105,6 +105,10 @@ jobs:
         if: env.IS_CODE == 'true'
         run: claude plugin validate ./testbench/neighbour-mod
 
+      - name: Validate the test bench's fault mod
+        if: env.IS_CODE == 'true'
+        run: claude plugin validate ./testbench/fault-mod
+
       # Unit tests (src/) and UI tests (tests/), no session or login needed.
       - name: Test
         if: env.IS_CODE == 'true'

@@ -12,11 +12,18 @@ claude --plugin-dir ../hosts/claude-code
 CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 claude --plugin-dir ../hosts/claude-code
 # next to another mod (issue #12): the test bench's own neighbour mod
 claude --plugin-dir ../hosts/claude-code --plugin-dir ./neighbour-mod
+# with a thread's agent failing on demand (issue #239): the fault mod
+claude --plugin-dir ../hosts/claude-code --plugin-dir ./fault-mod
 ```
 
 `neighbour-mod/` is a deliberately well-behaved companion mod: it shares the
 band, the reply and the prompt box with Synaptik and always calls
 `next(e)`, so anything that breaks points at Synaptik.
+
+`fault-mod/` makes Synaptik's thread agents fail on demand, and touches no
+other agent: `/fault refuse` refuses their spawns, `/fault fail` sends their
+requests to a model that doesn't exist so each run dies on an API error, and
+`/fault off` (or a reload) puts things back.
 
 ## Running a test
 

@@ -56,4 +56,17 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
     - **Expect:** under the paragraph's quote, `❝` and the thread's summary with its `Subagent:` section; no report, no report tag
     - **Expect:** the summary opens with a `Context:` line saying where its Actions come from (what the agent found)
 
+**When it fails** (loaded with the fault mod: `--plugin-dir ./fault-mod`, see the test bench's CLAUDE.md; skip these steps without it)
+
+11. **Do:** run `/fault refuse`, open a new thread on the code block, ask `can you run it?`, then send `yes, start it`
+    - **Expect:** a dim `✗ Agent not started · refused by the test bench fault mod` line in the thread, its ✗ in the error colour
+    - **Expect:** no agent in Claude Code's agent list, and the include switch as it was
+12. **Do:** send `why didn't it start?`
+    - **Expect:** the answer knows the agent didn't start, and doesn't talk as if it ran
+13. **Do:** run `/fault fail`, then in the same thread send `try again, start it`
+    - **Expect:** after a moment, `✗ Agent failed · an API error ended its run`, and no answer to a report under it
+    - **Expect:** the agent list says `· stopped`
+14. **Do:** run `/fault off`, open a thread, start an agent on a slow task, and stop it from Claude Code's agent list
+    - **Expect:** `◼ Agent stopped`, and the agent list `· stopped`
+
 When you're done: close any thread pane, click the first **Expect:**, mark every expectation, press `q`, `Tab`, then `⏎`. The test session answers with a table of your results.
