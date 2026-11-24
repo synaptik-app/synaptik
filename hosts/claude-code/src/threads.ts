@@ -33,8 +33,8 @@ import {
 // thread has an agent with tools (D51), its reports, what the thread sent it,
 // and what the person wrote to it in its own view ('direct').
 // A report keeps how long the agent's run took (`ms`), when Claude Code said. A
-// status is Synaptik's own line about the agent: it couldn't start, or its run
-// ended without a report (#239).
+// status is Synaptik's own line in the thread: its agent couldn't start, or a
+// run ended without a report (#239), or an answer was cancelled (#240).
 export type ThreadMessage = { role: 'person' | 'agent' | 'report' | 'sent' | 'direct' | 'status'; text: string; ms?: number }
 
 // A thread's agent with tools (D51): its id in `$.agent.list()`, and where its
@@ -61,6 +61,9 @@ export type Thread = {
   inputSeq: number
   // Its agent, once the person asked for one.
   agent?: ThreadAgent
+  // What the field starts with when next drawn: a cancelled question, back for
+  // editing (#240).
+  draft?: string
 }
 
 export const NEW_THREAD: Thread = { messages: [], pending: 0, included: false, isIncludeSet: false, summarizedAt: 0, inputSeq: 0 }
@@ -87,7 +90,7 @@ const SPEAKER: Record<ThreadMessage['role'], string> = {
   report: 'Your agent reported',
   sent: 'You, to your agent',
   direct: 'Person, to your agent in its own view',
-  status: 'Synaptik, about your agent',
+  status: 'Synaptik',
 }
 
 const transcript = (messages: readonly ThreadMessage[]) => messages.map(m => `${SPEAKER[m.role]}: ${m.text}`).join('\n\n')

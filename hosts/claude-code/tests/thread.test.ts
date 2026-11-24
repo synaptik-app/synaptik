@@ -5,7 +5,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { FoundElement } from 'claude-code/testing'
 
-import { closed, forkAnswer, forks, fullscreen, log, opened, placement, start, suggested, synaptik, threadPane } from './engine'
+import { closed, forkAnswer, forkHold, forks, fullscreen, log, opened, placement, start, suggested, synaptik, threadPane } from './engine'
 
 const F = 'review'
 const CACHE = 1
@@ -48,6 +48,8 @@ const send = ($: Dollar, text: string) =>
   inPane($, async pane => pane.input({ key: String((await pane.find({ type: 'Input' }))!.key), text }))
 
 const include = ($: Dollar) => inPane($, pane => pane.press({ key: `${PANE}-include` }))
+// A moment for answers already resolved to land.
+const tick = () => new Promise<void>(resolve => (globalThis as unknown as { setTimeout: (f: () => void, ms: number) => void }).setTimeout(resolve, 50))
 
 test('d on a block opens its thread pane, with the keyboard', async ($, on) => {
   await openThread($, on)
@@ -266,4 +268,49 @@ test('#238: switching the thread on clears the mark; marking the block switches 
   expect(suggested()).toBe('✗ "1. Cache sessions in Redis"')
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '○ include in review' })))).toBe(true)
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '› and the TTL?' })))).toBe(true)
+})
+
+test('#240: ◼ cancel drops the pending answer: it is thrown away when it lands, and the question is back in the field', async ($, on) => {
+  await openThread($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  forkAnswer.text = 'An answer that came too late.'
+  await send($, 'why Redis?')
+  // Pending: the waiting line, and ◼ cancel beside it.
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '◼ cancel' })))).toBe(true)
+  await inPane($, pane => pane.press({ key: `${PANE}-stop` }))
+  release()
+  await tick()
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '◼ Answer cancelled' })))).toBe(true)
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Markdown', text: 'An answer that came too late.' })))).toBe(false)
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '◼ cancel' })))).toBe(false)
+  // The question is back in the field, to edit and send again.
+  const field = await inPane($, async pane => pane.find({ type: 'Input' }))
+  expect((field!.props as { value?: string }).value).toBe('why Redis?')
+  // A question sent after the cancel is answered as usual.
+  forkHold.until = undefined
+  forkAnswer.text = 'Durability.'
+  await send($, 'why Redis, really?')
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Markdown', text: 'Durability.' })))).toBe(true)
+})
+
+test('#240: cancelling with two questions pending gives the last back; a later question, sent while the old answers are held, is answered', async ($, on) => {
+  await openThread($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  forkAnswer.text = 'Too late.'
+  await send($, 'first?')
+  await send($, 'second?')
+  await inPane($, pane => pane.press({ key: `${PANE}-stop` }))
+  const field = await inPane($, async pane => pane.find({ type: 'Input' }))
+  expect((field!.props as { value?: string }).value).toBe('second?')
+  // A new question while the old answers are still held: only its answer stays.
+  const held = release
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  await send($, 'third?')
+  held()
+  await tick()
+  release()
+  await tick()
+  expect(await inPane($, async pane => (await pane.findAll({ type: 'Markdown', text: 'Too late.' })).length)).toBe(1)
 })

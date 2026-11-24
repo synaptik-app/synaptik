@@ -7,6 +7,7 @@ import type { FoundElement } from 'claude-code/testing'
 
 import {
   AGENT_ID,
+  forkHold,
   agentLabels,
   agentRows,
   appended,
@@ -254,7 +255,7 @@ test("a refused start is a line in the thread, in plain words, and the switch st
   // The thread's fork reads it, so its next answer doesn't assume the agent ran.
   forkAnswer.text = 'Send anything in the main chat first.'
   await send($, 'why not?')
-  expect(forks.at(-1)).toContain("Synaptik, about your agent: ✗ Agent not started · Claude Code won't start")
+  expect(forks.at(-1)).toContain("Synaptik: ✗ Agent not started · Claude Code won't start")
 })
 
 test('a run interrupted before it reported is a line in the thread, and the agent is stopped', async ($, on) => {
@@ -313,4 +314,18 @@ test('#238: a thread with an agent, switched off by hand, stays out of the sugge
   await report($)
   expect(await hasButton($, '○ include in review')).toBe(true)
   expect(suggested()).not.toContain('❝')
+})
+
+test("#240: the thread's answer to a report can be cancelled: nothing comes back to the field", async ($, on) => {
+  await withAgent($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  forkAnswer.text = 'An answer to the report that came too late.'
+  const reported = report($)
+  await inPane($, pane => pane.press({ key: `${PANE}-stop` }))
+  release()
+  await reported
+  expect(await hasText($, '◼ Answer cancelled')).toBe(true)
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Markdown', text: 'An answer to the report that came too late.' })))).toBe(false)
+  expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { value?: string }).value).toBeUndefined()
 })

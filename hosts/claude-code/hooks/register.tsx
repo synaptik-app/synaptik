@@ -22,7 +22,7 @@ import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
 import { decorate } from '../src/decorate'
-import { agentLine, endedLine, notStartedLine, refusalWords, thinkingLine, toolStep } from '../src/waiting'
+import { agentLine, CANCELLED_LINE, endedLine, notStartedLine, refusalWords, thinkingLine, toolStep } from '../src/waiting'
 import type { AgentNow } from '../src/waiting'
 import {
   AGENT_WORDS,
@@ -70,7 +70,7 @@ import { ClassicView, EmptyView } from './views/navigator'
 import type { NavigatorActions } from './views/navigator'
 import { ReplyView } from './views/reply'
 import { BandKeysView, BandView } from './views/band'
-import { threadFieldKey, threadSwitchKey, ThreadView } from './views/thread'
+import { threadFieldKey, threadStopKey, threadSwitchKey, ThreadView } from './views/thread'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
 const isWorking = atom({ plugin: 'synaptik', key: 'isWorking' } as const, false)
@@ -759,6 +759,53 @@ async function tickWaiting($: EngineInterface) {
 // the newest answer and the field would fall below it. Scrolled once the change
 // is drawn: right after it, the window still measures the old tree.
 const THREAD_REDRAW_MS = 80
+// --- Cancelling a thread's answer (#240). A fork can't be stopped, so the
+// answers asked for before a cancel are thrown away when they land; the request
+// still runs, and is billed.
+
+// How many times each thread's answers were cancelled: an answer asked for
+// before the latest is thrown away.
+const cancels = new Map<string, number>()
+
+const isCancelled = (key: string, asked: number) => (cancels.get(key) ?? 0) !== asked
+
+// ◼ cancel: the pending answers are cancelled, the thread says so, and the
+// person's last question is back in the field to edit.
+async function cancelAnswers($: EngineInterface, key: string) {
+  const t = (await read($, threads))[key]
+  if (!t || t.pending === 0) return
+  cancels.set(key, (cancels.get(key) ?? 0) + 1)
+  observe(`thread ${key}: ${t.pending} answer(s) cancelled`)
+  // The last question comes back; with several pending, the others wait for
+  // the queue (#245). None when the answer cancelled was to an agent's report.
+  const last = t.messages.at(-1)
+  const draft = last?.role === 'person' ? last.text : undefined
+  await changeThread($, key, now => ({
+    ...now,
+    pending: 0,
+    messages: [...now.messages, { role: 'status', text: CANCELLED_LINE }],
+    inputSeq: now.inputSeq + 1,
+    draft,
+  }))
+  void focusField($, key)
+}
+
+// The field, drawn again under a new key on each send, takes the keyboard back:
+// autoFocus applies only when the pane itself takes it, so the person could not
+// type again, or press Ctrl+C, until they clicked (#240).
+async function focusField($: EngineInterface, key: string) {
+  try {
+    await $.clock.sleep(THREAD_REDRAW_MS)
+    const pane = threadPane(key)
+    const field = threadFieldKey(pane, (await read($, threads))[key]?.inputSeq ?? 0)
+    const moved = await $.ui.focus({ requestId: pane, key: field })
+    if (!('deny' in moved && moved.deny)) threadFocus.set(pane, field)
+    observe(`thread ${key} field focused: ${JSON.stringify(moved)}`)
+  } catch (err) {
+    observe(`thread ${key} field not focused: ${String(err)}`)
+  }
+}
+
 async function toThreadEnd($: EngineInterface, key: string) {
   try {
     await $.clock.sleep(THREAD_REDRAW_MS)
@@ -804,7 +851,9 @@ async function sendInThread($: EngineInterface, key: string, text: string) {
   const anchor = await threadAnchor($, key)
   if (anchor === undefined || !text.trim()) return
   const prompt = threadPrompt(anchor, (await read($, threads))[key] ?? NEW_THREAD, text)
-  await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text }], pending: t.pending + 1, inputSeq: t.inputSeq + 1 }))
+  const asked = cancels.get(key) ?? 0
+  await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text }], pending: t.pending + 1, inputSeq: t.inputSeq + 1, draft: undefined }))
+  void focusField($, key)
   const reply = await read($, lastText)
   // Whatever happens, the message stops waiting: a thread stuck waiting would
   // never be summarised.
@@ -815,9 +864,10 @@ async function sendInThread($: EngineInterface, key: string, text: string) {
     answer = r.isAnswered ? r.text : `(${noAnswer(r.reason)})`
   } finally {
     // A new reply meanwhile discarded the thread: the answer has nowhere to go.
-    if ((await read($, lastText)) === reply) await changeThread($, key, t => withAnswer(t, answer))
+    // Cancelled while it was written, it is thrown away (#240).
+    if ((await read($, lastText)) === reply && !isCancelled(key, asked)) await changeThread($, key, t => withAnswer(t, answer))
   }
-  if ((await read($, lastText)) !== reply) return
+  if ((await read($, lastText)) !== reply || isCancelled(key, asked)) return
   // What it carries for the agent goes at once, and an agent the person asked
   // for starts: they chose either when they sent the message it answers (D51).
   const { toAgent, startsAgent } = parseAnswer(answer)
@@ -1020,15 +1070,16 @@ async function onAgentTurn($: EngineInterface, id: string, answer: string, ms?: 
     pending: t.pending + 1,
   }))
   const thread = (await read($, threads))[key]!
+  const asked = cancels.get(key) ?? 0
   let reply = '(no answer to the report: something went wrong)'
   try {
     const r = await forkThread($, reportPrompt(anchor, thread, answer.trim()))
     observe(`thread ${key} report answer: ${r.isAnswered ? `${r.usage.output_tokens} out` : r.reason}`)
     reply = r.isAnswered ? r.text : `(${noAnswer(r.reason)})`
   } finally {
-    if ((await read($, lastText)) === own.reply) await changeThread($, key, t => withAnswer(t, reply, true))
+    if ((await read($, lastText)) === own.reply && !isCancelled(key, asked)) await changeThread($, key, t => withAnswer(t, reply, true))
   }
-  if ((await read($, lastText)) === own.reply) await suggestTray($)
+  if ((await read($, lastText)) === own.reply && !isCancelled(key, asked)) await suggestTray($)
 }
 
 // A run that ended without a report: interrupted or failed. The thread says so,
@@ -1524,8 +1575,9 @@ export const register: Register = on => {
     if (!e.requestId.startsWith(THREAD_PREFIX) || e.origin.kind !== 'person' || e.pointer || Math.abs(e.by) !== 1) return next(e)
     const key = threadKeyOf(e.requestId)
     const t = (await read($, threads))[key] ?? NEW_THREAD
-    // The pane's stops, top to bottom: the field, then the switch under it.
-    const stops = [threadFieldKey(e.requestId, t.inputSeq), threadSwitchKey(e.requestId)]
+    // The pane's stops, top to bottom: ◼ cancel while an answer is pending, the
+    // field, then the switch under it.
+    const stops = [...(t.pending > 0 ? [threadStopKey(e.requestId)] : []), threadFieldKey(e.requestId, t.inputSeq), threadSwitchKey(e.requestId)]
     const at = Math.max(0, stops.indexOf(threadFocus.get(e.requestId) ?? stops[0]!))
     const to = stops[at + Math.sign(e.by)]
     if (to) {
@@ -1557,6 +1609,7 @@ export const register: Register = on => {
       {
         send: text => sendInThread($, key, text).catch(err => observe(`thread ${key} send failed: ${String(err)}`)),
         toggleInclude: () => toggleInclude($, key).catch(err => observe(`thread ${key} include failed: ${String(err)}`)),
+        cancel: () => cancelAnswers($, key).catch(err => observe(`thread ${key} cancel failed: ${String(err)}`)),
       },
     )
   }).catch(($, e, next) => next(e))

@@ -76,7 +76,19 @@ answers are, its spinner turning (Claude Code's frames) and its time counting:
 
 A thread's answer is one fork, which resolves once: it shows no text or
 thinking along the way, and can't be stopped, so its line is the spinner and the
-time. An agent at work says what it is doing, read about once a second: its
+time.
+
+**A dim `◼ cancel` beside it cancels the pending answer** (#240): a click, or ↑
+from the field to it and ⏎. The fork runs on and is billed, but its answer is
+thrown away when it lands; the thread says `◼ Answer cancelled`, and the last
+question is back in the field to edit and send again (several pending, the
+others wait for the queue, #245). A cancelled answer to an agent's report gives
+nothing back: there was no question. The field is drawn with that text as its
+`value`; that a redraw before the next send keeps what the person typed over it
+is unverified ⚠️. Ctrl+C can't press it:
+Claude Code keeps that key for itself. After every send, and after a cancel,
+the field takes the keyboard back, so the person can type while the answer is
+on its way. An agent at work says what it is doing, read about once a second: its
 latest progress summary's first line (`label` in `$.agent.list()`, as Claude
 Code's agent list has it); before Claude Code has written one, which a short
 task never gets, its latest tool call, from the newest rows of its transcript

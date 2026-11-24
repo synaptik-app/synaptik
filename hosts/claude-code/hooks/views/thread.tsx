@@ -8,7 +8,7 @@ import { drawnRows } from '../../src/layout'
 import { forPane, rowRecord } from '../../src/pane'
 import { cells } from '../../src/review'
 import { reportState } from '../../src/threads'
-import { reportLine } from '../../src/waiting'
+import { reportLine, STOP_LABEL } from '../../src/waiting'
 import type { Thread } from '../../src/threads'
 
 export type ThreadModel = {
@@ -28,6 +28,7 @@ export type ThreadModel = {
 export type ThreadActions = {
   send: (text: string) => unknown
   toggleInclude: () => unknown
+  cancel: () => unknown
 }
 
 const ANCHOR_ROWS = 3
@@ -45,6 +46,9 @@ const SUMMARY_HOOK = '⎿  '
 // keeps what was typed), and the switch's: the hooks move focus between them.
 export const threadFieldKey = (id: string, seq: number) => `${id}-input-${seq}`
 export const threadSwitchKey = (id: string) => `${id}-include`
+// ◼ cancel, beside the waiting line: a click, or ↑ from the field and ⏎. Ctrl+C
+// can't press it: Claude Code keeps that key, and Ctrl+D, for itself (#240).
+export const threadStopKey = (id: string) => `${id}-stop`
 
 export function ThreadView(
   { Box, Text, Button, Input, Markdown }: Pick<Elements['terminal'], 'Box' | 'Text' | 'Button' | 'Input' | 'Markdown'>,
@@ -130,8 +134,11 @@ export function ThreadView(
         </Box>
       ) : null}
       {m.thinking ? (
-        <Box paddingX={INSET} marginBottom={1}>
-          <Text dimColor>{m.thinking}</Text>
+        <Box paddingX={INSET} marginBottom={1} flexDirection="row">
+          <Text dimColor>{`${m.thinking}  `}</Text>
+          <Button key={threadStopKey(m.id)} dimColor onPress={() => void actions.cancel()}>
+            {STOP_LABEL}
+          </Button>
         </Box>
       ) : null}
       {/* The field as Claude Code draws its own prompt: a rule above and below,
@@ -142,6 +149,7 @@ export function ThreadView(
         <Box flexGrow={1}>
           <Input
             key={threadFieldKey(m.id, t.inputSeq)}
+            value={t.draft}
             placeholder="ask about this block"
             submitLabel="send"
             rows={FIELD_ROWS}
