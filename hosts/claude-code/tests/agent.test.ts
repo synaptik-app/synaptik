@@ -244,3 +244,61 @@ test("in the agent's view, its reply draws without the report", async ($, on) =>
   await ui.unmount()
   expect(drawnTexts.at(-1)).toBe('Tests pass. Should I also add one for the TTL?')
 })
+
+test("a refused start is a line in the thread, in plain words, and the switch stays as it was (#237, #239)", async ($, on) => {
+  await threadWithTools($, on)
+  spawnedAgent.deny = 'the session was stopped and nobody has sent input since'
+  forkAnswer.text = STARTING
+  await send($, 'yes, start it')
+  expect(await hasText($, "✗ Agent not started · Claude Code won't start an agent until you send something in the main chat")).toBe(true)
+  // The thread's fork reads it, so its next answer doesn't assume the agent ran.
+  forkAnswer.text = 'Send anything in the main chat first.'
+  await send($, 'why not?')
+  expect(forks.at(-1)).toContain("Synaptik, about your agent: ✗ Agent not started · Claude Code won't start")
+})
+
+test('a run interrupted before it reported is a line in the thread, and the agent is stopped', async ($, on) => {
+  await withAgent($, on)
+  const before = forks.length
+  await $.turn.complete({ turnId: 'agent-turn', agentId: AGENT_ID, answer: 'Counting', durationMs: 3000, isAborted: true, reason: 'aborted' })
+  expect(await hasText($, '◼ Agent stopped')).toBe(true)
+  // No report, so nothing for the thread to answer.
+  expect(forks).toHaveLength(before)
+})
+
+test("a thread switched off starts its agent at once: no summary written first, the thread itself its tasks", async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  await clickAndPress(await fullscreen($, F), CACHE, ['d'])
+  // Switched off by the person: answers come without a summary.
+  await inPane($, pane => pane.press({ key: `${PANE}-include` }))
+  await inPane($, pane => pane.press({ key: `${PANE}-include` }))
+  forkAnswer.text = "I can't count from here."
+  await send($, 'are the counts right?')
+  const before = forks.length
+  forkAnswer.text = 'Starting an agent on it.\n<next>agent</next>'
+  await send($, 'yes, start it')
+  expect(spawned).toHaveLength(1)
+  // The answer's fork, then the summary rewritten after the start: none before it.
+  expect(forks.length - before).toBe(2)
+  expect(spawned[0]!.prompt).toContain('No summary was written for this thread')
+})
+
+test("a refused start leaves a current summary current; a run that ended without a report doesn't", async ($, on) => {
+  await threadWithTools($, on)
+  spawnedAgent.deny = 'refused'
+  forkAnswer.text = STARTING
+  await send($, 'yes, start it')
+  expect(await hasText($, '✗ Agent not started · refused')).toBe(true)
+  // The answer brought a summary; the line after it doesn't make it stale.
+  expect(await hasText($, ' · rewritten when you close this')).toBe(false)
+})
+
+test('a run that ended without a report marks the summary due a rewrite: its tasks are undone', async ($, on) => {
+  await withAgent($, on)
+  forkAnswer.text = 'Counted.\n<summary>\nActions: none\n</summary>'
+  await send($, 'and the summary?')
+  await $.turn.complete({ turnId: 'agent-turn', agentId: AGENT_ID, answer: 'Count', durationMs: 3000, isAborted: true, reason: 'aborted' })
+  expect(await hasText($, ' · rewritten when you close this')).toBe(true)
+})

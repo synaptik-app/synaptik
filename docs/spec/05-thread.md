@@ -135,9 +135,11 @@ that only explained has an empty summary and `exclude`; switched on anyway, it
 gets a `Context:` section of a sentence or two.
 
 **The verdict is the switch's default**, until the person sets the switch; it never
-overrides them. When a verdict changes the switch, the answer says so in one
-sentence of its own, as the thread's agent's doing: "I put this in your review
-so the main conversation runs the check." Once they set it, no verdict is asked for, since none would change
+overrides them. When a verdict changes the switch, the answer to the person's
+message says so in one sentence of its own, as the thread's agent's doing: "I
+put this in your review so the main conversation runs the check." Never when
+it stays as it was, and never in the answer to an agent's report, which the
+person didn't ask for. Once they set it, no verdict is asked for, since none would change
 it. Switched on by them, each answer brings a summary that always sends something
 (a `Context:` section when nothing is to be done), and switching on writes one at
 once if the last answers came without. Switched off by them, a message asks for the
@@ -186,13 +188,16 @@ in its own words, the switch on or off:
 
 **When the person asks for one**, in so many words or as a yes to the offer,
 the answer says it is starting it and carries `<next>agent</next>`, stripped
-with the summary's tags. Synaptik then writes a summary first if the latest
-answer came without one, turns the switch on unless the person set it,
-rewrites the summary with the tasks under `Subagent:` `Still on:`, and spawns
+with the summary's tags. Synaptik then starts it at once, whatever the summary
+holds: the thread's agent decided. It turns the switch on unless the person set
+it, rewrites the summary with the tasks under `Subagent:` `Still on:`, and spawns
 the agent (`$.agent.spawn({ prompt, description, subagentType: 'fork' })`, its
 `description` `Synaptik · <block>`). The pane has no button for it, to start
 it or to open it. Its prompt (`src/prompts.ts`) holds the
-block, the thread's messages and its summary whole as its tasks, says who "the
+block, the thread's messages and its summary whole as its tasks (with none,
+which a switched-off thread has: `No summary was written for this thread. Carry
+out what the thread above settled needs doing, and answer what it left open.`),
+says who "the
 coordinator" is (the thread, passing on what the person decided), and asks it
 to write to the person as usual, any question last in its prose, then report:
 
@@ -270,6 +275,24 @@ Synaptik's own agents, `session.append` rewords it (wrapper and `<task-id>`
 kept: "A side task the person started from a Synaptik thread", no result) and
 `prompt.submit` drops it: no turn, no transcript row, one yellow `Prompt dropped by a hook:
 Synaptik agent notice` line.
+
+**When it doesn't start, or a run ends without a report**, the thread says so
+in a dim line of its own, in its history, and a toast too while its pane is
+closed (#239):
+
+| What happened | The line |
+|---|---|
+| the spawn refused | `✗ Agent not started · <why>`, a known reason in plain words: `Claude Code won't start an agent until you send something in the main chat` (#237); any other as given |
+| the spawn failed, or gave no id | `✗ Agent not started · <the error>`, `· Claude Code didn't report it` |
+| a run interrupted (`turn.complete` `aborted`) | `◼ Agent stopped` |
+| a run refused or cut by an API error | `✗ Agent failed · <the model's explanation>`, `· an API error ended its run` |
+
+A failure's line is in Claude Code's warning colour, yellow, as its own warnings
+are; `◼ Agent stopped`, which the person did, is dim. The thread's fork reads the line as
+Synaptik's, so its next answer doesn't assume the agent ran. A run that ended
+without a report gets no answer of its own, and the agent's state is `stopped`
+(Claude Code's agent list: `· stopped`). An agent that didn't start leaves the
+include switch as it was. `/synaptik log` keeps the raw reason.
 
 **Its ids are kept with the thread**, in `$.state`. When `spawn` returns,
 `$.agent.list()` is checked: an agent already `completed` is read from

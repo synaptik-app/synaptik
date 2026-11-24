@@ -99,6 +99,8 @@ threads (tabs come free when docked).
   summary opens with `Context:` when its Actions rest on what the main
   conversation never saw; `<next>agent</next>` starts the agent, on the
   person's word (D51).
+- **2026-11-24** — the sentence saying a verdict changed the switch is only in the
+  answer to the person's message, never in the answer to an agent's report.
 
 ---
 
@@ -155,9 +157,12 @@ person's message asks for one, in so many words or as a yes to the offer, the
 answer says it is starting it and carries `<next>agent</next>`, and Synaptik
 starts it at once: the person chose it when they sent the message, as with
 `<to-agent>` (D30). Nothing runs, costs or asks for permission unless they
-asked. A summary is written first if the latest answer came without one, as
-switching on does, and the include switch turns on unless the person set it.
-The agent is not tied to the switch after that.
+asked, and whether it should run is the thread's agent's call, made in its
+answer: Synaptik starts it whatever the summary holds (P2). Its tasks are the
+summary as it stands, or, with none (a thread switched off asks for the
+answer alone, D45), the thread itself; no summary is written first. The
+include switch turns on unless the person set it. The agent is not tied to the
+switch after that.
 
 **The pane has no button for it**, to start it or to open it: the thread is a
 conversation, so the person asks there, and Claude Code's agent list already
@@ -296,15 +301,20 @@ view. Fullscreen only.
   main conversation, where it starts a turn.
 
 **Revisions**
-- **2026-11-23** — the margin keeps `❝`: the agent's state glyphs read as a
-  mark of their own. A report draws as `⏺ Agent finished · 15s`, or
-  `○ Agent waiting for you`, with its run's time.
 - **2026-11-22** — no buttons: the answer offers the agent and starts it when
   the person asks; what the person types in the agent's view joins the thread;
   the report is cut only where its tag opens a line; the summary opens with
   `Context:` when its Actions rest on what the main conversation never saw;
   a report, and a message sent to the agent, each draw as one line in the
   pane.
+- **2026-11-23** — the margin keeps `❝`: the agent's state glyphs read as a
+  mark of their own. A report draws as `⏺ Agent finished · 15s`, or
+  `○ Agent waiting for you`, with its run's time.
+- **2026-11-24** — an agent that doesn't start, or a run that ends without a
+  report, is a line in the thread, not a toast alone; a run that ended so
+  leaves the agent `stopped` (#239).
+- **2026-11-24** — no summary written before the start, and no start refused for
+  an empty one: the agent works from the summary as it stands, or the thread.
 
 ---
 

@@ -1,0 +1,10 @@
+{
+  "name": "fault",
+  "version": "0.0.0-test",
+  "description": "Test bench companion: makes Synaptik's thread agents fail on demand, to test how a thread shows it (issue #239).",
+  "author": {
+    "name": "Synaptik",
+    "email": "hello@synaptik.app",
+    "url": "https://github.com/synaptik-app"
+  }
+}

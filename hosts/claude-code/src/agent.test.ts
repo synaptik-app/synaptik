@@ -49,6 +49,10 @@ test('while the verdict sets the switch, the answer says when it changes it', ()
   expect(threadPrompt({ block: 'B' }, talked, 'go')).toContain('that you put it in their review for the main conversation, or left it out and why')
   // Set by the person: no verdict, nothing to say of it.
   expect(threadPrompt({ block: 'B' }, { ...talked, isIncludeSet: true }, 'go')).not.toContain('This thread is')
+  // The answer to an agent's report has a verdict, but says nothing of the review.
+  const report = reportPrompt({ block: 'B' }, { ...working, isIncludeSet: false }, 'Counted.')
+  expect(report).toContain('<verdict>include</verdict> or <verdict>exclude</verdict>')
+  expect(report).not.toContain('This thread is')
 })
 
 test('the summary opens with its Context when its Actions rest on what the main conversation never saw', () => {
@@ -154,4 +158,15 @@ test("what the person typed in the agent's view is taken out of Claude Code's wr
 test('what the person wrote in the agent\'s view reads as theirs, to the agent', () => {
   const thread: Thread = { ...working, messages: [...working.messages, { role: 'direct', text: 'leave blank lines out' }] }
   expect(threadPrompt({ block: 'B' }, thread, 'and?')).toContain('Person, to your agent in its own view: leave blank lines out')
+})
+
+test('with no summary, the agent works from the thread itself', () => {
+  const prompt = agentPrompt({ block: 'B' }, { ...talked, summary: undefined })
+  expect(prompt).toContain('The tasks:\n\nNo summary was written for this thread. Carry out what the thread above settled needs doing')
+  expect(prompt).toContain('Person: are the counts right?')
+})
+
+test("the switch sentence comes before the summary's instructions, as part of the answer", () => {
+  const prompt = threadPrompt({ block: 'B' }, NEW_THREAD, 'go')
+  expect(prompt.indexOf('This thread is left out of their review now')).toBeLessThan(prompt.indexOf('<summary>'))
 })

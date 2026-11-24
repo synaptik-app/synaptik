@@ -42,9 +42,14 @@ After your answer, add the two parts below, exactly in this form. The person doe
 
 ${SUMMARY_GUIDANCE}
 
-${VERDICT_GUIDANCE}
+${VERDICT_GUIDANCE}`
 
-This thread is {{switch}} now, and your verdict sets it. When it changes that, say so in one short sentence of your own, the last of your answer, before the summary, as what you did: that you put it in their review for the main conversation, or left it out and why. Say nothing of it when the verdict leaves it as it is.`
+// Added to an answer to the person's message while the verdict sets the switch:
+// the answer says when it changed it. Never in the answer to an agent's report,
+// which the person didn't ask for.
+export const WITH_SWITCH_SENTENCE = `
+
+This thread is {{switch}} now, and your verdict sets it. Only if your verdict changes that, say so in one short sentence of your own, the last of your answer, before the summary, as what you did: that you put it in their review for the main conversation, or left it out and why. If the verdict leaves it as it is, say nothing about the review at all.`
 
 // What the switch stands at, for the sentence above.
 export const SWITCH_ON = 'included in their review'
@@ -173,6 +178,10 @@ The thread:
 The tasks:
 
 {{tasks}}`
+
+// The agent's tasks when the thread has no summary yet (the person switched it
+// off, so answers came without one): the thread itself says what to do.
+export const NO_SUMMARY_TASKS = `No summary was written for this thread. Carry out what the thread above settled needs doing, and answer what it left open.`
 
 // Claude Code's notice about one of Synaptik's agents, as the main conversation
 // keeps it: the wrapper and the task id, no result (D51).

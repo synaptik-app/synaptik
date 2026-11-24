@@ -104,7 +104,8 @@ export const appended: unknown[] = []
 export const agents: { id: string; description: string; status: string; taskStatus: string; hasRow: boolean; startTime: number }[] = []
 // How the agent spawned stands when spawn returns: `completed` for one whose
 // first turn ended first. Reset by `engine`.
-export const spawnedAgent = { taskStatus: 'running' }
+// `deny`: Claude Code refusing the spawn, with its reason.
+export const spawnedAgent = { taskStatus: 'running', deny: undefined as string | undefined }
 export const agentRows: Row[] = []
 export const AGENT_ID = 'agent-1'
 // The label of every agent row, and the text of every reply row, Claude Code
@@ -133,6 +134,7 @@ export function engine(on: On, rows: Row[]) {
   agents.length = 0
   agentRows.length = 0
   spawnedAgent.taskStatus = 'running'
+  spawnedAgent.deny = undefined
   agentLabels.length = 0
   drawnTexts.length = 0
   const event = (name: string, fn: (e: never) => unknown) =>
@@ -149,6 +151,7 @@ export function engine(on: On, rows: Row[]) {
   // Raised in the Agent tool's own spelling (`subagent_type`).
   event('agent.spawn', (e: { prompt: string; description?: string; subagent_type?: string }) => {
     spawned.push({ prompt: e.prompt, description: e.description, subagentType: e.subagent_type })
+    if (spawnedAgent.deny) return { deny: spawnedAgent.deny }
     // The kit keeps core's agentId from a hook's answer: the agent is found in
     // the list by its description, as when core gives none.
     agents.push({ id: AGENT_ID, description: e.description ?? '', status: 'running', taskStatus: spawnedAgent.taskStatus, hasRow: true, startTime: 1 })

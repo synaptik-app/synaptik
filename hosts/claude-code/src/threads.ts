@@ -9,6 +9,7 @@ import {
   AGENT_PROMPT,
   AGENT_STARTED,
   INCLUDED_ANYWAY,
+  NO_SUMMARY_TASKS,
   NOTICE,
   PART,
   REPORT_PROMPT,
@@ -23,6 +24,7 @@ import {
   WITH_NEXT,
   WITH_NOTHING,
   WITH_SUMMARY,
+  WITH_SWITCH_SENTENCE,
   WITH_TO_AGENT,
   WITH_VERDICT,
 } from './prompts'
@@ -30,12 +32,15 @@ import {
 // Who said it: the person, the thread's own answers ('agent'), and, once the
 // thread has an agent with tools (D51), its reports, what the thread sent it,
 // and what the person wrote to it in its own view ('direct').
-// A report keeps how long the agent's run took (`ms`), when Claude Code said.
-export type ThreadMessage = { role: 'person' | 'agent' | 'report' | 'sent' | 'direct'; text: string; ms?: number }
+// A report keeps how long the agent's run took (`ms`), when Claude Code said. A
+// status is Synaptik's own line about the agent: it couldn't start, or its run
+// ended without a report (#239).
+export type ThreadMessage = { role: 'person' | 'agent' | 'report' | 'sent' | 'direct' | 'status'; text: string; ms?: number }
 
 // A thread's agent with tools (D51): its id in `$.agent.list()`, and where its
-// tasks stand, by its last report (`working` until the first, and while it runs).
-export type AgentState = 'working' | 'needs-you' | 'done'
+// tasks stand, by its last report (`working` until the first, and while it runs),
+// or `stopped` when a run ended without one: interrupted, or failed.
+export type AgentState = 'working' | 'needs-you' | 'done' | 'stopped'
 export type ThreadAgent = { id: string; state: AgentState }
 
 export type Thread = {
@@ -82,6 +87,7 @@ const SPEAKER: Record<ThreadMessage['role'], string> = {
   report: 'Your agent reported',
   sent: 'You, to your agent',
   direct: 'Person, to your agent in its own view',
+  status: 'Synaptik, about your agent',
 }
 
 const transcript = (messages: readonly ThreadMessage[]) => messages.map(m => `${SPEAKER[m.role]}: ${m.text}`).join('\n\n')
@@ -97,18 +103,20 @@ const fill = (template: string, values: Record<string, string>) =>
 // or started on the person's word (none yet), or what to send the one it has (D51).
 export function threadPrompt(anchor: Anchor, thread: Thread, message: string): string {
   const so = thread.messages.length > 0 ? fill(THREAD_SO_FAR, { thread: transcript(thread.messages) }) : ''
-  const after = summaryAfter(thread) + (thread.agent ? WITH_TO_AGENT : WITH_NEXT)
+  const sentence = thread.isIncludeSet ? '' : WITH_SWITCH_SENTENCE.replace('{{switch}}', thread.included ? SWITCH_ON : SWITCH_OFF)
+  // The sentence before the summary's instructions: it belongs to the answer,
+  // ahead of the tags.
+  const after = sentence + summaryAfter(thread) + (thread.agent ? WITH_TO_AGENT : WITH_NEXT)
   const tools = thread.agent ? TOOLS_AGENT : TOOLS_OFFER
   return fill(THREAD_PROMPT, { block: anchor.block, part: partOf(anchor), thread: so, message, after, tools })
 }
 
 // What follows the answer about the summary, by the switch, with the agent's
 // section once there is one.
-// Untouched, the verdict sets the switch, and the answer says so when it changes
-// it, so the person knows what the thread's agent did.
+// Untouched, the verdict sets the switch; an answer to the person's message
+// also says when it changed it (threadPrompt), so they know what it did.
 function summaryAfter(thread: Thread): string {
-  const verdict = WITH_VERDICT.replace('{{switch}}', thread.included ? SWITCH_ON : SWITCH_OFF)
-  const after = !thread.isIncludeSet ? verdict : thread.included ? WITH_SUMMARY.replace('{{included}}', INCLUDED_ANYWAY) : WITH_NOTHING
+  const after = !thread.isIncludeSet ? WITH_VERDICT : thread.included ? WITH_SUMMARY.replace('{{included}}', INCLUDED_ANYWAY) : WITH_NOTHING
   return after && thread.agent ? `${after}\n\n${SUBAGENT_GUIDANCE}` : after
 }
 
@@ -120,9 +128,10 @@ export function reportPrompt(anchor: Anchor, thread: Thread, report: string): st
 }
 
 // What the agent is started with: the block, the thread and its summary whole,
-// as its tasks.
+// as its tasks; with no summary, the thread itself says what to do.
 export function agentPrompt(anchor: Anchor, thread: Thread): string {
-  return fill(AGENT_PROMPT, { block: anchor.block, part: partOf(anchor), thread: transcript(thread.messages), tasks: thread.summary ?? '' })
+  const tasks = thread.summary?.trim() || NO_SUMMARY_TASKS
+  return fill(AGENT_PROMPT, { block: anchor.block, part: partOf(anchor), thread: transcript(thread.messages), tasks })
 }
 
 const partOf = (anchor: Anchor) => (anchor.part ? fill(PART, { reference: anchor.part.reference }) : '')
@@ -252,7 +261,7 @@ export function reportStatus(text: string): AgentState | undefined {
 }
 
 // The agent's state in words, as the pane, the agent list and the cut line say it.
-export const AGENT_WORDS: Record<AgentState, string> = { working: 'working', 'needs-you': 'waiting for you', done: 'done' }
+export const AGENT_WORDS: Record<AgentState, string> = { working: 'working', 'needs-you': 'waiting for you', done: 'done', stopped: 'stopped' }
 
 // Which of `ids` a notice of Claude Code's is about: a `<task-notification>`
 // with its task id. Undefined for any other text.
