@@ -293,3 +293,24 @@ test('#240: ◼ cancel drops the pending answer: it is thrown away when it lands
   await send($, 'why Redis, really?')
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Markdown', text: 'Durability.' })))).toBe(true)
 })
+
+test('#240: cancelling with two questions pending gives both back; a later question, sent while the old answers are held, is answered', async ($, on) => {
+  await openThread($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  forkAnswer.text = 'Too late.'
+  await send($, 'first?')
+  await send($, 'second?')
+  await inPane($, pane => pane.press({ key: `${PANE}-stop` }))
+  const field = await inPane($, async pane => pane.find({ type: 'Input' }))
+  expect((field!.props as { value?: string }).value).toBe('first?\n\nsecond?')
+  // A new question while the old answers are still held: only its answer stays.
+  const held = release
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  await send($, 'third?')
+  held()
+  await tick()
+  release()
+  await tick()
+  expect(await inPane($, async pane => (await pane.findAll({ type: 'Markdown', text: 'Too late.' })).length)).toBe(1)
+})

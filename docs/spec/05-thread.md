@@ -80,8 +80,12 @@ time.
 
 **A dim `◼ cancel` beside it cancels the pending answer** (#240): a click, or ↑
 from the field to it and ⏎. The fork runs on and is billed, but its answer is
-thrown away when it lands; the thread says `◼ Answer cancelled`, and the
-question is back in the field to edit and send again. Ctrl+C can't press it:
+thrown away when it lands; the thread says `◼ Answer cancelled`, and every
+question still waiting for its answer is back in the field, joined by a blank
+line, to edit and send again. A cancelled answer to an agent's report gives
+nothing back: there was no question. The field is drawn with that text as its
+`value`; that a redraw before the next send keeps what the person typed over it
+is unverified ⚠️. Ctrl+C can't press it:
 Claude Code keeps that key for itself. After every send, and after a cancel,
 the field takes the keyboard back, so the person can type while the answer is
 on its way. An agent at work says what it is doing, read about once a second: its
