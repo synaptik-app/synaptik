@@ -281,9 +281,9 @@ returns, `$.agent.list()` is checked: an agent already `completed` is read from
 
 **Limits:** a thread is discarded with its reply (D24), so the person waits for
 the agent before taking the review onward; one still running when a new reply
-arrives keeps running, and its result joins no review (#194). Reviewing the
-agent's own replies in its view is #219: a suggestion shows only in the main
-view. Fullscreen only.
+arrives keeps running, and its result joins no review (#194). Its own replies
+aren't reviewed in its view: it is the thread's tool, and what it did reaches
+the review through the thread (#219). Fullscreen only.
 
 **Rests on the spike on 2.1.328** (#158); what it answered is in spec 08.
 
