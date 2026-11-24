@@ -287,7 +287,8 @@ closed (#239):
 | a run interrupted (`turn.complete` `aborted`) | `◼ Agent stopped` |
 | a run refused or cut by an API error | `✗ Agent failed · <the model's explanation>`, `· an API error ended its run` |
 
-A failure's `✗` is in the error colour. The thread's fork reads the line as
+A failure's line is in Claude Code's warning colour, yellow, as its own warnings
+are; `◼ Agent stopped`, which the person did, is dim. The thread's fork reads the line as
 Synaptik's, so its next answer doesn't assume the agent ran. A run that ended
 without a report gets no answer of its own, and the agent's state is `stopped`
 (Claude Code's agent list: `· stopped`). An agent that didn't start leaves the

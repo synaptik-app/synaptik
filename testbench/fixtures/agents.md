@@ -59,7 +59,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 **When it fails** (loaded with the fault mod: `--plugin-dir ./fault-mod`, see the test bench's CLAUDE.md; skip these steps without it)
 
 11. **Do:** run `/fault refuse`, open a new thread on the code block, ask `can you run it?`, then send `yes, start it`
-    - **Expect:** a dim `✗ Agent not started · refused by the test bench fault mod` line in the thread, its ✗ in the error colour
+    - **Expect:** a yellow `✗ Agent not started · refused by the test bench fault mod` line in the thread
     - **Expect:** no agent in Claude Code's agent list, and the include switch as it was
 12. **Do:** send `why didn't it start?`
     - **Expect:** the answer knows the agent didn't start, and doesn't talk as if it ran
