@@ -278,19 +278,6 @@ export function noticeAbout(text: string, ids: ReadonlySet<string>): string | un
 // no result.
 export const rewordedNotice = (id: string) => fill(NOTICE, { id })
 
-// What a cancel gives back to the field: every question still waiting for its
-// answer, the person's messages after the last thing anyone else said, joined
-// by a blank line. None when the answer cancelled was to an agent's report.
-export function unanswered(messages: readonly ThreadMessage[]): string | undefined {
-  const waiting: string[] = []
-  for (const m of [...messages].reverse()) {
-    if (m.role === 'status') continue
-    if (m.role !== 'person') break
-    waiting.unshift(m.text)
-  }
-  return waiting.length > 0 ? waiting.join('\n\n') : undefined
-}
-
 // What the person typed in an agent's view, as its conversation stores it:
 // typed while it ran, Claude Code wraps it ("The user sent a new message while
 // you were working: … This is how Claude Code surfaces …"), and the words alone

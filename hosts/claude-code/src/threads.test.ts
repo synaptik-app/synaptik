@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { anchorOf, clearedThreads, hasThread, markFirst, needsSummary, NEW_THREAD, parseAnswer, summaries, summaryPrompt, threadPrompt, unanswered, withAnswer } from './threads'
+import { anchorOf, clearedThreads, hasThread, markFirst, needsSummary, NEW_THREAD, parseAnswer, summaries, summaryPrompt, threadPrompt, withAnswer } from './threads'
 import type { Thread } from './threads'
 
 const talked: Thread = {
@@ -166,13 +166,4 @@ test("a marked part's thread stays out unless the person switched it on themselv
   expect(markFirst(byVerdict, false).included).toBe(true)
   // The person's own press stands.
   expect(markFirst({ ...talked, included: true, isIncludeSet: true }, true).included).toBe(true)
-})
-
-test('a cancel gives back every question still waiting for its answer (#240)', () => {
-  const asked = [...talked.messages, { role: 'person' as const, text: 'first?' }, { role: 'person' as const, text: 'second?' }]
-  expect(unanswered(asked)).toBe('first?\n\nsecond?')
-  // A status line between them doesn't end the run.
-  expect(unanswered([...talked.messages, { role: 'person', text: 'first?' }, { role: 'status', text: '✗ Agent not started · x' }, { role: 'person', text: 'second?' }])).toBe('first?\n\nsecond?')
-  // The answer cancelled was to an agent's report: nothing to give back.
-  expect(unanswered([...talked.messages, { role: 'report', text: 'Counted.' }])).toBeUndefined()
 })

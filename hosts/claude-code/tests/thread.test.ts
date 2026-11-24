@@ -294,7 +294,7 @@ test('#240: ◼ cancel drops the pending answer: it is thrown away when it lands
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Markdown', text: 'Durability.' })))).toBe(true)
 })
 
-test('#240: cancelling with two questions pending gives both back; a later question, sent while the old answers are held, is answered', async ($, on) => {
+test('#240: cancelling with two questions pending gives the last back; a later question, sent while the old answers are held, is answered', async ($, on) => {
   await openThread($, on)
   let release = () => {}
   forkHold.until = new Promise<void>(resolve => (release = resolve))
@@ -303,7 +303,7 @@ test('#240: cancelling with two questions pending gives both back; a later quest
   await send($, 'second?')
   await inPane($, pane => pane.press({ key: `${PANE}-stop` }))
   const field = await inPane($, async pane => pane.find({ type: 'Input' }))
-  expect((field!.props as { value?: string }).value).toBe('first?\n\nsecond?')
+  expect((field!.props as { value?: string }).value).toBe('second?')
   // A new question while the old answers are still held: only its answer stays.
   const held = release
   forkHold.until = new Promise<void>(resolve => (release = resolve))

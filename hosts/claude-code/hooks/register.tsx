@@ -43,7 +43,6 @@ import {
   summaryPrompt,
   threadPrompt,
   typedInView,
-  unanswered,
   withAnswer,
   withoutReport,
 } from '../src/threads'
@@ -777,7 +776,10 @@ async function cancelAnswers($: EngineInterface, key: string) {
   if (!t || t.pending === 0) return
   cancels.set(key, (cancels.get(key) ?? 0) + 1)
   observe(`thread ${key}: ${t.pending} answer(s) cancelled`)
-  const draft = unanswered(t.messages)
+  // The last question comes back; with several pending, the others wait for
+  // the queue (#245). None when the answer cancelled was to an agent's report.
+  const last = t.messages.at(-1)
+  const draft = last?.role === 'person' ? last.text : undefined
   await changeThread($, key, now => ({
     ...now,
     pending: 0,

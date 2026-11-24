@@ -80,9 +80,9 @@ time.
 
 **A dim `◼ cancel` beside it cancels the pending answer** (#240): a click, or ↑
 from the field to it and ⏎. The fork runs on and is billed, but its answer is
-thrown away when it lands; the thread says `◼ Answer cancelled`, and every
-question still waiting for its answer is back in the field, joined by a blank
-line, to edit and send again. A cancelled answer to an agent's report gives
+thrown away when it lands; the thread says `◼ Answer cancelled`, and the last
+question is back in the field to edit and send again (several pending, the
+others wait for the queue, #245). A cancelled answer to an agent's report gives
 nothing back: there was no question. The field is drawn with that text as its
 `value`; that a redraw before the next send keeps what the person typed over it
 is unverified ⚠️. Ctrl+C can't press it:
