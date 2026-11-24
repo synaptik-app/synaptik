@@ -48,7 +48,7 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
     - **Expect:** `⠋ Thinking… · 1s`, its spinner turning and its time counting, then an answer
     - **Expect:** if the answer recommends one, a summary under the include switch, which is on
 11. **Do:** press `Esc`
-    - **Expect:** the pane closes, and the table has ❝ in its margin
+    - **Expect:** the pane closes, and the table has ❝ in its margin if the thread is in the review (switch on); none if it's off
 12. **Do:** look at the reply and the prompt box (the thread took the keyboard, so the review is already over)
     - **Expect:** no selection and no menus; the marks are still in the margins
     - **Expect:** a dim suggestion with the ✓, the ✎ and its comment, line 2 under the code block, and the table's ❝ if it was included

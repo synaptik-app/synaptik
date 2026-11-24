@@ -14,7 +14,7 @@ import type { Mark } from '../types'
 import { lineKey, partCounts, partsOf, quote, segment } from '../src/blocks'
 import { grows, lastTurn, lastTurnText } from '../src/turn'
 import { compile as compileTray, GLYPH, PARTLY, preview, THREAD_GLYPH } from '../src/compile'
-import { clear as clearMark, clearBlock, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, lineMarks, toggle as toggleMark } from '../src/tray'
+import { clear as clearMark, clearBlock, draftComment, dropComment, EMPTY, finishComment as finishTrayComment, lineMarks, newlyMarked, toggle as toggleMark } from '../src/tray'
 import type { Part, Tray } from '../src/tray'
 import { apply as applyMenu, closed, letGo, paste, press, receive, START } from '../src/review'
 import type { Action, Held, Key, Numbered, Review } from '../src/review'
@@ -30,6 +30,7 @@ import {
   anchorOf,
   clearedThreads,
   hasThread,
+  markFirst,
   needsSummary,
   NEW_THREAD,
   noticeAbout,
@@ -391,9 +392,16 @@ async function readTray($: EngineInterface): Promise<Tray> {
 }
 
 async function writeTray($: EngineInterface, change: (tray: Tray) => Tray) {
-  const changed = change(await readTray($))
+  const before = await readTray($)
+  const changed = change(before)
   await update($, marks, () => ({ ...changed.marks }))
   await update($, comments, () => ({ ...changed.comments }))
+  // A part just marked takes its thread out of the review: the last thing the
+  // person did on it wins (#238). The thread is kept, and d reopens it.
+  const all = await read($, threads)
+  for (const key of newlyMarked(before.marks, changed.marks)) {
+    if (all[key]?.included) await changeThread($, key, t => ({ ...t, included: false, isIncludeSet: true }))
+  }
 }
 
 async function toggle($: EngineInterface, i: Part, mark: Mark) {
@@ -646,10 +654,11 @@ const startingAgents = new Set<string>()
 // the main conversation's.
 let viewedAgent: string | undefined
 
-// A block's margin glyph for its thread: ❝, an agent or not, since the agent
-// is the discussion's tool, not a mark of its own (D51); none without a thread.
+// A block's margin glyph for its thread: ❝ while it is in the review, an agent
+// or not (D51). An excluded thread shows nothing, as a cleared comment shows no
+// ✎; d still reopens it (#238).
 function threadGlyph(all: Readonly<Record<string, Thread>>, key: number | string): string | undefined {
-  return hasThread(all, key) ? THREAD_GLYPH : undefined
+  return hasThread(all, key) && all[String(key)]?.included ? THREAD_GLYPH : undefined
 }
 
 // The margin of a block's lines: a line's mark, or ❝ where it has a thread.
@@ -670,7 +679,8 @@ async function threadAnchor($: EngineInterface, key: string): Promise<Anchor | u
 }
 
 async function changeThread($: EngineInterface, key: string, change: (t: Thread) => Thread) {
-  await update($, threads, all => ({ ...all, [key]: change(all[key] ?? NEW_THREAD) }))
+  const isMarked = (await read($, marks))[key] !== undefined
+  await update($, threads, all => ({ ...all, [key]: markFirst(change(all[key] ?? NEW_THREAD), isMarked) }))
   const t = (await read($, threads))[key]
   if (t && t.pending > 0) {
     if (!pendingSince.has(key)) pendingSince.set(key, Date.now())
@@ -862,6 +872,9 @@ function noAnswer(reason: string): string {
 }
 
 async function toggleInclude($: EngineInterface, key: string) {
+  // Switched on, the thread is what the review sends for this part: its mark
+  // goes, a comment's text kept for c, as Backspace keeps it (#238).
+  if (!(await read($, threads))[key]?.included) await writeTray($, tray => clearMark(tray, key))
   await changeThread($, key, t => ({ ...t, included: !t.included, isIncludeSet: true }))
   await suggestTray($)
   // Switched on, it has to send something: a summary that is empty, or older than
@@ -1348,7 +1361,7 @@ export const register: Register = on => {
       )
     }
 
-    const isMarkedHere = [...Object.keys(marked), ...Object.keys(threadsNow).filter(k => hasThread(threadsNow, k))].some(
+    const isMarkedHere = [...Object.keys(marked), ...Object.keys(threadsNow).filter(k => threadGlyph(threadsNow, k))].some(
       k => Number(k) >= offset && Number(k) < offset + pieceBlocks,
     )
     const isTypingHere = isTyping && sel >= offset && sel < offset + pieceBlocks
@@ -1374,11 +1387,7 @@ export const register: Register = on => {
             hasGapBefore: seg.hasGapBefore,
             glyph: mark
               ? GLYPH[mark]
-              : hasThread(threadsNow, i)
-                ? threadGlyph(threadsNow, i)
-                : Object.keys(lineGlyphs(marked, threadsNow, i)).length > 0
-                  ? PARTLY
-                  : undefined,
+              : (threadGlyph(threadsNow, i) ?? (Object.keys(lineGlyphs(marked, threadsNow, i)).length > 0 ? PARTLY : undefined)),
             // Background and menu only while the navigator holds the keyboard:
             // after Esc the reply reads as a plain reply again.
             isSelected: isSelected && isNavigatorFocused,

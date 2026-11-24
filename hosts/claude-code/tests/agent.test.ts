@@ -302,3 +302,15 @@ test('a run that ended without a report marks the summary due a rewrite: its tas
   await $.turn.complete({ turnId: 'agent-turn', agentId: AGENT_ID, answer: 'Count', durationMs: 3000, isAborted: true, reason: 'aborted' })
   expect(await hasText($, ' · rewritten when you close this')).toBe(true)
 })
+
+test('#238: a thread with an agent, switched off by hand, stays out of the suggestion when a comment comes', async ($, on) => {
+  await withAgent($, on)
+  expect(suggested()).toContain('❝ "1. Cache sessions in Redis"')
+  await inPane($, pane => pane.press({ key: `${PANE}-include` }))
+  expect(await hasButton($, '○ include in review')).toBe(true)
+  expect(suggested()).not.toContain('❝')
+  // The agent reports, and the thread answers it: the switch stays as the person set it.
+  await report($)
+  expect(await hasButton($, '○ include in review')).toBe(true)
+  expect(suggested()).not.toContain('❝')
+})

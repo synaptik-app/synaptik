@@ -87,9 +87,14 @@ test('the switch includes the thread, and shows it', async ($, on) => {
   expect(suggested()).toContain('❝ "1. Cache sessions in Redis"')
 })
 
-test('a block with a thread shows ❝ in the margin, in a review and outside one', async ($, on) => {
+test('a block whose thread is in the review shows ❝ in the margin, in a review and outside one; excluded, nothing', async ($, on) => {
   await openThread($, on)
   await send($, 'why Redis?')
+  // Excluded: in the thread, but not in the review, as a cleared comment shows no ✎.
+  const excluded = await fullscreen($, F)
+  expect(await excluded.find({ type: 'Text', text: '❝' })).toBeUndefined()
+  await excluded.unmount()
+  await include($)
   // The thread took the keyboard, so the review let go: the reply is drawn plain.
   const plain = await fullscreen($, F)
   expect(await plain.find({ type: 'Text', text: '❝' })).toBeDefined()
@@ -232,4 +237,33 @@ test('clearing a code block takes its included line threads out of the review', 
   await review($)
   await clickAndPress(await fullscreen($, 'code'), TS, ['backspace'])
   expect(suggested()).not.toContain('❝')
+})
+
+test('#238: on a marked block, a verdict to include the thread leaves it out: it never overrides a mark', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  await clickAndPress(await fullscreen($, F), CACHE, ['a', 'd'])
+  forkAnswer.text = 'Use a TTL.\n\n<summary>\nAdd a 5-minute TTL.\n</summary>\n<verdict>include</verdict>'
+  await send($, 'and the TTL?')
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '○ include in review' })))).toBe(true)
+  expect(suggested()).toBe('✓ "1. Cache sessions in Redis"')
+})
+
+test('#238: switching the thread on clears the mark; marking the block switches the thread off', async ($, on) => {
+  await start($, on, F)
+  await fullscreen($, F)
+  await review($)
+  await clickAndPress(await fullscreen($, F), CACHE, ['a', 'd'])
+  forkAnswer.text = 'Use a TTL.\n\n<summary>\nAdd a 5-minute TTL.\n</summary>'
+  await send($, 'and the TTL?')
+  // The person's own press: the thread is what this block sends now.
+  await include($)
+  expect(suggested()).toBe(['❝ "1. Cache sessions in Redis"', '    Add a 5-minute TTL.'].join('\n'))
+  // Then a mark: the last thing done wins, and the thread is kept, switched off.
+  await review($)
+  await clickAndPress(await fullscreen($, F), CACHE, ['x'])
+  expect(suggested()).toBe('✗ "1. Cache sessions in Redis"')
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Button', text: '○ include in review' })))).toBe(true)
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '› and the TTL?' })))).toBe(true)
 })

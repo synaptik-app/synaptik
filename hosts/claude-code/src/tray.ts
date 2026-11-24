@@ -71,3 +71,10 @@ export function clearBlock(tray: Tray, block: number, hasOwnThread = false): Tra
   return { ...tray, marks: Object.fromEntries(Object.entries(tray.marks).filter(([key]) => !key.startsWith(prefix))) }
 }
 
+
+// The parts a change marked: a mark where there was none, or a different one.
+// Each takes its part's thread out of the review: the last thing the person did
+// on a part wins (#238).
+export function newlyMarked(before: Readonly<Record<string, Mark>>, after: Readonly<Record<string, Mark>>): string[] {
+  return Object.keys(after).filter(key => after[key] !== before[key])
+}

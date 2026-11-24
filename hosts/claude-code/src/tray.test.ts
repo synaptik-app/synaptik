@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { clearBlock, clear, draftComment, dropComment, EMPTY, finishComment, toggle } from './tray'
+import { clear, clearBlock, draftComment, dropComment, EMPTY, finishComment, newlyMarked, toggle } from './tray'
 
 test('§5 a new mark on a marked block overwrites it', async () => {
   const tray = toggle(toggle(EMPTY, 2, 'accept'), 2, 'reject')
@@ -65,3 +65,12 @@ test('Backspace on a block takes its own mark, then the marks on its lines', asy
   expect(twice.comments).toEqual({ '3.10': 'kept' })
 })
 
+
+test('a part counts as newly marked when it gains a mark or changes to another one (#238)', () => {
+  expect(newlyMarked({}, { '1': 'accept' })).toEqual(['1'])
+  expect(newlyMarked({ '1': 'accept' }, { '1': 'reject' })).toEqual(['1'])
+  expect(newlyMarked({ '1': 'accept' }, { '1': 'accept', '2.3': 'comment' })).toEqual(['2.3'])
+  // Unmarking, or nothing changed, marks nothing.
+  expect(newlyMarked({ '1': 'accept' }, {})).toEqual([])
+  expect(newlyMarked({ '1': 'accept' }, { '1': 'accept' })).toEqual([])
+})

@@ -11,8 +11,11 @@ row in it. **It never touches the main conversation.**
   included: compiled into the suggestion and sent by the person (D3, D14).
 - Threads are flat. A thread cannot spawn a thread.
 - `d` or `❝ discuss` on a block opens its thread; on a threaded block it reopens
-  that thread with its history. A block's thread shows `❝` in the margin, with an
-  agent or without: the agent is the discussion's tool, not a mark of its own.
+  that thread with its history. A block's thread shows `❝` in the margin while
+  it is in the review, with an agent or without: the agent is the discussion's
+  tool, not a mark of its own. Switched off, it shows nothing, as a cleared
+  comment shows no `✎`; `d` reopens it. A mark switches it off, and switching it
+  on clears the mark (`01-review-model.md`).
 - **Stepped into a code block or table** (`s`, `03-navigation.md`), `d` opens a thread on the
   selected line or row, its own and apart from the block's. The pane shows the
   part alone: a code line in its block's fences, a row as a record, each header

@@ -79,7 +79,18 @@ duplicating:
 - Comment on a commented block → reopens the input **pre-filled**
 - Discuss on a threaded block → reopens **that** thread with its history
 
-**One mark and one thread per block, maximum.**
+**One thing in the review per block, or per line or row: a mark or an included
+thread. The last thing the person did on it wins** (D2):
+
+| The person | Effect |
+|---|---|
+| marks it (`a`, `x`, a finished `c`) | its thread is switched off, kept, and reopened with `d` |
+| switches its thread on | its mark is cleared; a comment's text is kept for `c` |
+| presses Backspace | the mark is cleared and the thread switched off, as below |
+
+A thread's verdict, or its agent starting, never overrides a mark: on a marked
+block the switch stays off unless the person switches it on. Opening a thread
+(`d`) alone changes nothing. A block and its lines or rows are separate parts.
 
 ---
 
