@@ -29,6 +29,8 @@ export type ThreadActions = {
   send: (text: string) => unknown
   toggleInclude: () => unknown
   cancel: () => unknown
+  // What the field holds, as typed.
+  input: (text: string) => unknown
 }
 
 const ANCHOR_ROWS = 3
@@ -56,6 +58,8 @@ export function ThreadView(
   actions: ThreadActions,
 ) {
   const t = m.thread
+  // While messages wait, the empty field says how to get them back (#245).
+  const queuedCount = t.messages.filter(message => message.queued).length
   const isStale = t.summary !== undefined && t.summarizedAt < t.messages.length
   // The summary's state, beside the switch, only when it has one.
   // Off, there is nothing to say: the summary isn't shown, or written.
@@ -96,7 +100,10 @@ export function ThreadView(
       {t.messages.map((message, n) =>
         message.role === 'person' ? (
           <Box key={`m${n}`} marginBottom={1}>
-            <Text color="suggestion">{`› ${message.text}`}</Text>
+            <Text color="suggestion">
+              {`› ${message.text}`}
+              {message.queued ? <Text dimColor> · queued</Text> : null}
+            </Text>
           </Box>
         ) : message.role === 'sent' ? (
           // One line: the answer above it says what it asked. The thread keeps
@@ -150,10 +157,11 @@ export function ThreadView(
           <Input
             key={threadFieldKey(m.id, t.inputSeq)}
             value={t.draft}
-            placeholder="ask about this block"
+            placeholder={queuedCount > 0 ? `↑ to edit the queued message${queuedCount > 1 ? 's' : ''}` : 'ask about this block'}
             submitLabel="send"
             rows={FIELD_ROWS}
             autoFocus
+            onInput={value => void actions.input(value)}
             onSubmit={value => void actions.send(value)}
           />
         </Box>

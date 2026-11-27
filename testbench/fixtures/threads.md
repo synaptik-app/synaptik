@@ -79,4 +79,13 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 19. **Do:** on another block, press `a`, then `d`, and ask something whose answer would include the thread
     - **Expect:** the switch stays off: the answer's verdict doesn't override your ✓
 
+**Queued messages** (#245)
+
+20. **Do:** in a thread, send `why Redis?`, and while it's thinking send `and the TTL?`, then `and memcached?`
+    - **Expect:** the two later messages show with a dim `· queued`; once the first answer lands, under its question, they go out together and get one answer
+21. **Do:** send a question, and while it's thinking send another, then press `↑` in the empty field
+    - **Expect:** the queued message is back in the field, no longer marked queued; `↑` again moves to `◼ cancel`
+22. **Do:** send a question, queue two more, then press `◼ cancel`
+    - **Expect:** `◼ Answer cancelled`, and the two queued messages in the field, a line each
+
 When you're done: close any thread pane, click the first **Expect:**, mark every expectation, press `q`, `Tab`, then `⏎`. The test session answers with a table of your results.

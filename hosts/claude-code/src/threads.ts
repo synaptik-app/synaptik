@@ -35,7 +35,9 @@ import {
 // A report keeps how long the agent's run took (`ms`), when Claude Code said. A
 // status is Synaptik's own line in the thread: its agent couldn't start, or a
 // run ended without a report (#239), or an answer was cancelled (#240).
-export type ThreadMessage = { role: 'person' | 'agent' | 'report' | 'sent' | 'direct' | 'status'; text: string; ms?: number }
+// A person's message sent while the answer to their last one was pending waits,
+// `queued`, until it lands (#245).
+export type ThreadMessage = { role: 'person' | 'agent' | 'report' | 'sent' | 'direct' | 'status'; text: string; ms?: number; queued?: true }
 
 // A thread's agent with tools (D51): its id in `$.agent.list()`, and where its
 // tasks stand, by its last report (`working` until the first, and while it runs),
@@ -294,4 +296,31 @@ export function typedInView(text: string): string {
 // default, and never overrides a mark (#238).
 export function markFirst(thread: Thread, isMarked: boolean): Thread {
   return isMarked && thread.included && !thread.isIncludeSet ? { ...thread, included: false } : thread
+}
+
+// --- The queue (#245): the person's messages sent while the answer to their
+// last one was pending. They go out together, once it lands.
+
+// What is queued, in order.
+export function queuedOf(thread: Thread): string[] {
+  return thread.messages.filter(m => m.queued).map(m => m.text)
+}
+
+// The thread without its queued messages: what the next answer is asked over,
+// and what pulling them back into the field leaves.
+export function withoutQueued(thread: Thread): Thread {
+  return { ...thread, messages: thread.messages.filter(m => !m.queued) }
+}
+
+// The queue sent: its messages are the thread's like any other.
+export function sendQueued(thread: Thread): Thread {
+  return { ...thread, messages: thread.messages.map(m => (m.queued ? { role: m.role, text: m.text } : m)) }
+}
+
+// An answer landing while messages wait: it goes before them, as it answers
+// what came first.
+export function answerBeforeQueued(thread: Thread, raw: string, isReport = false): Thread {
+  const queued = thread.messages.filter(m => m.queued)
+  const answered = withAnswer(withoutQueued(thread), raw, isReport)
+  return { ...answered, messages: [...answered.messages, ...queued] }
 }
