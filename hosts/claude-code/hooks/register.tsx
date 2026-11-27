@@ -786,10 +786,12 @@ async function cancelAnswers($: EngineInterface, key: string) {
   // report.
   // What the field holds already stays: a click on ◼ cancel can bring the queue
   // back into it first (the ui.focus hook).
+  // The queued lines come first, then what was being typed, a line each: nothing
+  // the person wrote is lost.
   const held = fieldText.get(key)
   const queued = queuedOf(t)
   const last = withoutQueued(t).messages.at(-1)
-  const draft = held || (queued.length > 0 ? queued.join('\n') : last?.role === 'person' ? last.text : undefined)
+  const draft = queued.length > 0 ? [...queued, ...(held ? [held] : [])].join('\n') : held || (last?.role === 'person' ? last.text : undefined)
   if (draft) fieldText.set(key, draft)
   await changeThread($, key, now => ({
     ...withoutQueued(now),
@@ -867,14 +869,16 @@ const asking = new Set<string>()
 const fieldText = new Map<string, string>()
 
 async function sendInThread($: EngineInterface, key: string, text: string) {
-  if ((await threadAnchor($, key)) === undefined || !text.trim()) return
+  if (!text.trim()) return
   fieldText.delete(key)
   // The answer to their last message is on its way: this one waits for it.
+  // Checked and claimed before any await, so two sends can't both go out.
   if (asking.has(key)) {
     await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text, queued: true }], inputSeq: t.inputSeq + 1, draft: undefined }))
     void focusField($, key)
     return
   }
+  asking.add(key)
   const prior = (await read($, threads))[key] ?? NEW_THREAD
   await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text }], pending: t.pending + 1, inputSeq: t.inputSeq + 1, draft: undefined }))
   void focusField($, key)
@@ -894,27 +898,17 @@ async function queueBackToField($: EngineInterface, key: string) {
   void focusField($, key)
 }
 
-// Once the answer lands, everything queued goes out together, as one message, a
-// line each: the fork answers it over the thread without them.
-async function sendQueue($: EngineInterface, key: string) {
-  const t = (await read($, threads))[key]
-  const queued = t ? queuedOf(t) : []
-  if (!t || queued.length === 0 || asking.has(key)) return
-  observe(`thread ${key}: ${queued.length} queued message(s) sent`)
-  const prior = withoutQueued(t)
-  await changeThread($, key, now => ({ ...sendQueued(now), pending: now.pending + 1 }))
-  await askThread($, key, prior, queued.join('\n'))
-}
-
 // One answer to the person: the fork, asked over the thread as it was before
-// their message (`prior`).
+// their message (`prior`). Once it lands, everything queued meanwhile goes out
+// together, as one message a line each, asked over the thread with this answer.
 async function askThread($: EngineInterface, key: string, prior: Thread, text: string) {
   const anchor = await threadAnchor($, key)
-  if (anchor === undefined) return
+  if (anchor === undefined) return void asking.delete(key)
   asking.add(key)
   const prompt = threadPrompt(anchor, prior, text)
   const asked = cancels.get(key) ?? 0
   const reply = await read($, lastText)
+  let batch: { prior: Thread; text: string } | undefined
   // Whatever happens, the message stops waiting: a thread stuck waiting would
   // never be summarised.
   let answer = '(no answer: something went wrong, send it again)'
@@ -926,13 +920,27 @@ async function askThread($: EngineInterface, key: string, prior: Thread, text: s
     // A new reply meanwhile discarded the thread: the answer has nowhere to go.
     // Cancelled while it was written, it is thrown away (#240), and the cancel
     // already ended the wait. Landing, it goes before what is queued.
+    // With messages queued, they are sent, and pending, in the same change as
+    // the answer: nothing in between sees a thread with no answer on its way.
     if (!isCancelled(key, asked)) {
-      asking.delete(key)
-      if ((await read($, lastText)) === reply) await changeThread($, key, t => answerBeforeQueued(t, answer))
+      if ((await read($, lastText)) === reply) {
+        await changeThread($, key, t => {
+          const answered = answerBeforeQueued(t, answer)
+          const queued = queuedOf(answered)
+          if (queued.length === 0) return answered
+          batch = { prior: withoutQueued(answered), text: queued.join('\n') }
+          return { ...sendQueued(answered), pending: answered.pending + 1 }
+        })
+      }
+      if (!batch) asking.delete(key)
     }
   }
   if ((await read($, lastText)) !== reply || isCancelled(key, asked)) return
-  void sendQueue($, key).catch(err => observe(`thread ${key} queue failed: ${String(err)}`))
+  if (batch) {
+    const next: { prior: Thread; text: string } = batch
+    observe(`thread ${key}: ${next.text.split('\n').length} queued message(s) sent`)
+    void askThread($, key, next.prior, next.text).catch(err => observe(`thread ${key} queue failed: ${String(err)}`))
+  }
   // What it carries for the agent goes at once, and an agent the person asked
   // for starts: they chose either when they sent the message it answers (D51).
   const { toAgent, startsAgent } = parseAnswer(answer)

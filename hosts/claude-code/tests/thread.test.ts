@@ -380,3 +380,51 @@ test('#245: ↑ from an empty field, seen as the focus moving to ◼ cancel, tak
   release()
   await tick()
 })
+
+test('#249 review: cancelling with messages queued and text in the field keeps both, the queue first', async ($, on) => {
+  await openThread($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  await send($, 'first?')
+  await send($, 'second?')
+  // Typing in the field, then ◼ cancel.
+  await inPane($, async pane => pane.input({ key: String((await pane.find({ type: 'Input' }))!.key), text: 'third, being typed', kind: 'change' } as never))
+  await inPane($, pane => pane.press({ key: `${PANE}-stop` }))
+  expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { value?: string }).value).toBe('second?\nthird, being typed')
+  release()
+  await tick()
+})
+
+test('#249 review: two sends at once make one fork and one queued message', async ($, on) => {
+  await openThread($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  await inPane($, async pane => {
+    const field = String((await pane.find({ type: 'Input' }))!.key)
+    await Promise.all([pane.input({ key: field, text: 'first?' }), pane.input({ key: field, text: 'second?' })])
+  })
+  expect(forks).toHaveLength(1)
+  forkHold.until = undefined
+  release()
+  await tick()
+  await tick()
+  expect(forks).toHaveLength(2)
+})
+
+test('#249 review: once an answer lands with messages queued, the next fork is theirs, not a summary without them', async ($, on) => {
+  await openThread($, on)
+  await include($)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  // An answer without its summary: one would be written once nothing is pending.
+  forkAnswer.text = 'An answer.'
+  await send($, 'first?')
+  await send($, 'second?')
+  const before = forks.length
+  forkHold.until = undefined
+  release()
+  await tick()
+  await tick()
+  expect(forks[before]).toContain('Their message:\nsecond?')
+  expect(forks[before]).not.toContain('Reply with the summary alone.')
+})
