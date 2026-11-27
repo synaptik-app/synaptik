@@ -15,6 +15,8 @@ import {
   REPORT_PROMPT,
   SUBAGENT_GUIDANCE,
   SUMMARY_PROMPT,
+  START_ASKED,
+  START_AUTO,
   SWITCH_OFF,
   SWITCH_ON,
   THREAD_PROMPT,
@@ -66,6 +68,9 @@ export type Thread = {
   // What the field starts with when next drawn: a cancelled question, back for
   // editing (#240).
   draft?: string
+  // The answer proposed an agent, and the person is asked whether to start it:
+  // the session wasn't in auto mode (#225).
+  isAgentAsked?: boolean
 }
 
 export const NEW_THREAD: Thread = { messages: [], pending: 0, included: false, isIncludeSet: false, summarizedAt: 0, inputSeq: 0 }
@@ -106,13 +111,13 @@ const fill = (template: string, values: Record<string, string>) =>
 // they switch it on.
 // After the summary's part, whatever the switch: an agent for its tasks, offered
 // or started on the person's word (none yet), or what to send the one it has (D51).
-export function threadPrompt(anchor: Anchor, thread: Thread, message: string): string {
+export function threadPrompt(anchor: Anchor, thread: Thread, message: string, isAuto = false): string {
   const so = thread.messages.length > 0 ? fill(THREAD_SO_FAR, { thread: transcript(thread.messages) }) : ''
   const sentence = thread.isIncludeSet ? '' : WITH_SWITCH_SENTENCE.replace('{{switch}}', thread.included ? SWITCH_ON : SWITCH_OFF)
   // The sentence before the summary's instructions: it belongs to the answer,
   // ahead of the tags.
   const after = sentence + summaryAfter(thread) + (thread.agent ? WITH_TO_AGENT : WITH_NEXT)
-  const tools = thread.agent ? TOOLS_AGENT : TOOLS_OFFER
+  const tools = thread.agent ? TOOLS_AGENT : TOOLS_OFFER.replace('{{start}}', isAuto ? START_AUTO : START_ASKED)
   return fill(THREAD_PROMPT, { block: anchor.block, part: partOf(anchor), thread: so, message, after, tools })
 }
 

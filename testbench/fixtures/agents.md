@@ -1,6 +1,6 @@
 ## Agents test
 
-A thread's agent (D51): the thread offers an agent when its tasks need tools, you ask for it, the thread steers it, and its reports come back to the thread. Fullscreen (`/tui fullscreen`), at least 144 columns. The agent only counts lines; it changes nothing. Before clicking a block after a thread, click **the hint**: the band's "click here to review the reply".
+A thread's agent (D51): the thread decides its tasks need an agent with tools, it starts at once in auto mode or after you press start, the thread steers it, and its reports come back to the thread. Fullscreen (`/tui fullscreen`), at least 144 columns. The agent only counts lines; it changes nothing. Before clicking a block after a thread, click **the hint**: the band's "click here to review the reply".
 
 The fixtures folder holds 14 test files, and `fixtures/code.md` is the longest at 120 lines.
 
@@ -12,12 +12,15 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 
 **Starting it**
 
+In the default mode (the footer shows no mode; Shift+Tab until it doesn't), then send any prompt in the main chat, so Synaptik reads the mode.
+
 1. **Do:** click the hint, click the fixtures paragraph, press `d`, send `are those numbers right?`
-   - **Expect:** the answer says it can't check from the thread, and ends offering, in its own words, an agent to do the counting; the pane has no button for it, only the switch
+   - **Expect:** the answer says it can't check from the thread, and ends with a sentence of its own about an agent doing the counting
+   - **Expect:** above the field, `▶ Start an agent on these tasks?` with `[ start ]` and `[ not now ]`; no agent in Claude Code's agent list yet
    - **Expect:** if the switch turned on, the answer says so in one sentence of its own (that it put this in your review)
    - **Expect:** no tag (`<next>`, `<summary>`) shows in the answer
-2. **Do:** send `yes, start it`
-   - **Expect:** the answer says it is starting an agent, and the switch is on
+2. **Do:** press `start` (a click, or `↑` from the field and `⏎`)
+   - **Expect:** the question goes, the agent starts, and the switch is on
    - **Expect:** the summary under the switch has a `Subagent:` section with `- Still on:`
    - **Expect:** Claude Code's agent list under the prompt shows `Synaptik · "The fixtures folder…" · working`
    - **Expect:** while it works, the pane shows a dim line with a turning spinner, what the agent is doing (or `agent working`), its time and its tokens; the line goes when it reports
@@ -58,15 +61,26 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 
 **When it fails** (loaded with the fault mod: `--plugin-dir ./fault-mod`, see the test bench's CLAUDE.md; skip these steps without it)
 
-11. **Do:** run `/fault refuse`, open a new thread on the code block, ask `can you run it?`, then send `yes, start it`
+11. **Do:** run `/fault refuse`, open a new thread on the code block, ask `can you run it?`, then press `start`
     - **Expect:** a yellow `✗ Agent not started · refused by the test bench fault mod` line in the thread
     - **Expect:** no agent in Claude Code's agent list, and the include switch as it was
 12. **Do:** send `why didn't it start?`
     - **Expect:** the answer knows the agent didn't start, and doesn't talk as if it ran
-13. **Do:** run `/fault fail`, then in the same thread send `try again, start it`
+13. **Do:** run `/fault fail`, then in the same thread send `try again, start it`, and press `start`
     - **Expect:** after a moment, `✗ Agent failed · an API error ended its run`, and no answer to a report under it
     - **Expect:** the agent list says `· stopped`
 14. **Do:** run `/fault off`, open a thread, start an agent on a slow task, and stop it from Claude Code's agent list
     - **Expect:** `◼ Agent stopped`, and the agent list `· stopped`
+
+**By the permission mode** (#225)
+
+15. **Do:** with `/fault off`, open a new thread on the code block, ask `can you run it?`, press `not now`
+    - **Expect:** the question goes, a dim `◼ Agent not started · tell the thread what to do next`, no agent; nothing else happens
+16. **Do:** Shift+Tab to auto mode, send any prompt in the main chat, then open a thread on the table and ask `how many rows does fixtures/tables.md have?`
+    - **Expect:** no question: the answer says it is starting an agent, and it starts at once
+17. **Do:** still in auto mode, open a thread on another block, Shift+Tab away from auto and back without sending a prompt, and ask something that needs tools
+    - **Expect:** the question shows: after a Shift+Tab the mode is unknown until your next prompt, and an unknown mode asks
+18. **Do:** Shift+Tab to plan mode, send any prompt, open a thread and ask something that needs tools, press `start`
+    - **Expect:** the question shows (plan mode asks), and the agent reads and counts but changes nothing
 
 When you're done: close any thread pane, click the first **Expect:**, mark every expectation, press `q`, `Tab`, then `⏎`. The test session answers with a table of your results.

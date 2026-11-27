@@ -22,7 +22,7 @@ import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
 import { decorate } from '../src/decorate'
-import { agentLine, CANCELLED_LINE, endedLine, notStartedLine, refusalWords, thinkingLine, toolStep } from '../src/waiting'
+import { agentLine, CANCELLED_LINE, endedLine, isAutoMode, NOT_NOW_LINE, notStartedLine, refusalWords, thinkingLine, toolStep } from '../src/waiting'
 import type { AgentNow } from '../src/waiting'
 import {
   AGENT_WORDS,
@@ -74,7 +74,7 @@ import { ClassicView, EmptyView } from './views/navigator'
 import type { NavigatorActions } from './views/navigator'
 import { ReplyView } from './views/reply'
 import { BandKeysView, BandView } from './views/band'
-import { threadFieldKey, threadStopKey, threadSwitchKey, ThreadView } from './views/thread'
+import { threadAgentSkipKey, threadAgentStartKey, threadFieldKey, threadStopKey, threadSwitchKey, ThreadView } from './views/thread'
 
 const isOn = atom({ plugin: 'synaptik', key: 'isOn' } as const, true)
 const isWorking = atom({ plugin: 'synaptik', key: 'isWorking' } as const, false)
@@ -763,6 +763,21 @@ async function tickWaiting($: EngineInterface) {
 // the newest answer and the field would fall below it. Scrolled once the change
 // is drawn: right after it, the window still measures the old tree.
 const THREAD_REDRAW_MS = 80
+// The person's answer to "Start an agent on these tasks?": start it, or not now,
+// which the thread keeps as a line; nothing more happens until they write.
+async function answerAgentAsk($: EngineInterface, key: string, isStart: boolean) {
+  const t = (await read($, threads))[key]
+  if (!t?.isAgentAsked) return
+  observe(`thread ${key} agent asked: ${isStart ? 'start' : 'not now'}`)
+  await changeThread($, key, now => ({
+    ...now,
+    isAgentAsked: false,
+    messages: isStart ? now.messages : [...now.messages, { role: 'status', text: NOT_NOW_LINE }],
+  }))
+  if (isStart) await startAgent($, key)
+  void focusField($, key)
+}
+
 // --- Cancelling a thread's answer (#240). A fork can't be stopped, so the
 // answers asked for before a cancel are thrown away when they land; the request
 // still runs, and is billed.
@@ -868,9 +883,35 @@ const asking = new Set<string>()
 // only into an empty one.
 const fieldText = new Map<string, string>()
 
+// --- The session's permission mode (#225), for whether the thread's agent
+// starts at once (auto mode) or once the person confirms it. Claude Code tells
+// it to the settings hooks of each prompt and each turn's end (read here,
+// passed on unchanged); no event tells of Shift+Tab, but the prompt's hint line
+// is drawn again when the mode changes, and a change seen there since the last
+// reading leaves it unknown until the next.
+let modeRead: string | undefined
+// Whether the hint line named a mode other than the default's (its
+// "shift+tab to cycle"), now and at the last reading.
+let hintMarked: boolean | undefined
+let hintMarkedAtRead: boolean | undefined
+
+function readMode(mode: string | undefined) {
+  if (!mode) return
+  modeRead = mode
+  hintMarkedAtRead = hintMarked
+}
+
+// In auto mode for sure: the last reading said so, and Shift+Tab hasn't changed
+// it since. Any doubt means asking.
+const isAutoNow = () => isAutoMode(modeRead, hintMarked, hintMarkedAtRead)
+
 async function sendInThread($: EngineInterface, key: string, text: string) {
   if (!text.trim()) return
   fieldText.delete(key)
+  // A question waiting on the agent's start: the person wrote instead, which
+  // counts as not now; the answer to their message may propose it again.
+  const before = (await read($, threads))[key]
+  if (before?.isAgentAsked) await changeThread($, key, t => ({ ...t, isAgentAsked: false }))
   // The answer to their last message is on its way: this one waits for it.
   // Checked and claimed before any await, so two sends can't both go out.
   if (asking.has(key)) {
@@ -905,7 +946,7 @@ async function askThread($: EngineInterface, key: string, prior: Thread, text: s
   const anchor = await threadAnchor($, key)
   if (anchor === undefined) return void asking.delete(key)
   asking.add(key)
-  const prompt = threadPrompt(anchor, prior, text)
+  const prompt = threadPrompt(anchor, prior, text, isAutoNow())
   const asked = cancels.get(key) ?? 0
   const reply = await read($, lastText)
   let batch: { prior: Thread; text: string } | undefined
@@ -946,7 +987,12 @@ async function askThread($: EngineInterface, key: string, prior: Thread, text: s
   const { toAgent, startsAgent } = parseAnswer(answer)
   const agent = (await read($, threads))[key]?.agent
   if (toAgent && agent) await sendToAgent($, agent.id, toAgent)
-  if (startsAgent && !agent) await startAgent($, key).catch(err => observe(`thread ${key} agent failed: ${String(err)}`))
+  // Proposed: started at once in auto mode, else asked of the person (#225).
+  if (startsAgent && !agent) {
+    observe(`thread ${key} agent proposed, mode ${modeRead ?? 'unknown'}${hintMarked === hintMarkedAtRead ? '' : ' (changed since)'}`)
+    if (isAutoNow()) await startAgent($, key).catch(err => observe(`thread ${key} agent failed: ${String(err)}`))
+    else await changeThread($, key, t => ({ ...t, isAgentAsked: true }))
+  }
   // The answer brought the summary and the switch's default: the review follows.
   await suggestTray($)
   // Included and the answer came without a summary: closed while it waited (the
@@ -1216,6 +1262,22 @@ export const register: Register = on => {
     // A resumed session (and every reload of this mod) already has a reply.
     await adoptLastReply($)
     await reclaimAgents($)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // The permission mode, read from Claude Code's settings hooks of the main loop
+  // and passed on as they came (#225): nothing is blocked or changed.
+  on('classic.UserPromptSubmit', async ($, e, next) => {
+    if (!e.agent_id) readMode(e.permission_mode)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+  on('classic.Stop', async ($, e, next) => {
+    if (!e.agent_id) readMode(e.permission_mode)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+  // Shift+Tab: the hint line is drawn again, naming a mode or not.
+  on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
+    hintMarked = e.props.hint.includes('shift+tab to cycle')
     return next(e)
   }).catch(($, e, next) => next(e))
 
@@ -1663,7 +1725,12 @@ export const register: Register = on => {
     // The pane's stops, top to bottom: ◼ cancel while an answer is pending, the
     // field, then the switch under it.
     const field = threadFieldKey(e.requestId, t.inputSeq)
-    const stops = [...(t.pending > 0 ? [threadStopKey(e.requestId)] : []), field, threadSwitchKey(e.requestId)]
+    const stops = [
+      ...(t.pending > 0 ? [threadStopKey(e.requestId)] : []),
+      ...(t.isAgentAsked ? [threadAgentStartKey(e.requestId), threadAgentSkipKey(e.requestId)] : []),
+      field,
+      threadSwitchKey(e.requestId),
+    ]
     // Where the focus is: the field until something else took it, as the field
     // takes it by itself (autoFocus).
     const focused = threadFocus.get(e.requestId) ?? field
@@ -1707,6 +1774,8 @@ export const register: Register = on => {
         toggleInclude: () => toggleInclude($, key).catch(err => observe(`thread ${key} include failed: ${String(err)}`)),
         cancel: () => cancelAnswers($, key).catch(err => observe(`thread ${key} cancel failed: ${String(err)}`)),
         input: text => void fieldText.set(key, text),
+        agentStart: () => answerAgentAsk($, key, true).catch(err => observe(`thread ${key} agent failed: ${String(err)}`)),
+        agentSkip: () => answerAgentAsk($, key, false).catch(err => observe(`thread ${key} agent skip failed: ${String(err)}`)),
       },
     )
   }).catch(($, e, next) => next(e))

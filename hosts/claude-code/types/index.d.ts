@@ -14,6 +14,7 @@ export type Thread = {
   // Its agent with tools (D51): the id, and where its tasks stand.
   agent?: { id: string; state: 'working' | 'needs-you' | 'done' | 'stopped' }
   draft?: string
+  isAgentAsked?: boolean
 }
 
 declare module 'claude-code' {
