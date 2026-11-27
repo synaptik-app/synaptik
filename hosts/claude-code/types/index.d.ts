@@ -4,7 +4,7 @@ export type Mark = 'accept' | 'reject' | 'comment'
 
 // A thread (src/threads.ts keeps the same shape; this contract may import nothing).
 export type Thread = {
-  messages: { role: 'person' | 'agent' | 'report' | 'sent' | 'direct' | 'status'; text: string; ms?: number }[]
+  messages: { role: 'person' | 'agent' | 'report' | 'sent' | 'direct' | 'status'; text: string; ms?: number; queued?: true }[]
   pending: number
   included: boolean
   isIncludeSet: boolean

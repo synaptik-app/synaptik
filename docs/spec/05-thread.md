@@ -66,6 +66,17 @@ value`, a line each, a blank line between rows. A table that fits is drawn as a
 grid, by Claude Code. Inside a code fence, a table is code and stays as written.
 Display only: the fork, the summary and the review get the table as written.
 
+**A message sent while the answer to the last one is pending waits** (#245):
+it shows as the person's, with a dim `· queued`, and once that answer lands,
+every queued message goes out together, one fork, as one message a line each.
+The answer lands before them in the thread. **↑ in an empty field takes the
+queue back into it**, as its dim placeholder says while one waits (`↑ to edit
+the queued messages`), a line each, to edit and send as one text, as Claude
+Code's own prompt does with messages queued during a turn; with text in the
+field, or nothing queued, ↑ moves to `◼ cancel` as before. Only the person's
+messages queue: an agent's report is answered when it arrives, alongside
+anything pending, and the two aren't ordered.
+
 **While it waits**, the pane shows a dim line under the thread, inset as the
 answers are, its spinner turning (Claude Code's frames) and its time counting:
 
@@ -80,9 +91,9 @@ time.
 
 **A dim `◼ cancel` beside it cancels the pending answer** (#240): a click, or ↑
 from the field to it and ⏎. The fork runs on and is billed, but its answer is
-thrown away when it lands; the thread says `◼ Answer cancelled`, and the last
-question is back in the field to edit and send again (several pending, the
-others wait for the queue, #245). A cancelled answer to an agent's report gives
+thrown away when it lands; the thread says `◼ Answer cancelled`, and the queued
+messages are back in the field, a line each; with none queued, the question
+whose answer was cancelled. A cancelled answer to an agent's report gives
 nothing back: there was no question. The field is drawn with that text as its
 `value`; that a redraw before the next send keeps what the person typed over it
 is unverified ⚠️. Ctrl+C can't press it:

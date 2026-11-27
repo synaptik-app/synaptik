@@ -101,6 +101,10 @@ threads (tabs come free when docked).
   person's word (D51).
 - **2026-11-24** — the sentence saying a verdict changed the switch is only in the
   answer to the person's message, never in the answer to an agent's report.
+- **2026-11-27** — a message sent while the answer to the last one is pending
+  waits, and the queue goes out together once it lands (#245): sent at once, a
+  second fork answered without the first answer, and the last to land wrote
+  the summary alone.
 
 ---
 

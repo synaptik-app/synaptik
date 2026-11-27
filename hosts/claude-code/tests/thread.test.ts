@@ -314,3 +314,69 @@ test('#240: cancelling with two questions pending gives the last back; a later q
   await tick()
   expect(await inPane($, async pane => (await pane.findAll({ type: 'Markdown', text: 'Too late.' })).length)).toBe(1)
 })
+
+// A person's ↑ in the thread's pane.
+const up = ($: Dollar) =>
+  $.ui.scroll({ component: 'Pane', requestId: PANE, offset: 1, by: -1, bodyRows: 20, contentRows: 22, origin: { kind: 'person' } })
+
+test('#245: messages sent while an answer is pending wait, then go out together, the answer landing before them', async ($, on) => {
+  await openThread($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  forkAnswer.text = 'An answer.'
+  await send($, 'first?')
+  await send($, 'second?')
+  await send($, 'third?')
+  // One fork so far: the others wait, marked queued.
+  expect(forks).toHaveLength(1)
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: ' · queued' })))).toBe(true)
+  forkHold.until = undefined
+  release()
+  await tick()
+  await tick()
+  // Then one fork for both, asked over the thread with the first answer in it.
+  expect(forks).toHaveLength(2)
+  expect(forks[1]).toContain('Their message:\nsecond?\nthird?')
+  expect(forks[1]).toContain('Person: first?\n\nYou: An answer.')
+  expect(forks[1]).not.toContain('Person: second?')
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: ' · queued' })))).toBe(false)
+})
+
+test('#245: ↑ in an empty field takes the queue back into it, a line each; ◼ cancel does too', async ($, on) => {
+  await openThread($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  await send($, 'first?')
+  await send($, 'second?')
+  await send($, 'third?')
+  // The empty field says how to get them back.
+  expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { placeholder?: string }).placeholder).toBe('↑ to edit the queued messages')
+  await up($)
+  const field = await inPane($, async pane => pane.find({ type: 'Input' }))
+  expect((field!.props as { value?: string }).value).toBe('second?\nthird?')
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: ' · queued' })))).toBe(false)
+  // Queued again, then cancelled: they come back the same way.
+  await send($, 'fourth?')
+  await inPane($, pane => pane.press({ key: `${PANE}-stop` }))
+  expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { value?: string }).value).toBe('fourth?')
+  release()
+  await tick()
+  expect(forks).toHaveLength(1)
+})
+
+test('#245: ↑ from an empty field, seen as the focus moving to ◼ cancel, takes the queue back; a click on it then cancels and keeps it', async ($, on) => {
+  await openThread($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  await send($, 'first?')
+  await send($, 'second?')
+  const moved = await $.ui.focus({ component: 'Pane', requestId: PANE, element: `${PANE}-stop`, origin: { kind: 'person' } })
+  expect(moved).toEqual({ deny: 'the queued messages are back in the field' })
+  expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { value?: string }).value).toBe('second?')
+  // The press that came with it cancels, and what the field holds stays.
+  await inPane($, pane => pane.press({ key: `${PANE}-stop` }))
+  expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { value?: string }).value).toBe('second?')
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '◼ Answer cancelled' })))).toBe(true)
+  release()
+  await tick()
+})

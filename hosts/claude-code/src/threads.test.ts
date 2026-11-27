@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { anchorOf, clearedThreads, hasThread, markFirst, needsSummary, NEW_THREAD, parseAnswer, summaries, summaryPrompt, threadPrompt, withAnswer } from './threads'
+import { anchorOf, answerBeforeQueued, clearedThreads, hasThread, markFirst, needsSummary, NEW_THREAD, parseAnswer, queuedOf, sendQueued, summaries, summaryPrompt, threadPrompt, withAnswer, withoutQueued } from './threads'
 import type { Thread } from './threads'
 
 const talked: Thread = {
@@ -166,4 +166,19 @@ test("a marked part's thread stays out unless the person switched it on themselv
   expect(markFirst(byVerdict, false).included).toBe(true)
   // The person's own press stands.
   expect(markFirst({ ...talked, included: true, isIncludeSet: true }, true).included).toBe(true)
+})
+
+test('the queue: what waits, the thread without it, and its messages once sent (#245)', () => {
+  const waiting: Thread = { ...talked, messages: [...talked.messages, { role: 'person', text: 'and TTL?' }, { role: 'person', text: 'b?', queued: true }, { role: 'person', text: 'c?', queued: true }] }
+  expect(queuedOf(waiting)).toEqual(['b?', 'c?'])
+  expect(withoutQueued(waiting).messages.at(-1)).toEqual({ role: 'person', text: 'and TTL?' })
+  expect(sendQueued(waiting).messages.slice(-2)).toEqual([{ role: 'person', text: 'b?' }, { role: 'person', text: 'c?' }])
+  expect(queuedOf(sendQueued(waiting))).toEqual([])
+})
+
+test('an answer landing while messages wait goes before them (#245)', () => {
+  const waiting: Thread = { ...talked, pending: 1, messages: [...talked.messages, { role: 'person', text: 'a?' }, { role: 'person', text: 'b?', queued: true }] }
+  const answered = answerBeforeQueued(waiting, 'Answer to a.')
+  expect(answered.messages.slice(-3)).toEqual([{ role: 'person', text: 'a?' }, { role: 'agent', text: 'Answer to a.' }, { role: 'person', text: 'b?', queued: true }])
+  expect(answered.pending).toBe(0)
 })
