@@ -908,20 +908,18 @@ const isAutoNow = () => isAutoMode(modeRead, hintMarked, hintMarkedAtRead)
 async function sendInThread($: EngineInterface, key: string, text: string) {
   if (!text.trim()) return
   fieldText.delete(key)
-  // A question waiting on the agent's start: the person wrote instead, which
-  // counts as not now; the answer to their message may propose it again.
-  const before = (await read($, threads))[key]
-  if (before?.isAgentAsked) await changeThread($, key, t => ({ ...t, isAgentAsked: false }))
   // The answer to their last message is on its way: this one waits for it.
   // Checked and claimed before any await, so two sends can't both go out.
+  // A question waiting on the agent's start goes in the same change: the person
+  // wrote instead, which counts as not now (#225).
   if (asking.has(key)) {
-    await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text, queued: true }], inputSeq: t.inputSeq + 1, draft: undefined }))
+    await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text, queued: true }], inputSeq: t.inputSeq + 1, draft: undefined, isAgentAsked: false }))
     void focusField($, key)
     return
   }
   asking.add(key)
   const prior = (await read($, threads))[key] ?? NEW_THREAD
-  await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text }], pending: t.pending + 1, inputSeq: t.inputSeq + 1, draft: undefined }))
+  await changeThread($, key, t => ({ ...t, messages: [...t.messages, { role: 'person', text }], pending: t.pending + 1, inputSeq: t.inputSeq + 1, draft: undefined, isAgentAsked: false }))
   void focusField($, key)
   await askThread($, key, prior, text)
 }
@@ -946,7 +944,10 @@ async function askThread($: EngineInterface, key: string, prior: Thread, text: s
   const anchor = await threadAnchor($, key)
   if (anchor === undefined) return void asking.delete(key)
   asking.add(key)
-  const prompt = threadPrompt(anchor, prior, text, isAutoNow())
+  // The mode as the question is asked: the answer's words and what follows them
+  // both go by it, so a change meanwhile can't split them.
+  const isAuto = isAutoNow()
+  const prompt = threadPrompt(anchor, prior, text, isAuto)
   const asked = cancels.get(key) ?? 0
   const reply = await read($, lastText)
   let batch: { prior: Thread; text: string } | undefined
@@ -989,8 +990,8 @@ async function askThread($: EngineInterface, key: string, prior: Thread, text: s
   if (toAgent && agent) await sendToAgent($, agent.id, toAgent)
   // Proposed: started at once in auto mode, else asked of the person (#225).
   if (startsAgent && !agent) {
-    observe(`thread ${key} agent proposed, mode ${modeRead ?? 'unknown'}${hintMarked === hintMarkedAtRead ? '' : ' (changed since)'}`)
-    if (isAutoNow()) await startAgent($, key).catch(err => observe(`thread ${key} agent failed: ${String(err)}`))
+    observe(`thread ${key} agent proposed, ${isAuto ? 'auto mode: started' : `mode ${modeRead ?? 'unknown'}: asked`}`)
+    if (isAuto) await startAgent($, key).catch(err => observe(`thread ${key} agent failed: ${String(err)}`))
     else await changeThread($, key, t => ({ ...t, isAgentAsked: true }))
   }
   // The answer brought the summary and the switch's default: the review follows.

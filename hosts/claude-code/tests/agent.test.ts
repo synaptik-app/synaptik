@@ -356,3 +356,22 @@ test("#240: the thread's answer to a report can be cancelled: nothing comes back
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Markdown', text: 'An answer to the report that came too late.' })))).toBe(false)
   expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { value?: string }).value).toBeUndefined()
 })
+
+test('#250 review: two quick sends while the start question shows make one fork and one queued message; the question goes', async ($, on) => {
+  await threadWithTools($, on)
+  forkAnswer.text = STARTING
+  await send($, 'yes, start it')
+  expect(await hasText($, '▶ Start an agent on these tasks?  ')).toBe(true)
+  const before = forks.length
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  forkAnswer.text = 'Fine.'
+  await inPane($, async pane => {
+    const field = String((await pane.find({ type: 'Input' }))!.key)
+    await Promise.all([pane.input({ key: field, text: 'no, wait' }), pane.input({ key: field, text: 'and count tables.md' })])
+  })
+  expect(forks.length - before).toBe(1)
+  expect(await hasText($, '▶ Start an agent on these tasks?  ')).toBe(false)
+  forkHold.until = undefined
+  release()
+})
