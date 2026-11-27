@@ -201,26 +201,43 @@ A thread can hand its tasks to an agent of its own, a fork subagent with tools
 (D51). The thread's agent says when, the person starts it, and the thread then
 steers it.
 
-**When.** While the thread has no agent, an answer whose Actions or Open
-questions need tools (a search, a command, an edit) ends with a one-line offer
-in its own words, the switch on or off:
+**When.** While the thread has no agent, the thread's agent decides: an answer
+whose work needs tools (a search, a command, an edit) ends with a sentence of
+its own about it, the switch on or off, and carries `<next>agent</next>`,
+stripped with the summary's tags. **How it starts follows the session's
+permission mode** (#225):
+
+| The mode | What happens |
+|---|---|
+| auto | it starts at once; the answer says so: `I'm starting an agent to count the fixtures.` |
+| any other (default, accept edits, plan) | Synaptik asks just above the field: `▶ Start an agent on these tasks?  [ start ] [ not now ]` |
 
 ```
 › are those numbers right?
-  The 14 is right; I can't measure code.md from here. I can start an agent
-  to run those counts and report the real numbers.
-› yes, start it
-  Starting an agent on the count.
+  The 14 is right; I can't measure code.md from here. An agent could run
+  those counts and report the real numbers.
+  ▶ Start an agent on these tasks?   [ start ]  [ not now ]
 ```
 
-**When the person asks for one**, in so many words or as a yes to the offer,
-the answer says it is starting it and carries `<next>agent</next>`, stripped
-with the summary's tags. Synaptik then starts it at once, whatever the summary
-holds: the thread's agent decided. It turns the switch on unless the person set
-it, rewrites the summary with the tasks under `Subagent:` `Still on:`, and spawns
-the agent (`$.agent.spawn({ prompt, description, subagentType: 'fork' })`, its
-`description` `Synaptik · <block>`). The pane has no button for it, to start
-it or to open it. Its prompt (`src/prompts.ts`) holds the
+`start` runs it. `not now` leaves a dim `◼ Agent not started · tell the thread
+what to do next`, and nothing happens until the person writes; a message sent
+instead also counts as not now, and its answer may propose the agent again.
+An answer after a not now proposes one again only if the person asks. In plan
+mode the agent inherits the mode: it reads and searches, and changes nothing.
+
+**The mode is read from Claude Code's settings hooks**, `classic.UserPromptSubmit`
+and `classic.Stop` of the main loop (`permission_mode`), and passed on
+unchanged. Shift+Tab raises no event, but the prompt's hint line is drawn again,
+`shift+tab to cycle` showing outside the default mode: a change seen there
+since the last reading makes the mode unknown, and an unknown mode asks. So the
+agent starts unasked only when the last reading was `auto` and nothing changed
+since; right after switching to auto, the thread asks until the next prompt.
+
+**When it starts**, whatever the summary holds (the thread's agent decided),
+Synaptik turns the switch on unless the person set it, rewrites the summary with
+the tasks under `Subagent:` `Still on:`, and spawns the agent (`$.agent.spawn({ prompt, description, subagentType: 'fork' })`, its
+`description` `Synaptik · <block>`). The pane has no lasting button for it, to
+start it or to open it: only the question above, outside auto mode. Its prompt (`src/prompts.ts`) holds the
 block, the thread's messages and its summary whole as its tasks (with none,
 which a switched-off thread has: `No summary was written for this thread. Carry
 out what the thread above settled needs doing, and answer what it left open.`),

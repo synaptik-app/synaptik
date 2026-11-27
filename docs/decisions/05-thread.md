@@ -152,25 +152,45 @@ agent hears every report, steers the agent on the person's word, and its
 summary is the one account that goes into the review. Discuss is not another
 way to start agents: Claude Code has `/btw`, forks and its own agents for that.
 
-**The thread's agent offers, the person asks.** While the thread has no
-agent, an answer whose Actions or Open questions need tools (a search, a
-command, an edit) ends with a one-line offer in its own words, fitted to the
-work, with the include switch on or off: "I can start an agent to run those
-two counts and report the real numbers." When the
-person's message asks for one, in so many words or as a yes to the offer, the
-answer says it is starting it and carries `<next>agent</next>`, and Synaptik
-starts it at once: the person chose it when they sent the message, as with
-`<to-agent>` (D30). Nothing runs, costs or asks for permission unless they
-asked, and whether it should run is the thread's agent's call, made in its
-answer: Synaptik starts it whatever the summary holds (P2). Its tasks are the
+**The thread's agent decides; the session's permission mode says how it
+starts** (#225). While the thread has no agent, an answer whose work needs tools
+(a search, a command, an edit) ends with a sentence of its own about it,
+fitted to the work, and carries `<next>agent</next>`, the include switch on or
+off. In **auto mode** the agent starts at once, and the answer says so ("I'm
+starting an agent to count the fixtures."): the person chose auto mode in
+Claude Code, which is choosing that work runs without asking. In **any other
+mode**, plan mode included, Synaptik asks just above the field:
+
+```
+▶ Start an agent on these tasks?   [ start ]  [ not now ]
+```
+
+`start` runs it; `not now` leaves `◼ Agent not started · tell the thread what to
+do next` in the thread, and nothing more happens until the person writes;
+writing instead counts as not now. So nothing runs, costs or asks for
+permission unless the person chose it, by auto mode or by `start` (D30).
+Whether an agent is needed is the thread's agent's call, made in its answer:
+Synaptik starts it whatever the summary holds (P2). In plan mode the agent
+inherits plan mode: it reads and searches, and changes nothing.
+
+**The mode is read, never touched.** Claude Code tells it to its settings hooks
+(`classic.UserPromptSubmit` and `classic.Stop` of the main loop), which
+Synaptik reads and passes on unchanged: no prompt is blocked or changed, so
+this is no interception (D24). No event tells of Shift+Tab, but the prompt's
+hint line is drawn again when the mode changes (`shift+tab to cycle` shows
+outside the default mode): a change seen there since the last reading leaves
+the mode unknown, and an unknown mode asks. So the agent starts unasked only
+when the last reading was `auto` and nothing changed since; right after
+switching to auto, the thread asks until the person's next prompt. Its tasks are the
 summary as it stands, or, with none (a thread switched off asks for the
 answer alone, D45), the thread itself; no summary is written first. The
 include switch turns on unless the person set it. The agent is not tied to the
 switch after that.
 
-**The pane has no button for it**, to start it or to open it: the thread is a
-conversation, so the person asks there, and Claude Code's agent list already
-holds the agent, with its state, and opens its view.
+**The pane has no lasting button for it**, to start it or to open it: only the
+one-time question above, outside auto mode, as Claude Code asks before a tool
+runs. Claude Code's agent list holds the agent, with its state, and opens its
+view.
 
 **The agent is a fork** (`$.agent.spawn({ subagentType: 'fork' })`): it has the
 main conversation, plus the block, the thread's messages and its summary
@@ -308,6 +328,9 @@ arrives keeps running, and its result joins no review (#194). Fullscreen only.
   label says it.
 - A fresh agent in place of the fork (#223): it hands every report back to the
   main conversation, where it starts a turn.
+- The person asking for the agent in words, after the answer offered it, in
+  every mode: in auto mode they had already chosen that work runs unasked, and
+  outside it a question to answer is quicker than a message to write.
 
 **Revisions**
 - **2026-11-22** — no buttons: the answer offers the agent and starts it when
@@ -326,6 +349,10 @@ arrives keeps running, and its result joins no review (#194). Fullscreen only.
   an empty one: the agent works from the summary as it stands, or the thread.
 - **2026-11-25** — its own replies are not reviewed, a decision rather than a
   limit to lift (#219, closed): its work reaches the review through the thread.
+- **2026-11-27** — the thread's agent decides; auto mode starts the agent at
+  once, any other mode asks (`start` / `not now`), the mode read from Claude
+  Code's settings hooks (#225). Before: offered, then started on the person's
+  words.
 
 ---
 

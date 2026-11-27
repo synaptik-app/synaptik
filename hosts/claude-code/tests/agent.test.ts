@@ -72,26 +72,53 @@ async function threadWithTools($: Dollar, on: Parameters<typeof start>[1]) {
 }
 
 // The agent started on that thread's tasks, at the person's word.
+// The person asks for it, the answer proposes it, and they press start: the test
+// session has no auto mode (#225).
+async function startIt($: Dollar) {
+  await send($, 'yes, start it')
+  if (await hasButton($, 'start')) await inPane($, pane => pane.press({ key: `${PANE}-agent-start` }))
+}
+
 async function withAgent($: Dollar, on: Parameters<typeof start>[1]) {
   await threadWithTools($, on)
   forkAnswer.text = STARTING
-  await send($, 'yes, start it')
+  await startIt($)
   forkAnswer.text = 'Actions: none\nSubagent:\n- Still on: Run npm test -- greet.'
 }
 
 const report = ($: Dollar, answer = REPORT) =>
   $.turn.complete({ turnId: 'agent-turn', agentId: AGENT_ID, answer, durationMs: 15_000, isAborted: false, reason: 'answer' })
 
-test('an agent starts only when the answer to the person carries the tag, and the pane has no button for it', async ($, on) => {
+test('outside auto mode, an answer proposing an agent asks first: start runs it', async ($, on) => {
   await threadWithTools($, on)
   expect(spawned).toHaveLength(0)
-  expect(await hasButton($, '▶ start agent on tasks')).toBe(false)
   forkAnswer.text = STARTING
   await send($, 'yes, start it')
-  expect(spawned).toHaveLength(1)
+  // Not started yet: the person is asked, under the answer.
+  expect(spawned).toHaveLength(0)
+  expect(await hasText($, '▶ Start an agent on these tasks?  ')).toBe(true)
   // The person reads no tag.
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Markdown', text: 'Starting an agent on it.' })))).toBe(true)
-  expect(await inPane($, async pane => (await pane.findAll({ type: 'Button' })).length)).toBe(1)
+  await inPane($, pane => pane.press({ key: `${PANE}-agent-start` }))
+  expect(spawned).toHaveLength(1)
+  expect(await hasText($, '▶ Start an agent on these tasks?  ')).toBe(false)
+})
+
+test('not now: no agent, a line in the thread, and nothing more until the person writes; writing instead counts as not now', async ($, on) => {
+  await threadWithTools($, on)
+  forkAnswer.text = STARTING
+  await send($, 'yes, start it')
+  await inPane($, pane => pane.press({ key: `${PANE}-agent-skip` }))
+  expect(spawned).toHaveLength(0)
+  expect(await hasText($, '◼ Agent not started · tell the thread what to do next')).toBe(true)
+  expect(await hasText($, '▶ Start an agent on these tasks?  ')).toBe(false)
+  // Asked again, then the person writes instead: the question goes, no agent.
+  await send($, 'start it after all')
+  expect(await hasText($, '▶ Start an agent on these tasks?  ')).toBe(true)
+  forkAnswer.text = 'Fine, no agent.'
+  await send($, 'actually, no')
+  expect(await hasText($, '▶ Start an agent on these tasks?  ')).toBe(false)
+  expect(spawned).toHaveLength(0)
 })
 
 test('starting it spawns a fork on the summary, rewritten with its tasks under Still on', async ($, on) => {
@@ -159,7 +186,7 @@ test('a first turn that ended before spawn returned is read from its transcript'
   spawnedAgent.taskStatus = 'completed'
   agentRows.push({ role: 'user', text: '<fork-boilerplate>go</fork-boilerplate>', toolUses: [] }, { role: 'assistant', text: REPORT, toolUses: [] })
   forkAnswer.text = STARTING
-  await send($, 'yes, start it')
+  await startIt($)
   expect(await hasText($, '○ Agent waiting for you')).toBe(true)
 })
 
@@ -250,7 +277,7 @@ test("a refused start is a line in the thread, in plain words, and the switch st
   await threadWithTools($, on)
   spawnedAgent.deny = 'the session was stopped and nobody has sent input since'
   forkAnswer.text = STARTING
-  await send($, 'yes, start it')
+  await startIt($)
   expect(await hasText($, "✗ Agent not started · Claude Code won't start an agent until you send something in the main chat")).toBe(true)
   // The thread's fork reads it, so its next answer doesn't assume the agent ran.
   forkAnswer.text = 'Send anything in the main chat first.'
@@ -279,7 +306,7 @@ test("a thread switched off starts its agent at once: no summary written first, 
   await send($, 'are the counts right?')
   const before = forks.length
   forkAnswer.text = 'Starting an agent on it.\n<next>agent</next>'
-  await send($, 'yes, start it')
+  await startIt($)
   expect(spawned).toHaveLength(1)
   // The answer's fork, then the summary rewritten after the start: none before it.
   expect(forks.length - before).toBe(2)
@@ -290,7 +317,7 @@ test("a refused start leaves a current summary current; a run that ended without
   await threadWithTools($, on)
   spawnedAgent.deny = 'refused'
   forkAnswer.text = STARTING
-  await send($, 'yes, start it')
+  await startIt($)
   expect(await hasText($, '✗ Agent not started · refused')).toBe(true)
   // The answer brought a summary; the line after it doesn't make it stale.
   expect(await hasText($, ' · rewritten when you close this')).toBe(false)
@@ -328,4 +355,23 @@ test("#240: the thread's answer to a report can be cancelled: nothing comes back
   expect(await hasText($, '◼ Answer cancelled')).toBe(true)
   expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Markdown', text: 'An answer to the report that came too late.' })))).toBe(false)
   expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { value?: string }).value).toBeUndefined()
+})
+
+test('#250 review: two quick sends while the start question shows make one fork and one queued message; the question goes', async ($, on) => {
+  await threadWithTools($, on)
+  forkAnswer.text = STARTING
+  await send($, 'yes, start it')
+  expect(await hasText($, '▶ Start an agent on these tasks?  ')).toBe(true)
+  const before = forks.length
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  forkAnswer.text = 'Fine.'
+  await inPane($, async pane => {
+    const field = String((await pane.find({ type: 'Input' }))!.key)
+    await Promise.all([pane.input({ key: field, text: 'no, wait' }), pane.input({ key: field, text: 'and count tables.md' })])
+  })
+  expect(forks.length - before).toBe(1)
+  expect(await hasText($, '▶ Start an agent on these tasks?  ')).toBe(false)
+  forkHold.until = undefined
+  release()
 })

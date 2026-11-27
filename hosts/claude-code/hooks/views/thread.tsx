@@ -8,7 +8,7 @@ import { drawnRows } from '../../src/layout'
 import { forPane, rowRecord } from '../../src/pane'
 import { cells } from '../../src/review'
 import { reportState } from '../../src/threads'
-import { reportLine, STOP_LABEL } from '../../src/waiting'
+import { reportLine, START_QUESTION, STOP_LABEL } from '../../src/waiting'
 import type { Thread } from '../../src/threads'
 
 export type ThreadModel = {
@@ -31,6 +31,9 @@ export type ThreadActions = {
   cancel: () => unknown
   // What the field holds, as typed.
   input: (text: string) => unknown
+  // The answer to "Start an agent on these tasks?" (#225).
+  agentStart: () => unknown
+  agentSkip: () => unknown
 }
 
 const ANCHOR_ROWS = 3
@@ -51,6 +54,9 @@ export const threadSwitchKey = (id: string) => `${id}-include`
 // ◼ cancel, beside the waiting line: a click, or ↑ from the field and ⏎. Ctrl+C
 // can't press it: Claude Code keeps that key, and Ctrl+D, for itself (#240).
 export const threadStopKey = (id: string) => `${id}-stop`
+// The question an agent's start waits on, outside auto mode: start, or not now.
+export const threadAgentStartKey = (id: string) => `${id}-agent-start`
+export const threadAgentSkipKey = (id: string) => `${id}-agent-skip`
 
 export function ThreadView(
   { Box, Text, Button, Input, Markdown }: Pick<Elements['terminal'], 'Box' | 'Text' | 'Button' | 'Input' | 'Markdown'>,
@@ -145,6 +151,18 @@ export function ThreadView(
           <Text dimColor>{`${m.thinking}  `}</Text>
           <Button key={threadStopKey(m.id)} dimColor onPress={() => void actions.cancel()}>
             {STOP_LABEL}
+          </Button>
+        </Box>
+      ) : null}
+      {t.isAgentAsked ? (
+        <Box paddingX={INSET} marginBottom={1} flexDirection="row">
+          <Text>{`${START_QUESTION}  `}</Text>
+          <Button key={threadAgentStartKey(m.id)} onPress={() => void actions.agentStart()}>
+            start
+          </Button>
+          <Text> </Text>
+          <Button key={threadAgentSkipKey(m.id)} dimColor onPress={() => void actions.agentSkip()}>
+            not now
           </Button>
         </Box>
       ) : null}

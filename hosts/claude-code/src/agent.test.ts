@@ -35,10 +35,10 @@ const working: Thread = { ...talked, agent: { id: 'a1', state: 'working' } }
 test('with no agent, every answer offers one when its tasks need tools, and starts it when asked, the switch on or off', () => {
   for (const t of [NEW_THREAD, talked, { ...talked, isIncludeSet: true, included: false }]) {
     const prompt = threadPrompt({ block: 'B' }, t, 'go')
-    expect(prompt).toContain('offering, in one sentence of your own fitted to what needs doing, to start an agent with tools on it')
+    expect(prompt).toContain('proposing an agent with tools for it: the person is asked whether to start it')
     expect(prompt).toContain('reading or counting files')
     expect(prompt).toContain('<next>agent</next>')
-    expect(prompt).toContain('Never add it unless their message asks for the agent.')
+    expect(prompt).toContain('Never add it when nothing needs tools.')
     expect(prompt).not.toContain('<to-agent>')
   }
 })
@@ -169,4 +169,9 @@ test('with no summary, the agent works from the thread itself', () => {
 test("the switch sentence comes before the summary's instructions, as part of the answer", () => {
   const prompt = threadPrompt({ block: 'B' }, NEW_THREAD, 'go')
   expect(prompt.indexOf('This thread is left out of their review now')).toBeLessThan(prompt.indexOf('<summary>'))
+})
+
+test('in auto mode the answer says it is starting the agent; otherwise that it proposes one, the person asked (#225)', () => {
+  expect(threadPrompt({ block: 'B' }, talked, 'go', true)).toContain("saying that you're starting an agent with tools on it: the session runs in auto mode")
+  expect(threadPrompt({ block: 'B' }, talked, 'go', false)).toContain('the person is asked whether to start it, right under your answer')
 })

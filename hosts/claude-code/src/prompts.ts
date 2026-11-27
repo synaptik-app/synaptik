@@ -105,16 +105,21 @@ export const INCLUDED_ANYWAY = `The person chose to include this thread in their
 
 // In the thread's opening, by whether it has an agent: what becomes of work
 // that needs tools. With none, the answer offers one (D51).
-export const TOOLS_OFFER = ` When answering their message, or doing what the thread settled, needs tools (reading or counting files, a search, a command, an edit, a test run), say what would settle it, then end your answer, before the summary, by offering, in one sentence of your own fitted to what needs doing, to start an agent with tools on it; the person takes it up by saying so (only a sentence about their review may follow it). Leave it out if you offered it before and the person didn't take it up. Whatever needs doing also goes into the summary, for the main conversation to carry out if the person sends it instead.`
+export const TOOLS_OFFER = ` When answering their message, or doing what the thread settled, needs tools (reading or counting files, a search, a command, an edit, a test run), say what would settle it, then end your answer, before the summary, with one sentence of your own, fitted to what needs doing, {{start}} (only a sentence about their review may follow it). If the thread shows the person chose not to start one ("Agent not started"), don't propose one again unless their message asks for it. Whatever needs doing also goes into the summary, for the main conversation to carry out if the person sends it instead.`
+
+// How the agent the answer proposes starts, by the session's permission mode
+// (#225): in auto mode at once, otherwise once the person confirms it.
+export const START_AUTO = `saying that you're starting an agent with tools on it: the session runs in auto mode, so it starts at once`
+export const START_ASKED = `proposing an agent with tools for it: the person is asked whether to start it, right under your answer`
 export const TOOLS_AGENT = ` When something needs doing (a command to run, a file to edit, a test to run), an agent with tools is already working on this thread's tasks (below), and the summary carries it to the main conversation.`
 
-// After every answer, switch on or off, while the thread has no agent: it
-// starts when the person asks for it.
+// After every answer, switch on or off, while the thread has no agent: the
+// thread's agent decides one is needed, and Synaptik starts it or asks (#225).
 export const WITH_NEXT = `
 
-When the person's message asks you to start an agent with tools (in so many words, or a yes to your offer of one), say in your answer that you're starting it, and add this at the very end, after everything else:
+When your answer starts or proposes an agent with tools, or the person's message asks for one, add this at the very end, after everything else:
 <next>agent</next>
-It starts at once, with the summary as its tasks. Never add it unless their message asks for the agent.`
+Its tasks are the summary as it stands. Never add it when nothing needs tools.`
 
 // After every answer to the person, once the thread has an agent: what to send it.
 export const WITH_TO_AGENT = `

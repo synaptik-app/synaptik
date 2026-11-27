@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { agentLine, elapsed, endedLine, notStartedLine, refusalWords, reportLine, spinnerFrame, thinkingLine, tokensText, toolStep } from './waiting'
+import { agentLine, elapsed, endedLine, isAutoMode, notStartedLine, refusalWords, reportLine, spinnerFrame, thinkingLine, tokensText, toolStep } from './waiting'
 
 test("a report says how the agent's run ended, and how long it took", () => {
   expect(reportLine('done', 15_200)).toBe('⏺ Agent finished · 15s')
@@ -59,4 +59,14 @@ test('a run that ended without a report says how', () => {
   expect(endedLine('refusal', 'It declined to run the command.')).toBe('✗ Agent failed · It declined to run the command.')
   expect(endedLine('refusal', null)).toBe('✗ Agent failed · the model refused')
   expect(endedLine('error')).toBe('✗ Agent failed · an API error ended its run')
+})
+
+test('auto mode for sure: the last reading said auto, and Shift+Tab has not changed the hint line since (#225)', () => {
+  expect(isAutoMode('auto', true, true)).toBe(true)
+  // Shift+Tab since: the hint line changed, so the mode is unknown until the next reading.
+  expect(isAutoMode('auto', false, true)).toBe(false)
+  expect(isAutoMode('default', false, false)).toBe(false)
+  expect(isAutoMode('acceptEdits', true, true)).toBe(false)
+  // Nothing read yet.
+  expect(isAutoMode(undefined, undefined, undefined)).toBe(false)
 })

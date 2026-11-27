@@ -64,6 +64,11 @@ export const CANCELLED_LINE = '◼ Answer cancelled'
 // the fork runs on; only its answer is dropped.
 export const STOP_LABEL = '◼ cancel'
 
+// The question an agent's start waits on, outside auto mode, and the line the
+// thread keeps when the person says not now (#225).
+export const START_QUESTION = '▶ Start an agent on these tasks?'
+export const NOT_NOW_LINE = '◼ Agent not started · tell the thread what to do next'
+
 // A thread waiting for its answer.
 export function thinkingLine(now: number, since: number | undefined): string {
   return `${spinnerFrame(now)} Thinking…${since === undefined ? '' : ` · ${elapsed(now - since)}`}`
@@ -88,4 +93,11 @@ export function agentLine(now: number, agent: AgentNow | undefined): string {
   const time = agent ? ` · ${elapsed(now - agent.startTime)}` : ''
   const tokens = agent && agent.tokenCount > 0 ? ` · ${tokensText(agent.tokenCount)}` : ''
   return `${spinnerFrame(now)} ${what}${time}${tokens}`
+}
+
+// Whether the session is in auto mode for sure (#225): the mode Claude Code
+// last reported was `auto`, and the prompt's hint line hasn't changed since,
+// as Shift+Tab changes it. Any doubt means the person is asked.
+export function isAutoMode(modeRead: string | undefined, hintMarked: boolean | undefined, hintMarkedAtRead: boolean | undefined): boolean {
+  return modeRead === 'auto' && hintMarked === hintMarkedAtRead
 }
