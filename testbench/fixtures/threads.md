@@ -88,4 +88,11 @@ Each step says what to **do**, then what to **expect**. Mark each expectation: �
 22. **Do:** send a question, queue two more, then press `◼ cancel`
     - **Expect:** `◼ Answer cancelled`, and the two queued messages in the field, a line each
 
+**After a resume** (#195)
+
+23. **Do:** quit, resume this session (`claude -r`, with the same `--plugin-dir`), and before any prompt in the main chat, open a thread and ask `why Redis?`
+    - **Expect:** a dim `⏸ Waiting for the main chat · threads will work on the next reply`, and `why Redis?` back in the field, not in the thread
+24. **Do:** send any prompt in the main chat, then open a thread on a block of the new reply and ask something
+    - **Expect:** the old thread's pane closed with the new reply, and the new thread is answered
+
 When you're done: close any thread pane, click the first **Expect:**, mark every expectation, press `q`, `Tab`, then `⏎`. The test session answers with a table of your results.

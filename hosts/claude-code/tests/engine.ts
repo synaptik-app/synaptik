@@ -76,7 +76,8 @@ export const opened: { focus: boolean }[] = []
 // Every $.model.fork prompt, in order, and the answer each gets (the text, or
 // a reason it has none). Reset by `engine`.
 export const forks: string[] = []
-export const forkAnswer = { text: 'An answer.' as string | undefined }
+// `text` undefined: no answer, for `reason`.
+export const forkAnswer = { text: 'An answer.' as string | undefined, reason: 'empty-reply' }
 // Set, a fork waits for it before it answers: an answer pending, to cancel.
 export const forkHold = { until: undefined as Promise<void> | undefined }
 
@@ -130,6 +131,7 @@ export function engine(on: On, rows: Row[]) {
   reads.length = 0
   session.id = 'session-1'
   forkAnswer.text = 'An answer.'
+  forkAnswer.reason = 'empty-reply'
   forkHold.until = undefined
   spawned.length = 0
   sentToAgents.length = 0
@@ -185,7 +187,7 @@ export function engine(on: On, rows: Row[]) {
     forks.push(e.prompt)
     const usage = { input_tokens: 16, output_tokens: 3, cache_read_input_tokens: 50_000, cache_creation_input_tokens: 0 }
     if (forkHold.until) await forkHold.until
-    const value = forkAnswer.text === undefined ? { isAnswered: false, reason: 'empty-reply', usage } : { isAnswered: true, text: forkAnswer.text, usage }
+    const value = forkAnswer.text === undefined ? { isAnswered: false, reason: forkAnswer.reason, usage } : { isAnswered: true, text: forkAnswer.text, usage }
     return { value }
   }) as never)
   call('ui.invalidate', () => undefined)

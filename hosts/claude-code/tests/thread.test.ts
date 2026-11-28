@@ -428,3 +428,41 @@ test('#249 review: once an answer lands with messages queued, the next fork is t
   expect(forks[before]).toContain('Their message:\nsecond?')
   expect(forks[before]).not.toContain('Reply with the summary alone.')
 })
+
+test("#195: with nothing to fork yet, the thread says it waits for the main chat, and the question goes back to the field", async ($, on) => {
+  await openThread($, on)
+  // Claude Code's answer when no turn has finished since the session resumed.
+  forkAnswer.text = undefined
+  forkAnswer.reason = 'nothing-to-fork'
+  await send($, 'why Redis?')
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '⏸ Waiting for the main chat · threads will work on the next reply' })))).toBe(true)
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '› why Redis?' })))).toBe(false)
+  expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { value?: string }).value).toBe('why Redis?')
+})
+
+test('#251 review: a draft typed while the fork ran stays, after the question that comes back', async ($, on) => {
+  await openThread($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  forkAnswer.text = undefined
+  forkAnswer.reason = 'nothing-to-fork'
+  await send($, 'why Redis?')
+  await inPane($, async pane => pane.input({ key: String((await pane.find({ type: 'Input' }))!.key), text: 'and the TTL?', kind: 'change' } as never))
+  release()
+  await tick()
+  expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { value?: string }).value).toBe('why Redis?\nand the TTL?')
+})
+
+test('#251 review: cancelled while the fork ran, its nothing-to-fork answer changes nothing', async ($, on) => {
+  await openThread($, on)
+  let release = () => {}
+  forkHold.until = new Promise<void>(resolve => (release = resolve))
+  forkAnswer.text = undefined
+  forkAnswer.reason = 'nothing-to-fork'
+  await send($, 'why Redis?')
+  await inPane($, pane => pane.press({ key: `${PANE}-stop` }))
+  release()
+  await tick()
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '◼ Answer cancelled' })))).toBe(true)
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '⏸ Waiting for the main chat · threads will work on the next reply' })))).toBe(false)
+})

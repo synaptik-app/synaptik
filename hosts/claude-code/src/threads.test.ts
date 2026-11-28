@@ -2,7 +2,7 @@
 
 import { expect, test } from 'claude-code/testing'
 
-import { anchorOf, answerBeforeQueued, clearedThreads, hasThread, markFirst, needsSummary, NEW_THREAD, parseAnswer, queuedOf, sendQueued, summaries, summaryPrompt, threadPrompt, withAnswer, withoutQueued } from './threads'
+import { anchorOf, answerBeforeQueued, clearedThreads, hasThread, markFirst, needsSummary, NEW_THREAD, parseAnswer, queuedOf, sendQueued, summaries, summaryPrompt, threadPrompt, unforked, withAnswer, withoutQueued } from './threads'
 import type { Thread } from './threads'
 
 const talked: Thread = {
@@ -181,4 +181,13 @@ test('an answer landing while messages wait goes before them (#245)', () => {
   const answered = answerBeforeQueued(waiting, 'Answer to a.')
   expect(answered.messages.slice(-3)).toEqual([{ role: 'person', text: 'a?' }, { role: 'agent', text: 'Answer to a.' }, { role: 'person', text: 'b?', queued: true }])
   expect(answered.pending).toBe(0)
+})
+
+test('a question no fork could answer goes back to the field, with what was queued behind it (#195)', () => {
+  const asked: Thread = { ...talked, pending: 1, messages: [...talked.messages, { role: 'person', text: 'why?' }, { role: 'person', text: 'and?', queued: true }] }
+  const back = unforked(asked, talked.messages.length, '✗ Not answered')
+  expect(back.draft).toBe('why?\nand?')
+  expect(back.thread.draft).toBe('why?\nand?')
+  expect(back.thread.messages).toEqual([...talked.messages, { role: 'status', text: '✗ Not answered' }])
+  expect(back.thread.pending).toBe(0)
 })
