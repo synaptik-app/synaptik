@@ -967,11 +967,14 @@ async function askThread($: EngineInterface, key: string, prior: Thread, text: s
     if (isUnforked && !isCancelled(key, asked)) {
       asking.delete(key)
       if ((await read($, lastText)) === reply) {
+        // What was typed meanwhile stays, after the question: nothing the
+        // person wrote is lost.
+        const held = fieldText.get(key)
         let draft = ''
         await changeThread($, key, t => {
           const back = unforked(t, prior.messages.length, NOT_FORKED_LINE)
-          draft = back.draft
-          return back.thread
+          draft = [back.draft, held].filter(Boolean).join('\n')
+          return { ...back.thread, draft }
         })
         if (draft) fieldText.set(key, draft)
         void focusField($, key)

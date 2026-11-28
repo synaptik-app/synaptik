@@ -127,7 +127,7 @@ main conversation (a fresh session, or after a resume or `/clear`), there is
 nothing to fork (`nothing-to-fork`), and no way round it short of pasting the
 transcript into an uncached call. The thread keeps a dim line instead (#195),
 and the question, with anything queued behind it, goes back to the field, to
-copy:
+copy, before anything typed there meanwhile:
 
 ```
 ⏸ Waiting for the main chat · threads will work on the next reply
