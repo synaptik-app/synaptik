@@ -122,9 +122,24 @@ this thread`.
 switch however long the thread; the wheel and the page keys scroll it. The pane
 follows the thread: after each change it scrolls to its end, once redrawn.
 
-**A fork with no answer** says why in the pane: a resumed session has nothing to
-fork until a turn finishes in it. An answer or summary that arrives after a new
-reply is dropped, with the thread it belonged to.
+**A fork with no answer** says why in the pane. Until a turn finishes in the
+main conversation (a fresh session, or after a resume or `/clear`), there is
+nothing to fork (`nothing-to-fork`), and no way round it short of pasting the
+transcript into an uncached call. The thread keeps a dim line instead (#195),
+and the question, with anything queued behind it, goes back to the field, to
+copy:
+
+```
+⏸ Waiting for the main chat · threads will work on the next reply
+```
+
+The person's next prompt brings a new reply, which discards this thread with
+its review (D24), so the line points at that reply rather than at asking here
+again. Threads outliving their reply (#194) would let it go on here.
+
+Any other failure is the thread's answer, in brackets (`(no answer: the request
+failed, send it again)`). An answer or summary that arrives after a new reply is
+dropped, with the thread it belonged to.
 
 **Threads run at once.** Forks run in parallel, each thread with one message in
 flight at a time; the field says it is waiting.

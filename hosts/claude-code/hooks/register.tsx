@@ -22,7 +22,7 @@ import { blockCounter } from '../src/counter'
 import { classicRows, clip, drawnRows, minimap } from '../src/layout'
 import { glyphCounts } from '../src/tally'
 import { decorate } from '../src/decorate'
-import { agentLine, CANCELLED_LINE, endedLine, isAutoMode, NOT_NOW_LINE, notStartedLine, refusalWords, thinkingLine, toolStep } from '../src/waiting'
+import { agentLine, CANCELLED_LINE, endedLine, isAutoMode, NOT_FORKED_LINE, NOT_NOW_LINE, notStartedLine, refusalWords, thinkingLine, toolStep } from '../src/waiting'
 import type { AgentNow } from '../src/waiting'
 import {
   AGENT_WORDS,
@@ -46,6 +46,7 @@ import {
   queuedOf,
   sendQueued,
   typedInView,
+  unforked,
   withoutQueued,
   withAnswer,
   withoutReport,
@@ -951,6 +952,9 @@ async function askThread($: EngineInterface, key: string, prior: Thread, text: s
   const asked = cancels.get(key) ?? 0
   const reply = await read($, lastText)
   let batch: { prior: Thread; text: string } | undefined
+  // Nothing to fork yet: no turn has finished since the session started or
+  // resumed. The question goes back to the field, the thread says why (#195).
+  let isUnforked = false
   // Whatever happens, the message stops waiting: a thread stuck waiting would
   // never be summarised.
   let answer = '(no answer: something went wrong, send it again)'
@@ -958,7 +962,22 @@ async function askThread($: EngineInterface, key: string, prior: Thread, text: s
     const r = await forkThread($, prompt)
     observe(`thread ${key} fork: ${r.isAnswered ? `${r.usage.input_tokens} in, ${r.usage.cache_read_input_tokens} cached, ${r.usage.output_tokens} out` : r.reason}`)
     answer = r.isAnswered ? r.text : `(${noAnswer(r.reason)})`
+    isUnforked = !r.isAnswered && r.reason === 'nothing-to-fork'
   } finally {
+    if (isUnforked && !isCancelled(key, asked)) {
+      asking.delete(key)
+      if ((await read($, lastText)) === reply) {
+        let draft = ''
+        await changeThread($, key, t => {
+          const back = unforked(t, prior.messages.length, NOT_FORKED_LINE)
+          draft = back.draft
+          return back.thread
+        })
+        if (draft) fieldText.set(key, draft)
+        void focusField($, key)
+      }
+      return
+    }
     // A new reply meanwhile discarded the thread: the answer has nowhere to go.
     // Cancelled while it was written, it is thrown away (#240), and the cancel
     // already ended the wait. Landing, it goes before what is queued.
@@ -1036,7 +1055,7 @@ async function forkThread($: EngineInterface, prompt: string) {
 
 // Why a fork gave no answer, in the person's words.
 function noAnswer(reason: string): string {
-  if (reason === 'nothing-to-fork') return 'no answer: a resumed session can be discussed once a turn has finished in it'
+  if (reason === 'nothing-to-fork') return 'no answer: send a prompt in the main chat first, then try again'
   if (reason === 'api-error') return 'no answer: the request failed, send it again'
   return `no answer: ${reason}`
 }

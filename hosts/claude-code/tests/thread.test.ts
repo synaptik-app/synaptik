@@ -428,3 +428,14 @@ test('#249 review: once an answer lands with messages queued, the next fork is t
   expect(forks[before]).toContain('Their message:\nsecond?')
   expect(forks[before]).not.toContain('Reply with the summary alone.')
 })
+
+test("#195: with nothing to fork yet, the thread says it waits for the main chat, and the question goes back to the field", async ($, on) => {
+  await openThread($, on)
+  // Claude Code's answer when no turn has finished since the session resumed.
+  forkAnswer.text = undefined
+  forkAnswer.reason = 'nothing-to-fork'
+  await send($, 'why Redis?')
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '⏸ Waiting for the main chat · threads will work on the next reply' })))).toBe(true)
+  expect(await inPane($, async pane => Boolean(await pane.find({ type: 'Text', text: '› why Redis?' })))).toBe(false)
+  expect(((await inPane($, async pane => pane.find({ type: 'Input' })))!.props as { value?: string }).value).toBe('why Redis?')
+})

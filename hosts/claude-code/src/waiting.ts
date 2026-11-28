@@ -69,6 +69,12 @@ export const STOP_LABEL = '◼ cancel'
 export const START_QUESTION = '▶ Start an agent on these tasks?'
 export const NOT_NOW_LINE = '◼ Agent not started · tell the thread what to do next'
 
+// A question no fork could answer: nothing to fork until a turn finishes in the
+// main conversation, after a resume or before the first (#195). Its next prompt
+// brings a new reply, which discards this thread (D24), so the line points at
+// that reply, not at asking here again; #194 would keep the thread.
+export const NOT_FORKED_LINE = '⏸ Waiting for the main chat · threads will work on the next reply'
+
 // A thread waiting for its answer.
 export function thinkingLine(now: number, since: number | undefined): string {
   return `${spinnerFrame(now)} Thinking…${since === undefined ? '' : ` · ${elapsed(now - since)}`}`

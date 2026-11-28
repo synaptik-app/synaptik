@@ -329,3 +329,16 @@ export function answerBeforeQueued(thread: Thread, raw: string, isReport = false
   const answered = withAnswer(withoutQueued(thread), raw, isReport)
   return { ...answered, messages: [...answered.messages, ...queued] }
 }
+
+// A question the fork couldn't answer at all: no turn has finished in the main
+// conversation since the session started or resumed (#195). The question, and
+// whatever was queued behind it, leaves the thread for the field, to send again
+// once the person has sent a prompt there; the thread keeps `line` instead.
+export function unforked(thread: Thread, askedFrom: number, line: string): { thread: Thread; draft: string } {
+  const sent = thread.messages.filter((m, i) => i >= askedFrom && m.role === 'person').map(m => m.text)
+  const messages = thread.messages.filter((m, i) => i < askedFrom || m.role !== 'person')
+  return {
+    thread: { ...thread, messages: [...messages, { role: 'status', text: line }], pending: Math.max(0, thread.pending - 1), inputSeq: thread.inputSeq + 1, draft: sent.join('\n') },
+    draft: sent.join('\n'),
+  }
+}
