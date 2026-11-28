@@ -341,9 +341,11 @@ only when the person asks for it.
   would make Synaptik adopt something new on its own, which this keeps to the
   person's request.
 
-**Built in #208. Later:** the same row reviews any file read from disk (#108), and a plan can be
-set beside its previous version (#110): the transcript holds each `Write` in
-full and each `ExitPlanMode`'s plan.
+**Built in #208. Later:** the same row reviews any file read from disk (#108).
+
+**Revisions**
+- **2026-11-28** — a plan set beside its previous version is dropped (#110,
+  closed): comparing rewritten text is guesswork, and the main chat can ask.
 
 ---
 
